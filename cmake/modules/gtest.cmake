@@ -49,12 +49,12 @@ else(GTEST_SEARCH_PATH)
         "${PROJECT_BINARY_DIR}/lib/gmock_main.lib")
     else(WIN32)
     set(GTEST_LIBRARIES
-        "${PROJECT_BINARY_DIR}/lib64/libgtest.a"
-        "${PROJECT_BINARY_DIR}/lib64/libgtest_main.a")
+        "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libgtest.a"
+        "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libgtest_main.a")
 
     set(GMOCK_LIBRARIES
-        "${PROJECT_BINARY_DIR}/lib64/libgmock.a"
-        "${PROJECT_BINARY_DIR}/lib64/libgmock_main.a")
+        "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libgmock.a"
+        "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libgmock_main.a")
     endif(WIN32)
     message(STATUS "GTest will be built as a third party")
     message(STATUS "  (Headers should be)       ${GTEST_INCLUDE_DIR}")

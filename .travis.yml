@@ -24,14 +24,14 @@ before_install:
   - sudo apt-get -y install libboost-{chrono,program-options,date-time,thread,system,filesystem,regex,serialization}1.58{-dev,.0}
 
 install:
-  - mkdir tmp
-  - cd tmp
+  - mkdir tmp-zmq
+  - cd tmp-zmq
   - git clone https://github.com/zeromq/cppzmq
   - cd cppzmq
   - git reset --hard 4648ebc9643119cff2a433dff4609f1a5cb640ec  # Since only libzmq3-dev can be installed. The new zmq.hpp requires version above 4.
   - sudo cp zmq.hpp /usr/local/include
   - cd ../..
-  - rm -rf tmp
+  - rm -rf tmp-zmq
 
 before_script:
   - export CLANG_FORMAT=clang-format-3.9
