@@ -13,8 +13,10 @@
 // limitations under the License.
 
 #include "gtest/gtest.h"
+#include "glog/logging.h"
 
 GTEST_API_ int main(int argc, char** argv) {
-    testing::InitGoogleTest(&argc, argv);
-    return RUN_ALL_TESTS();
+  testing::InitGoogleTest(&argc, argv);
+  google::InitGoogleLogging(argv[0]);
+  return RUN_ALL_TESTS();
 }
