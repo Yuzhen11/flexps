@@ -2,6 +2,8 @@
 
 #include "glog/logging.h"
 
+#include <vector>
+
 namespace flexps {
 
 void ProgressTracker::Init(const std::vector<int>& tids) {
@@ -23,9 +25,7 @@ int ProgressTracker::AdvanceAndGetChangedMinClock(int tid) {
   }
 }
 
-int ProgressTracker::GetNumThreads() const {
-  return progresses_.size();
-}
+int ProgressTracker::GetNumThreads() const { return progresses_.size(); }
 
 int ProgressTracker::GetProgress(int tid) const {
   CHECK(CheckThreadValid(tid));
@@ -33,9 +33,7 @@ int ProgressTracker::GetProgress(int tid) const {
   return it->second;
 }
 
-int ProgressTracker::GetMinClock() const {
-  return min_clock_;
-}
+int ProgressTracker::GetMinClock() const { return min_clock_; }
 
 bool ProgressTracker::IsUniqueMin(int tid) const {
   CHECK(CheckThreadValid(tid));
@@ -52,7 +50,6 @@ bool ProgressTracker::IsUniqueMin(int tid) const {
   }
   return true;
 }
-
 
 bool ProgressTracker::CheckThreadValid(int tid) const {
   auto it = progresses_.find(tid);

@@ -1,19 +1,16 @@
-#include "server/message.hpp"
-#include "server/abstract_consistency_controller.hpp"
-#include "server/abstract_storage.hpp"
-#include "server/progress_tracker.hpp"
-
 #include <memory>
+#include "server/abstract_model.hpp"
+#include "server/message.hpp"
 
 namespace flexps {
 
-class ModelManager {
+class ServerModel : AbstractModel {
  public:
-  ModelManager()
-  void Init();
-  void Clock(int tid);
-  void Add(int tid, const Message& message);
-  void Get(int tid, const Message& message);
+  serverModel() void Init();
+  virtual void Clock(int tid) override;
+  virtual void Add(int tid, const Message& message) override;
+  virtual void Get(int tid, const Message& message) override;
+
  private:
   std::unique_ptr<AbstractConsistencyController> consistency_controller_;
 };

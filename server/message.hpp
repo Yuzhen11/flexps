@@ -1,4 +1,6 @@
-#include "base/binstream.hpp"
+#pragma once
+
+#include "base/serialization.hpp"
 
 namespace flexps {
 

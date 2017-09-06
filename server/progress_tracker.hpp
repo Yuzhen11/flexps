@@ -1,5 +1,5 @@
-#include <vector>
 #include <map>
+#include <vector>
 
 namespace flexps {
 
@@ -17,6 +17,7 @@ class ProgressTracker {
   int GetNumThreads() const;
   bool IsUniqueMin(int tid) const;
   bool CheckThreadValid(int tid) const;
+
  private:
   std::map<int, int> progresses_;
   int min_clock_;

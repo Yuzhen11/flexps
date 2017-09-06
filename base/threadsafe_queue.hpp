@@ -1,13 +1,13 @@
 #pragma once
 
-#include <queue>
-#include <mutex>
-#include <conditional_variable>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
+#include <queue>
 
 namespace flexps {
 
-template<typename T>
+template <typename T>
 class ThreadsafeQueue {
  public:
   ThreadsafeQueue() = default;
@@ -25,10 +25,11 @@ class ThreadsafeQueue {
   }
   void WaitAndPop(T* elem) {
     std::unique_lock<std::mutex> lk(mu_);
-    cond_.wait(lk, [this]{ return !queue_.empty(); });
+    cond_.wait(lk, [this] { return !queue_.empty(); });
     *elem = std::move(queue_.front());
     queue_.pop();
   }
+
  private:
   std::mutex mu_;
   std::queue<T> queue_;

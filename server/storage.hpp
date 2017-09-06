@@ -1,17 +1,16 @@
 #include "server/abstract_storage.hpp"
 
-#include "server/threadsafe_queue.hpp"
 #include "server/message.hpp"
+#include "server/threadsafe_queue.hpp"
 
 #include <map>
 
 namespace flexps {
 
-template<typename T>
+template <typename T>
 class Storage : public AbstractStorage {
  public:
-  Storage(ThreadsafeQueue<Message>* const threadsafe_queue)
-    : threadsafe_queue_(threadsafe_queue) {}
+  Storage(ThreadsafeQueue<Message>* const threadsafe_queue) : threadsafe_queue_(threadsafe_queue) {}
 
   virtual void Add(const Message& message) override {
     size_t key;
@@ -29,8 +28,8 @@ class Storage : public AbstractStorage {
     threadsafe_queue_.Push(rep);
   }
 
-  virtual void FinishIter() override {
-  }
+  virtual void FinishIter() override {}
+
  private:
   // Not owned.
   ThreadsafeQueue<Message>* const threadsafe_queue_;
