@@ -32,7 +32,7 @@ void ServerThread::Main() {
       break;
 
     uint32_t model_id = msg.meta.model_id;
-    CHECK(models_.find(model_id) != models_.end());
+    CHECK(models_.find(model_id) != models_.end()) << "Unknown model_id: " << model_id;
     switch (msg.meta.flag) {
     case Flag::kClock:
       models_[model_id]->Clock(msg);

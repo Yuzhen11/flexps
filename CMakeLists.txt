@@ -43,5 +43,6 @@ set(HUSKY_EXTERNAL_LIB ${GLOG_LIBRARY} ${ZMQ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 add_subdirectory(tmp)
 add_subdirectory(base)
 add_subdirectory(server)
+add_subdirectory(worker)
 
 add_subdirectory(test)

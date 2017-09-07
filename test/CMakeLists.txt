@@ -1,6 +1,9 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
-add_library(flexps STATIC $<TARGET_OBJECTS:tmp-objs> $<TARGET_OBJECTS:server-objs> $<TARGET_OBJECTS:base-objs>)
+add_library(flexps STATIC $<TARGET_OBJECTS:tmp-objs> 
+  $<TARGET_OBJECTS:server-objs> 
+  $<TARGET_OBJECTS:worker-objs> 
+  $<TARGET_OBJECTS:base-objs>)
 
 # Unit Test
 file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp) 
