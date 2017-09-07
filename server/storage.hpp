@@ -1,6 +1,6 @@
 #include "server/abstract_storage.hpp"
 
-#include "server/message.hpp"
+#include "base/message.hpp"
 #include "server/threadsafe_queue.hpp"
 
 #include <map>

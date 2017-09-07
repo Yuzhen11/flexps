@@ -1,7 +1,7 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
 file(GLOB server-src-files
-  ssp_consistency_controller.cpp
+  ssp_model.cpp
   progress_tracker.cpp
   server_thread.cpp)
 

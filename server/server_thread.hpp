@@ -2,7 +2,7 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "server/abstract_model.hpp"
-#include "server/message.hpp"
+#include "base/message.hpp"
 
 #include <thread>
 #include <unordered_map>

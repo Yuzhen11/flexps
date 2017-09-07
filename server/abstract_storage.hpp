@@ -1,4 +1,4 @@
-#include "server/message.hpp"
+#include "base/message.hpp"
 
 namespace flexps {
 

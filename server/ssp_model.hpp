@@ -1,7 +1,7 @@
 #include "server/abstract_model.hpp"
 
 #include "server/abstract_storage.hpp"
-#include "server/message.hpp"
+#include "base/message.hpp"
 #include "server/pending_buffer.hpp"
 #include "server/progress_tracker.hpp"
 
@@ -9,13 +9,13 @@
 
 namespace flexps {
 
-class SSPConsistencyController : public AbstractModel {
+class SSPModel : public AbstractModel {
  public:
-  SSPConsistencyController(int staleness) : staleness_(staleness) {}
+  SSPModel(int staleness) : staleness_(staleness) {}
 
-  virtual void Clock(uint32_t tid) override;
-  virtual void Add(uint32_t tid, const Message& message) override;
-  virtual void Get(uint32_t tid, const Message& message) override;
+  virtual void Clock(Message& message) override;
+  virtual void Add(Message& message) override;
+  virtual void Get(Message& message) override;
 
  private:
   int staleness_;

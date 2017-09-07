@@ -21,9 +21,9 @@ class TestServerThread : public testing::Test {
 
 class FakeModel : public AbstractModel {
  public:
-  virtual void Clock(uint32_t tid) override { clock_count_ += 1; }
-  virtual void Add(uint32_t tid, const Message&) override { add_count_ += 1; }
-  virtual void Get(uint32_t tid, const Message&) override { get_count_ += 1; }
+  virtual void Clock(Message&) override { clock_count_ += 1; }
+  virtual void Add(Message&) override { add_count_ += 1; }
+  virtual void Get(Message&) override { get_count_ += 1; }
 
   int clock_count_ = 0;
   int add_count_ = 0;
@@ -41,22 +41,26 @@ TEST_F(TestServerThread, Basic) {
   th.Start();
 
   auto* work_queue = th.GetWorkQueue();
-  uint32_t tid = 123;
   Message m;
-  m.bin << kClock << tid << model_id;
+  m.meta.flag = Flag::kClock;
+  m.meta.model_id = model_id;
   work_queue->Push(m);
   work_queue->Push(m);
+
   Message m2;
-  m2.bin << kAdd << tid << model_id;
+  m2.meta.flag = Flag::kAdd;
+  m2.meta.model_id = model_id;
   work_queue->Push(m2);
+
   Message m3;
-  m3.bin << kGet << tid << model_id;
+  m3.meta.flag = Flag::kGet;
+  m3.meta.model_id = model_id;
   work_queue->Push(m3);
   work_queue->Push(m3);
   work_queue->Push(m3);
 
   Message m4;
-  m4.bin << kExit;
+  m3.meta.flag = Flag::kExit;
   work_queue->Push(m4);
 
   th.Stop();

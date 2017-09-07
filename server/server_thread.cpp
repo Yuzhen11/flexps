@@ -1,7 +1,5 @@
 #include "server/server_thread.hpp"
 
-#include "base/magic.hpp"
-
 #include "glog/logging.h"
 
 namespace flexps {
@@ -28,21 +26,23 @@ void ServerThread::Main() {
     Message msg;
     work_queue_.WaitAndPop(&msg);
 
-    char flag;
-    msg.bin >> flag;
-    if (flag == kExit)
+    if (msg.meta.flag == Flag::kExit)
       break;
 
-    uint32_t tid;
-    uint32_t model_id;
-    msg.bin >> tid >> model_id;
+    uint32_t model_id = msg.meta.model_id;
     CHECK(models_.find(model_id) != models_.end());
-    if (flag == kClock) {
-      models_[model_id]->Clock(tid);
-    } else if (flag == kAdd) {
-      models_[model_id]->Add(tid, msg);
-    } else if (flag == kGet) {
-      models_[model_id]->Get(tid, msg);
+    switch (msg.meta.flag) {
+      case Flag::kClock :
+        models_[model_id]->Clock(msg);
+        break;
+      case Flag::kAdd:
+        models_[model_id]->Add(msg);
+        break;
+      case Flag::kGet:
+        models_[model_id]->Get(msg);
+        break;
+      default:
+        CHECK(false) << "Unknown flag in message: " << FlagName[static_cast<int>(msg.meta.flag)];
     }
   }
 }
