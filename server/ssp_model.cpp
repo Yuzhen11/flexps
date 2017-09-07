@@ -3,6 +3,8 @@
 
 namespace flexps {
 
+void SSPModel::Init() {}
+
 void SSPModel::Clock(Message& message) {
   int updated_min_clock = progress_tracker_.AdvanceAndGetChangedMinClock(message.meta.sender);
   if (updated_min_clock != -1) {  // min clock updated

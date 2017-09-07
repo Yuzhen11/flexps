@@ -30,17 +30,17 @@ class FakeModel : public AbstractModel {
   int get_count_ = 0;
 };
 
-TEST_F(TestServerThread, Construct) { ServerThread th; }
+TEST_F(TestServerThread, Construct) { ServerThread server_thread(0); }
 
 TEST_F(TestServerThread, Basic) {
-  ServerThread th;
+  ServerThread server_thread(0);
   std::unique_ptr<AbstractModel> model(new FakeModel());
   const uint32_t model_id = 0;
-  th.RegisterModel(model_id, std::move(model));
-  auto* p = static_cast<FakeModel*>(th.GetModel(model_id));
-  th.Start();
+  server_thread.RegisterModel(model_id, std::move(model));
+  auto* p = static_cast<FakeModel*>(server_thread.GetModel(model_id));
+  server_thread.Start();
 
-  auto* work_queue = th.GetWorkQueue();
+  auto* work_queue = server_thread.GetWorkQueue();
   Message m;
   m.meta.flag = Flag::kClock;
   m.meta.model_id = model_id;
@@ -63,7 +63,7 @@ TEST_F(TestServerThread, Basic) {
   m3.meta.flag = Flag::kExit;
   work_queue->Push(m4);
 
-  th.Stop();
+  server_thread.Stop();
 
   EXPECT_EQ(p->clock_count_, 2);
   EXPECT_EQ(p->add_count_, 1);

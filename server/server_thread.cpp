@@ -16,6 +16,8 @@ void ServerThread::RegisterModel(uint32_t model_id, std::unique_ptr<AbstractMode
 
 ThreadsafeQueue<Message>* ServerThread::GetWorkQueue() { return &work_queue_; }
 
+uint32_t ServerThread::GetServerId() const { return server_id_; }
+
 AbstractModel* ServerThread::GetModel(uint32_t model_id) {
   CHECK(models_.find(model_id) != models_.end());
   return models_[model_id].get();
@@ -32,17 +34,17 @@ void ServerThread::Main() {
     uint32_t model_id = msg.meta.model_id;
     CHECK(models_.find(model_id) != models_.end());
     switch (msg.meta.flag) {
-      case Flag::kClock :
-        models_[model_id]->Clock(msg);
-        break;
-      case Flag::kAdd:
-        models_[model_id]->Add(msg);
-        break;
-      case Flag::kGet:
-        models_[model_id]->Get(msg);
-        break;
-      default:
-        CHECK(false) << "Unknown flag in message: " << FlagName[static_cast<int>(msg.meta.flag)];
+    case Flag::kClock:
+      models_[model_id]->Clock(msg);
+      break;
+    case Flag::kAdd:
+      models_[model_id]->Add(msg);
+      break;
+    case Flag::kGet:
+      models_[model_id]->Get(msg);
+      break;
+    default:
+      CHECK(false) << "Unknown flag in message: " << FlagName[static_cast<int>(msg.meta.flag)];
     }
   }
 }

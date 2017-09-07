@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "gtest/gtest.h"
 #include "glog/logging.h"
+#include "gtest/gtest.h"
 
 GTEST_API_ int main(int argc, char** argv) {
   testing::InitGoogleTest(&argc, argv);
