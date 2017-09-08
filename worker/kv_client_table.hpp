@@ -7,6 +7,9 @@
 #include "base/third_party/sarray.h"
 
 #include "abstract_range_manager.hpp"
+#include "abstract_callback_runner.hpp"
+
+#include "glog/logging.h"
 
 namespace flexps {
 
@@ -21,9 +24,8 @@ class KVClientTable {
  public:
   KVClientTable(uint32_t app_thread_id, uint32_t model_id, 
       ThreadsafeQueue<Message>* const downstream,
-      const AbstractRangeManager* const range_manager)
-    : app_thread_id_(app_thread_id), model_id_(model_id),
-    downstream_(downstream), range_manager_(range_manager) {}
+      const AbstractRangeManager* const range_manager,
+      AbstractCallbackRunner* const callback_runner);
 
   void Init();
 
@@ -40,13 +42,39 @@ class KVClientTable {
   uint32_t app_thread_id_;
   uint32_t model_id_;
 
+  // Do not need to protect this variable since:
+  // 1. Now we assume only 1 background thread using app_blocker
+  // 2. The Get() call will always wait for the result
+  // If we add more background threads later, we need to lock this.
+  std::vector<KVPairs<Val>> recv_kvs_;
+
   // Not owned.
   ThreadsafeQueue<Message>* const downstream_;
   // Not owned.
-  // AbstractCallbackRunner* const callback_runner_;
+  AbstractCallbackRunner* const callback_runner_;
   // Not owned.
   const AbstractRangeManager* const range_manager_; 
 };
+
+
+template<typename Val>
+KVClientTable<Val>::KVClientTable(uint32_t app_thread_id, uint32_t model_id, 
+    ThreadsafeQueue<Message>* const downstream,
+    const AbstractRangeManager* const range_manager,
+    AbstractCallbackRunner* const callback_runner)
+  : app_thread_id_(app_thread_id), model_id_(model_id),
+  downstream_(downstream), range_manager_(range_manager),
+  callback_runner_(callback_runner) {
+
+  callback_runner_->RegisterRecvHandle(app_thread_id_, model_id_, [&](Message& msg) {
+    CHECK_EQ(msg.data.size(), 2);
+    KVPairs<Val> kvs;
+    kvs.keys = msg.data[0];
+    kvs.vals= msg.data[1];
+    // TODO: Need lock?
+    recv_kvs_.push_back(kvs);
+  });
+}
 
 template<typename Val>
 void KVClientTable<Val>::Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {
@@ -60,6 +88,49 @@ void KVClientTable<Val>::Add(const std::vector<Key>& keys, const std::vector<Val
   Slice(kvs, &sliced); 
   // 2. send
   Send(sliced);
+}
+
+template<typename Val>
+void KVClientTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
+  KVPairs<Val> kvs;
+  kvs.keys = keys;
+  SlicedKVs sliced;
+  // 1. slice
+  Slice(kvs, &sliced);
+  // 2. register handle
+  callback_runner_->RegisterRecvFinishHandle(app_thread_id_, model_id_, [&]() {
+    size_t total_key = 0, total_val = 0;
+    for (const auto& s : recv_kvs_) {
+      third_party::Range range = third_party::FindRange(kvs.keys, s.keys.front(), s.keys.back() + 1);
+      CHECK_EQ(range.size(), s.keys.size())
+          << "unmatched keys size from one server";
+      total_key += s.keys.size();
+      total_val += s.vals.size();
+    }
+    CHECK_EQ(total_key, keys.size()) << "lost some servers?";
+    std::sort(recv_kvs_.begin(), recv_kvs_.end(), [](
+        const KVPairs<Val>& a, const KVPairs<Val>& b) {
+          return a.keys.front() < b.keys.front();
+    });
+    CHECK_NOTNULL(vals);
+    if (vals->empty()) {
+      vals->resize(total_val);
+    } else {
+      CHECK_EQ(vals->size(), total_val);
+    }
+    Val* p_vals = vals->data();
+    for (const auto& s : recv_kvs_) {
+      memcpy(p_vals, s.vals.data(), s.vals.size() * sizeof(Val));
+      p_vals += s.vals.size();
+    }
+    recv_kvs_.clear();
+  });
+  // 3. add request
+  AddRequest(sliced);
+  // 4. send
+  Send(sliced);
+  // 5. wait request
+  callback_runner_->WaitRequest(app_thread_id_, model_id_);
 }
 
 template<typename Val>
@@ -126,6 +197,12 @@ void KVClientTable<Val>::Send(const SlicedKVs& sliced) {
 
 template<typename Val>
 void KVClientTable<Val>::AddRequest(const SlicedKVs& sliced) {
+  int num_reqs = 0;
+  for (size_t i = 0; i < sliced.size(); ++ i) {
+    if (sliced[i].first)
+      num_reqs += 1;
+  }
+  callback_runner_->NewRequest(app_thread_id_, model_id_, num_reqs);
 }
 
 }  // namespace flexps

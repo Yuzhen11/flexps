@@ -33,9 +33,8 @@ TEST_F(TestAppBlocker, Register) {
     f1_counter += 1;
     EXPECT_EQ(m.meta.sender, message.meta.sender);
   };
-  auto f2 = [&f2_counter, m](Message& message) {
+  auto f2 = [&f2_counter]() {
     f2_counter += 1;
-    EXPECT_EQ(m.meta.sender, message.meta.sender);
   };
   blocker.RegisterRecvHandle(0, 0, f1);
   blocker.RegisterRecvFinishHandle(0, 0, f2);
@@ -58,9 +57,8 @@ TEST_F(TestAppBlocker, MultiThreads) {
     f1_counter += 1;
     EXPECT_EQ(m.meta.sender, message.meta.sender);
   };
-  auto f2 = [&f2_counter, m](Message& message) {
+  auto f2 = [&f2_counter]() {
     f2_counter += 1;
-    EXPECT_EQ(m.meta.sender, message.meta.sender);
   };
   blocker.RegisterRecvHandle(0, 0, f1);
   blocker.RegisterRecvFinishHandle(0, 0, f2);
@@ -91,9 +89,8 @@ TEST_F(TestAppBlocker, MultiThreadsReused) {
     f1_counter += 1;
     EXPECT_EQ(m.meta.sender, message.meta.sender);
   };
-  auto f2 = [&f2_counter, m](Message& message) {
+  auto f2 = [&f2_counter]() {
     f2_counter += 1;
-    EXPECT_EQ(m.meta.sender, message.meta.sender);
   };
   blocker.RegisterRecvHandle(0, 0, f1);
   blocker.RegisterRecvFinishHandle(0, 0, f2);

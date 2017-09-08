@@ -6,6 +6,7 @@
 #include <mutex>
 
 #include "base/message.hpp"
+#include "worker/abstract_callback_runner.hpp"
 
 namespace flexps {
 
@@ -19,13 +20,14 @@ namespace flexps {
  * Should register handle before use.
  * Should call NewRequest before sending out the request.
  */
-class AppBlocker {
+class AppBlocker : public AbstractCallbackRunner {
  public:
-  void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_handle);
-  void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_finish_handle);
+  virtual void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_handle) override;
+  virtual void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void()>& recv_finish_handle) override;
 
-  void NewRequest(uint32_t app_thread_id, uint32_t model_id, uint32_t expected_responses); 
-  void WaitRequest(uint32_t app_thread_id, uint32_t model_id); 
+  virtual void NewRequest(uint32_t app_thread_id, uint32_t model_id, uint32_t expected_responses) override;
+  virtual void WaitRequest(uint32_t app_thread_id, uint32_t model_id) override;
+
   void AddResponse(uint32_t app_thread_id, uint32_t model_id, Message& msg);
  private:
   void SanityCheck(uint32_t app_thread_id, uint32_t model_id); 
@@ -38,7 +40,7 @@ class AppBlocker {
 
   // app_thread_id, model_id, callback
   std::map<uint32_t, std::map<uint32_t, std::function<void(Message& message)>>> recv_handle_;
-  std::map<uint32_t, std::map<uint32_t, std::function<void(Message& message)>>> recv_finish_handle_;
+  std::map<uint32_t, std::map<uint32_t, std::function<void()>>> recv_finish_handle_;
 };
 
 }  // namespace flexps
