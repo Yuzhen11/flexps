@@ -64,14 +64,14 @@ TEST_F(TestAppBlocker, MultiThreads) {
   };
   blocker.RegisterRecvHandle(0, 0, f1);
   blocker.RegisterRecvFinishHandle(0, 0, f2);
-  std::promise<int> prom;
-  std::future<int> fut = prom.get_future();
+  std::promise<void> prom;
+  std::future<void> fut = prom.get_future();
   std::thread th([&blocker, &prom] {
     blocker.NewRequest(0, 0, 2);
-    prom.set_value(10);
+    prom.set_value();
     blocker.WaitRequest(0,0);
   });
-  int x = fut.get();
+  fut.get();
   blocker.AddResponse(0, 0, m);
   EXPECT_EQ(f1_counter, 1);
   EXPECT_EQ(f2_counter, 0);

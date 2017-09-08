@@ -4,6 +4,8 @@
 
 namespace flexps {
 
+using Key = uint32_t;
+
 static const char kExit = 0x00;
 
 static const char kClock = 0x12;

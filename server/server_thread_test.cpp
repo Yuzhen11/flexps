@@ -60,7 +60,7 @@ TEST_F(TestServerThread, Basic) {
   work_queue->Push(m3);
 
   Message m4;
-  m3.meta.flag = Flag::kExit;
+  m4.meta.flag = Flag::kExit;
   work_queue->Push(m4);
 
   server_thread.Stop();
