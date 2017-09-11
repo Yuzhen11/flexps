@@ -24,8 +24,9 @@ class SSPModel : public AbstractModel {
   virtual void Clock(Message& message) override;
   virtual void Add(Message& message) override;
   virtual void Get(Message& message) override;
+  virtual int GetProgress(int tid) override;
 
-  int GetProgress(int tid);
+  int GetPendingSize(int progress);
 
  private:
   uint32_t model_id_;

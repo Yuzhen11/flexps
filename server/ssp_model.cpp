@@ -1,6 +1,7 @@
 #include "server/ssp_model.hpp"
 #include "glog/logging.h"
 
+
 namespace flexps {
 
 SSPModel::SSPModel(uint32_t model_id, 
@@ -44,6 +45,10 @@ void SSPModel::Get(Message& message) {
 
 int SSPModel::GetProgress(int tid) {
   return progress_tracker_.GetProgress(tid);
+}
+
+int SSPModel::GetPendingSize(int progress) {
+  return buffer_.Size(progress);
 }
 
 }  // namespace flexps

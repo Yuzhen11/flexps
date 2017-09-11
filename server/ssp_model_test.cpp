@@ -125,30 +125,111 @@ TEST_F(TestSSPModel, CheckClock) {
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &threadsafe_queue));
 
-  //model.get()->Clock();
+  // Message1
+  Message m1;
+  m1.meta.flag = Flag::kClock;
+  m1.meta.model_id = 0;
+  m1.meta.sender = 2;
+  m1.meta.recver = 0;
+  model.get()->Clock(m1);
+
+  // Message2
+  Message m2;
+  m2.meta.flag = Flag::kClock;
+  m2.meta.model_id = 0;
+  m2.meta.sender = 3;
+  m2.meta.recver = 0;
+  model.get()->Clock(m2);
+
+  // Message3
+  Message m3;
+  m3.meta.flag = Flag::kClock;
+  m3.meta.model_id = 0;
+  m3.meta.sender = 2;
+  m3.meta.recver = 0;
+  model.get()->Clock(m3);
+
+  EXPECT_EQ(model.get()->GetProgress(2), 2);
+  EXPECT_EQ(model.get()->GetProgress(3), 1);
 }
 
 TEST_F(TestSSPModel, CheckStaleness) {
-  /* There are two servers(0, 1), two clients(2, 3) and four parameters(0, 1, 2, 3)
-   * param(0, 2) will be stored in server(0) and param(1, 3) will be stored in server(1)
-   * WORK for client(2):
-   *   get param(0, 1)
-   *   add param(0, 1)
-   *   clock
-   *   get param(1, 3)
-   *   add param(1, 3)
-   *   clock
-   *   get param(0)
-   *   add param(0)
-   *   clock
-   *   exit
-   * WORK for client(3):
-   *   get param(2, 3)
-   *   add param(2, 3)
-   *   clock
-   *   exit
-   */
+  ThreadsafeQueue<Message> threadsafe_queue;
+  int staleness = 2;
+  std::vector<int> tids{2, 3};
+  int model_id = 0;
+  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &threadsafe_queue));
 
+  // Message1
+  Message m1;
+  m1.meta.flag = Flag::kGet;
+  m1.meta.model_id = 0;
+  m1.meta.sender = 2;
+  m1.meta.recver = 0;
+  m1.bin << 1 << 0;
+  model.get()->Get(m1);
+  threadsafe_queue.WaitAndPop(&m1);
+
+  // Message2
+  Message m2;
+  m2.meta.flag = Flag::kClock;
+  m2.meta.model_id = 0;
+  m2.meta.sender = 2;
+  m2.meta.recver = 0;
+  model.get()->Clock(m2);
+
+  // Message3
+  Message m3;
+  m3.meta.flag = Flag::kAdd;
+  m3.meta.model_id = 0;
+  m3.meta.sender = 2;
+  m3.meta.recver = 0;
+  m3.bin << 1 << 0 << 1;
+  model.get()->Add(m3);
+
+  // Message4
+  Message m4;
+  m4.meta.flag = Flag::kClock;
+  m4.meta.model_id = 0;
+  m4.meta.sender = 2;
+  m4.meta.recver = 0;
+  model.get()->Clock(m4);
+
+  // Message5
+  Message m5;
+  m5.meta.flag = Flag::kClock;
+  m5.meta.model_id = 0;
+  m5.meta.sender = 2;
+  m5.meta.recver = 0;
+  model.get()->Clock(m5);
+
+  // Check
+  Message m;
+  m.meta.flag = Flag::kGet;
+  m.meta.model_id = 0;
+  m.meta.sender = 2;
+  m.meta.recver = 0;
+  m.bin << 1 << 0;
+  model.get()->Get(m);
+  EXPECT_EQ(dynamic_cast<SSPModel*>(model.get())->GetPendingSize(1), 1);
+
+  // Message6
+  Message m6;
+  m6.meta.flag = Flag::kClock;
+  m6.meta.model_id = 0;
+  m6.meta.sender = 3;
+  m6.meta.recver = 0;
+  model.get()->Clock(m6);
+
+  // Check
+  m.meta.flag = Flag::kGet;
+  m.meta.model_id = 0;
+  m.meta.sender = 2;
+  m.meta.recver = 0;
+  m.bin << 1 << 0;
+  model.get()->Get(m);
+  EXPECT_EQ(dynamic_cast<SSPModel*>(model.get())->GetPendingSize(1), 0);
 }
 
 }  // namespace
