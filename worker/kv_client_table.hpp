@@ -11,6 +11,9 @@
 
 #include "glog/logging.h"
 
+#include <vector>
+#include <algorithm>
+
 namespace flexps {
 
 template <typename Val>
@@ -36,7 +39,7 @@ class KVClientTable {
   using SlicedKVs = std::vector<std::pair<bool, KVPairs<Val>>>;
  private:
   void Slice(const KVPairs<Val>& send, SlicedKVs* sliced);
-  void Send(const SlicedKVs& sliced);
+  void Send(const SlicedKVs& sliced, bool is_add);
   void AddRequest(const SlicedKVs& sliced);
 
   uint32_t app_thread_id_;
@@ -87,7 +90,7 @@ void KVClientTable<Val>::Add(const std::vector<Key>& keys, const std::vector<Val
   // 1. slice
   Slice(kvs, &sliced); 
   // 2. send
-  Send(sliced);
+  Send(sliced, true);
 }
 
 template<typename Val>
@@ -128,7 +131,7 @@ void KVClientTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* val
   // 3. add request
   AddRequest(sliced);
   // 4. send
-  Send(sliced);
+  Send(sliced, false);
   // 5. wait request
   callback_runner_->WaitRequest(app_thread_id_, model_id_);
 }
@@ -178,7 +181,7 @@ void KVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
 }
 
 template<typename Val>
-void KVClientTable<Val>::Send(const SlicedKVs& sliced) {
+void KVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
   for (size_t i = 0; i < sliced.size(); ++ i) {
     if (!sliced[i].first) {
       continue;
@@ -186,6 +189,10 @@ void KVClientTable<Val>::Send(const SlicedKVs& sliced) {
     Message msg;
     // TODO: Fill the meta
     // msg.meta = ...;
+    msg.meta.sender = app_thread_id_;
+    msg.meta.recver = i;
+    msg.meta.model_id = model_id_;
+    msg.meta.flag = is_add ? Flag::kAdd : Flag::kGet;
     const auto& kvs = sliced[i].second;
     if (kvs.keys.size()) {
       msg.AddData(kvs.keys);

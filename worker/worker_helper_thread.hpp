@@ -2,6 +2,7 @@
 
 #include "base/message.hpp"
 #include "base/threadsafe_queue.hpp"
+#include "worker/abstract_receiver.hpp"
 
 #include <condition_variable>
 #include <memory>
@@ -10,20 +11,23 @@
 
 namespace flexps {
 
-class WorkerThread {
+class WorkerHelperThread {
  public:
-  WorkerThread(uint32_t worker_id) : worker_id_(worker_id) {}
+  WorkerHelperThread(uint32_t helper_id, AbstractReceiver* const receiver) 
+    : helper_id_(helper_id), receiver_(receiver) {}
 
-  void RegisterThread(uint32_t model_id, );
   void Start();
   void Stop();
   ThreadsafeQueue<Message>* GetWorkQueue();
+  uint32_t GetHelperId() const;
  private:
-  uint32_t worker_id_;
+  void Main();
+
+  uint32_t helper_id_;
   std::thread work_thread_;
   ThreadsafeQueue<Message> work_queue_;
 
-  AppBlocker app_blocker_;
+  AbstractReceiver* const receiver_;
 };
 
 }  // namespace flexps

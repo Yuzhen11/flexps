@@ -16,3 +16,10 @@ target_link_libraries(HuskyUnitTest ${GTEST_LIBRARIES})
 target_link_libraries(HuskyUnitTest ${GMOCK_LIBRARIES})
 set_property(TARGET HuskyUnitTest PROPERTY CXX_STANDARD 11)
 add_dependencies(HuskyUnitTest ${external_project_dependencies})
+
+# TestWorker
+add_executable(TestWorker test_worker.cpp)
+target_link_libraries(TestWorker flexps)
+target_link_libraries(TestWorker ${HUSKY_EXTERNAL_LIB})
+set_property(TARGET TestWorker PROPERTY CXX_STANDARD 11)
+add_dependencies(TestWorker ${external_project_dependencies})

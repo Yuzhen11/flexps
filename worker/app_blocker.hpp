@@ -7,6 +7,7 @@
 
 #include "base/message.hpp"
 #include "worker/abstract_callback_runner.hpp"
+#include "worker/abstract_receiver.hpp"
 
 namespace flexps {
 
@@ -20,7 +21,7 @@ namespace flexps {
  * Should register handle before use.
  * Should call NewRequest before sending out the request.
  */
-class AppBlocker : public AbstractCallbackRunner {
+class AppBlocker : public AbstractCallbackRunner, public AbstractReceiver {
  public:
   virtual void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_handle) override;
   virtual void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void()>& recv_finish_handle) override;
@@ -28,7 +29,7 @@ class AppBlocker : public AbstractCallbackRunner {
   virtual void NewRequest(uint32_t app_thread_id, uint32_t model_id, uint32_t expected_responses) override;
   virtual void WaitRequest(uint32_t app_thread_id, uint32_t model_id) override;
 
-  void AddResponse(uint32_t app_thread_id, uint32_t model_id, Message& msg);
+  virtual void AddResponse(uint32_t app_thread_id, uint32_t model_id, Message& msg) override;
  private:
   void SanityCheck(uint32_t app_thread_id, uint32_t model_id); 
 
