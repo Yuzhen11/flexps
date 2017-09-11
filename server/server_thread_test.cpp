@@ -5,6 +5,7 @@
 #include "base/magic.hpp"
 #include "server/abstract_model.hpp"
 #include "server/server_thread.hpp"
+#include "server/ssp_model.hpp"
 
 namespace flexps {
 namespace {
@@ -40,6 +41,7 @@ TEST_F(TestServerThread, Basic) {
   auto* p = static_cast<FakeModel*>(server_thread.GetModel(model_id));
   server_thread.Start();
 
+
   auto* work_queue = server_thread.GetWorkQueue();
   Message m;
   m.meta.flag = Flag::kClock;
@@ -61,6 +63,7 @@ TEST_F(TestServerThread, Basic) {
 
   Message m4;
   m4.meta.flag = Flag::kExit;
+  m4.meta.model_id = model_id;
   work_queue->Push(m4);
 
   server_thread.Stop();

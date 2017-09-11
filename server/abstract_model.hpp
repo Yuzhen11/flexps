@@ -2,6 +2,8 @@
 
 #include <cinttypes>
 #include "base/message.hpp"
+#include "base/threadsafe_queue.hpp"
+
 
 namespace flexps {
 

@@ -1,7 +1,9 @@
-#include "server/abstract_storage.hpp"
+#pragma once
 
+#include "server/abstract_storage.hpp"
 #include "base/message.hpp"
-#include "server/threadsafe_queue.hpp"
+
+#include "glog/logging.h"
 
 #include <map>
 
@@ -10,30 +12,48 @@ namespace flexps {
 template <typename T>
 class Storage : public AbstractStorage {
  public:
-  Storage(ThreadsafeQueue<Message>* const threadsafe_queue) : threadsafe_queue_(threadsafe_queue) {}
+  Storage() {}
 
-  virtual void Add(const Message& message) override {
-    size_t key;
-    T val;
-    message.bin >> key >> val;
-    storage_[key] += val;
+  // Storage(ThreadsafeQueue<Message>* const threadsafe_queue) : threadsafe_queue_(threadsafe_queue) {}
+
+  virtual void Add(Message& message) override {
+    // TODO(Ruoyu Wu): check if message is legal
+    int size;
+    message.bin >> size;
+    while (size --) {
+      // size_t key;
+      int key;
+      T val;
+      message.bin >> key >> val;
+      FindAndCreate(key);
+      storage_[key] += val;
+    }
   }
 
-  virtual void Get(const Message& message) override {
-    size_t key;
-    message.bin >> key;
-    T res = storage_[key];
+  virtual Message Get(Message& message) override {
+    // TODO(Ruoyu Wu): check if message is legal
+    int size;
     Message rep;
-    rep.bin << key << res;
-    threadsafe_queue_.Push(rep);
+    message.bin >> size;
+    while (size --) {
+      int key;
+      message.bin >> key;
+      FindAndCreate(key);
+      rep.bin << key << storage_[key];
+    }
+    return rep;    
   }
 
   virtual void FinishIter() override {}
 
  private:
-  // Not owned.
-  ThreadsafeQueue<Message>* const threadsafe_queue_;
-  std::map<T> storage_;
+  virtual void FindAndCreate(int key) override {
+    if (storage_.find(key) == storage_.end()) {
+      storage_[key] = T();
+    }
+  }
+
+  std::map<int, T> storage_;
 };
 
 }  // namespace flexps

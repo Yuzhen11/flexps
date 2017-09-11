@@ -2,8 +2,6 @@
 
 #include "glog/logging.h"
 
-#include <vector>
-
 namespace flexps {
 
 void ProgressTracker::Init(const std::vector<int>& tids) {
