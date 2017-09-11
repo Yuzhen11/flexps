@@ -44,5 +44,6 @@ add_subdirectory(tmp)
 add_subdirectory(base)
 add_subdirectory(server)
 add_subdirectory(worker)
+add_subdirectory(comm)
 
 add_subdirectory(test)
