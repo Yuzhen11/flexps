@@ -22,6 +22,14 @@ TEST_F(TestMailbox, Construct) {
   Mailbox mailbox(node);
   mailbox.Start({node});
 
+  Message msg;
+  msg.meta.sender = 0;
+  msg.meta.recver = 0;
+  msg.meta.model_id = 0;
+  msg.meta.flag = Flag::kGet;
+
+  mailbox.Send(msg);
+
   mailbox.Stop();
 }
 
