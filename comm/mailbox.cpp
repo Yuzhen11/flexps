@@ -78,11 +78,12 @@ void Mailbox::Receiving() {
 
 // \brief Free the recved data
 inline void MyFree(void *data, void *hint) {
-  if (hint == NULL) {
+ /* if (hint == NULL) {
     delete [] static_cast<char*>(data);
   } else {
     delete static_cast<third_party::SArray<char>*>(hint);
-  }
+  }*/
+	free(data);
 }
 
 int Mailbox::Send(const Message& msg) {
@@ -98,7 +99,7 @@ int Mailbox::Send(const Message& msg) {
 
     // send meta
     LOG(INFO) << "Starting sending meta";
-    int meta_size = sizeof(msg.meta);
+    int meta_size = sizeof(Meta);
     char meta_buf[meta_size];
     memcpy(meta_buf, &msg.meta, meta_size);
 
@@ -106,7 +107,7 @@ int Mailbox::Send(const Message& msg) {
     int num_data = msg.data.size();
     if (num_data == 0) tag = 0;
     zmq_msg_t meta_msg;
-    zmq_msg_init_data(&meta_msg, meta_buf, meta_size, MyFree, NULL);
+    zmq_msg_init_data(&meta_msg, meta_buf, meta_size, NULL, NULL);
     while (true) {
       if (zmq_msg_send(&meta_msg, socket, tag) == meta_size) break;
       if (errno == EINTR) continue;
@@ -114,7 +115,7 @@ int Mailbox::Send(const Message& msg) {
                    << "] errno: " << errno << " " << zmq_strerror(errno);
       return -1;
     }
-    zmq_msg_close(&meta_msg);
+   //zmq_msg_close(&meta_msg);
     int send_bytes = meta_size;
 
     // send data
@@ -123,7 +124,7 @@ int Mailbox::Send(const Message& msg) {
       zmq_msg_t data_msg;
       third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
       int data_size = data->size();
-      zmq_msg_init_data(&data_msg, data->data(), data->size(), MyFree, data);
+      zmq_msg_init_data(&data_msg, data->data(), data->size(), NULL, data);
       if (i == num_data - 1) tag = 0;
       while (true) {
         if (zmq_msg_send(&data_msg, socket, tag) == data_size) break;
@@ -136,7 +137,7 @@ int Mailbox::Send(const Message& msg) {
       zmq_msg_close(&data_msg);
       send_bytes += data_size;
     }
-    LOG(INFO) << "Finish sending data";
+    //LOG(INFO) << "Finish sending data";
     return send_bytes;
   }
 

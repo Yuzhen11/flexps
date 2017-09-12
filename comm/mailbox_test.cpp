@@ -22,7 +22,7 @@ TEST_F(TestMailbox, Construct) {
   Mailbox mailbox(node);
   mailbox.Start({node});
 
-  Message msg;
+  Message msg, msg2;
   msg.meta.sender = 0;
   msg.meta.recver = 0;
   msg.meta.model_id = 0;
@@ -35,6 +35,12 @@ TEST_F(TestMailbox, Construct) {
 
   mailbox.Send(msg);
 
+  msg2.meta.sender = 0;
+  msg2.meta.recver = 0;
+  msg.meta.model_id = 0;
+  msg.meta.flag = Flag::kExit;
+  mailbox.Send(msg2);
+  
   mailbox.Stop();
 }
 
