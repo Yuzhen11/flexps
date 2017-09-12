@@ -139,7 +139,7 @@ int Mailbox::Send(const Message& msg) {
     int num_data = msg.data.size();
     if (num_data == 0) tag = 0;
     zmq_msg_t meta_msg;
-    zmq_msg_init_data(&meta_msg, &msg.meta, meta_size, MyFree, NULL);
+    zmq_msg_init_data(&meta_msg, const_cast<void*>(&msg.meta), meta_size, MyFree, NULL);
     while (true) {
       if (zmq_msg_send(&meta_msg, socket, tag) == meta_size) break;
       if (errno == EINTR) continue;
