@@ -76,16 +76,6 @@ void Mailbox::Receiving() {
   }
 }
 
-// \brief Free the recved data
-inline void MyFree(void *data, void *hint) {
- /* if (hint == NULL) {
-    delete [] static_cast<char*>(data);
-  } else {
-    delete static_cast<third_party::SArray<char>*>(hint);
-  }*/
-	free(data);
-}
-
 int Mailbox::Send(const Message& msg) {
     std::lock_guard<std::mutex> lk(lock_);
     // find the socket
@@ -99,9 +89,7 @@ int Mailbox::Send(const Message& msg) {
 
     // send meta
     LOG(INFO) << "Starting sending meta";
-    int meta_size = sizeof(msg.meta);
-    //char meta_buf[meta_size];
-    //memcpy(meta_buf, &msg.meta, meta_size);
+    int meta_size = sizeof(Meta);
 
     int tag = ZMQ_SNDMORE;
     int num_data = msg.data.size();
@@ -137,7 +125,6 @@ int Mailbox::Send(const Message& msg) {
       zmq_msg_close(&data_msg);
       send_bytes += data_size;
     }
-    //LOG(INFO) << "Finish sending data";
     return send_bytes;
   }
 
@@ -159,19 +146,15 @@ int Mailbox::Recv(Message* msg) {
     
     size_t size = zmq_msg_size(zmsg);
     recv_bytes += size;
-    //char* buf = CHECK_NOTNULL((char *)zmq_msg_data(zmsg));
 
     if (i == 0) {
       // identify, don't care
-      LOG(INFO) << "Received identify message";
       CHECK(zmq_msg_more(zmsg));
       zmq_msg_close(zmsg);
       delete zmsg;
     } else if (i == 1) {
-      // task
       // Unpack the meta
       Meta* meta = CHECK_NOTNULL((Meta *)zmq_msg_data(zmsg));
-      //memcpy(&meta, buf, sizeof(buf));
       msg->meta.sender = meta->sender;
       msg->meta.recver = meta->recver;
       msg->meta.model_id = meta->model_id;
