@@ -28,7 +28,6 @@ class Mailbox {
   void Bind(const Node& node);
 
   void Receiving();
-  //int GetNodeID(const char* buf, size_t size);
 
   std::atomic<bool> ready{false};
   std::map<uint32_t, ThreadsafeQueue<Message>* const> queue_map_;

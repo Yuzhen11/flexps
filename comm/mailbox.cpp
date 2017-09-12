@@ -28,6 +28,10 @@ void Mailbox::Start(const std::vector<Node>& nodes) {
 }
 
 void Mailbox::Stop() {
+  Message exit_msg;
+  exit_msg.meta.recver = node_.id;
+  exit_msg.meta.flag = Flag::kExit;
+  Send(exit_msg);
   receiver_thread_.join();
 }
 
@@ -37,11 +41,7 @@ void Mailbox::Connect(const Node& node) {
     zmq_close(it->second);
   }
   void* sender = zmq_socket(context_, ZMQ_DEALER);
-  // CHECK(sender != nullptr) << zmq_strerror(errno);
-  CHECK(sender != NULL)
-        << zmq_strerror(errno)
-        << ". it often can be solved by \"sudo ulimit -n 65536\""
-        << " or edit /etc/security/limits.conf";
+  CHECK(sender != nullptr) << zmq_strerror(errno);
   std::string my_id = "ps" + std::to_string(node_.id);
   zmq_setsockopt(sender, ZMQ_IDENTITY, my_id.data(), my_id.size());
   std::string addr = "tcp://" + node.hostname + ":" + std::to_string(node.port);
@@ -67,15 +67,15 @@ void Mailbox::RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const q
 
 void Mailbox::Receiving() {
 
-  LOG(INFO) << "Starting receiving";
+  LOG(INFO) << "Start receiving";
   while (true) {
     Message msg;
     int recv_bytes = Recv(&msg);
-    // For debug, show received message
+    // For debugging, show received message
     LOG(INFO) << "Received message " << msg.DebugString();
 
     if (msg.meta.flag == Flag::kExit){
-      LOG(INFO) << "Received kExit message, exit receiving!";
+      LOG(INFO) << "Received kExit message, exiting!";
       break;
     }
 
@@ -96,7 +96,6 @@ int Mailbox::Send(const Message& msg) {
     void *socket = it->second;
 
     // send meta
-    LOG(INFO) << "Starting sending meta";
     int meta_size = sizeof(Meta);
 
     int tag = ZMQ_SNDMORE;
@@ -105,7 +104,6 @@ int Mailbox::Send(const Message& msg) {
     char* meta_buf = new char[meta_size];
     memcpy(meta_buf, &msg.meta, meta_size);
     zmq_msg_t meta_msg;
-    // zmq_msg_init_data(&meta_msg, (Meta*) &msg.meta, meta_size, FreeData, NULL);
     zmq_msg_init_data(&meta_msg, meta_buf, meta_size, FreeData, NULL);
     while (true) {
       if (zmq_msg_send(&meta_msg, socket, tag) == meta_size) break;
@@ -142,7 +140,6 @@ int Mailbox::Send(const Message& msg) {
 int Mailbox::Recv(Message* msg) {
   msg->data.clear();
   size_t recv_bytes = 0;
-  LOG(INFO) << "Start Recv";
   for (int i = 0; ; ++i) {
     zmq_msg_t* zmsg = new zmq_msg_t;
     CHECK(zmq_msg_init(zmsg) == 0) << zmq_strerror(errno);
@@ -153,7 +150,6 @@ int Mailbox::Recv(Message* msg) {
                    << errno << " " << zmq_strerror(errno);
       return -1;
     }
-    LOG(INFO) << "Recv processing";
     
     size_t size = zmq_msg_size(zmsg);
     recv_bytes += size;
@@ -175,7 +171,7 @@ int Mailbox::Recv(Message* msg) {
       delete zmsg;
       if (!more) break;
     } else {
-      // zero-copy
+      // data, zero-copy
       char* buf = CHECK_NOTNULL((char *)zmq_msg_data(zmsg));
       third_party::SArray<char> data;
       data.reset(buf, size, [zmsg, size](char* buf) {
@@ -186,7 +182,6 @@ int Mailbox::Recv(Message* msg) {
       if (!zmq_msg_more(zmsg)) { break; }
     }
   }
-  LOG(INFO) << "End Recv";
   return recv_bytes;
 }
 
