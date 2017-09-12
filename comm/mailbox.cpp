@@ -61,7 +61,7 @@ void Mailbox::Receiving() {
     LOG(INFO) << "Received message " << msg.DebugString();
 
     CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
-    queue_map_[msg.meta.recver].Push(msg);
+    queue_map_[msg.meta.recver]->Push(msg);
   }
 }
 
@@ -155,7 +155,7 @@ int Mailbox::Send(const Message& msg) {
       zmq_msg_t data_msg;
       third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
       int data_size = data->size();
-      zmq_msg_init_data(&data_msg, data->data(), data->size(), FreeData, data);
+      zmq_msg_init_data(&data_msg, data->data(), data->size(), MyFree, data);
       if (i == num_data - 1) tag = 0;
       while (true) {
         if (zmq_msg_send(&data_msg, socket, tag) == data_size) break;
