@@ -70,7 +70,7 @@ inline void MyFree(void *data, void *hint) {
   if (hint == NULL) {
     delete [] static_cast<char*>(data);
   } else {
-    delete static_cast<SArray<char>*>(hint);
+    delete static_cast<third_party::SArray<char>*>(hint);
   }
 }
 
@@ -153,7 +153,7 @@ int Mailbox::Send(const Message& msg) {
     // send data
     for (int i = 0; i < num_data; ++i) {
       zmq_msg_t data_msg;
-      SArray<char>* data = new SArray<char>(msg.data[i]);
+      third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
       int data_size = data->size();
       zmq_msg_init_data(&data_msg, data->data(), data->size(), FreeData, data);
       if (i == num_data - 1) tag = 0;
@@ -196,7 +196,7 @@ int Mailbox::Recv(Message* msg) {
     } else if (i == 1) {
       // task
       // Unpack the meta
-      Meta* meta = zmq_msg_data(zmsg);
+      Meta* meta = CHECK_NOTNULL((Meta *)zmq_msg_data(zmsg));
       msg->meta.sender = meta->sender;
       msg->meta.recver = meta->recver;
       msg->meta.model_id = meta->model_id;
@@ -208,7 +208,7 @@ int Mailbox::Recv(Message* msg) {
     } else {
       // zero-copy
       char* buf = CHECK_NOTNULL((char *)zmq_msg_data(zmsg));
-      SArray<char> data;
+      third_party::SArray<char> data;
       data.reset(buf, size, [zmsg, size](char* buf) {
           zmq_msg_close(zmsg);
           delete zmsg;
