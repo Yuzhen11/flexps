@@ -43,9 +43,6 @@ TEST_F(TestWorkerHelperThread, StartStop) {
   WorkerHelperThread helper_thread(0, &receiver);
   auto* work_queue = helper_thread.GetWorkQueue();
   helper_thread.Start();
-  Message exit_msg;
-  exit_msg.meta.flag = Flag::kExit; 
-  work_queue->Push(exit_msg);
   helper_thread.Stop();
 }
 
@@ -63,9 +60,6 @@ TEST_F(TestWorkerHelperThread, AddResponse) {
   receiver.SetExpected(kRecver, kModelId);
   work_queue->Push(msg1);
 
-  Message exit_msg;
-  exit_msg.meta.flag = Flag::kExit; 
-  work_queue->Push(exit_msg);
   helper_thread.Stop();
 }
 

@@ -46,5 +46,7 @@ add_subdirectory(base)
 add_subdirectory(server)
 add_subdirectory(worker)
 add_subdirectory(comm)
+# add_subdirectory(dist)
+# add_subdirectory(example)
 
 add_subdirectory(test)

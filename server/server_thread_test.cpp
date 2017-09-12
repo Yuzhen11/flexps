@@ -61,11 +61,6 @@ TEST_F(TestServerThread, Basic) {
   work_queue->Push(m3);
   work_queue->Push(m3);
 
-  Message m4;
-  m4.meta.flag = Flag::kExit;
-  m4.meta.model_id = model_id;
-  work_queue->Push(m4);
-
   server_thread.Stop();
 
   EXPECT_EQ(p->clock_count_, 2);
