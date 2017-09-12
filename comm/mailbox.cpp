@@ -53,14 +53,15 @@ void Mailbox::RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const q
 
 void Mailbox::Receiving() {
 
+  LOG(INFO) << "Starting receiving";
   while (true) {
     Message msg;
     int recv_bytes = Recv(&msg);
+    // For debug, show received message
+    LOG(INFO) << "Received message " << msg.DebugString();
+    
     CHECK(queue_map_.find(msg.recver) != queue_map_.end());
     queue_map_[msg.recver].Push(msg);
-
-    // For debug, show received message
-    LOG(WARNING) << "Received message " << msg.DebugString();
   }
 }
 
