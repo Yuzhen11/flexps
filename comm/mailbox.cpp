@@ -66,6 +66,11 @@ void Mailbox::Receiving() {
     // For debug, show received message
     LOG(INFO) << "Received message " << msg.DebugString();
 
+    if (msg.meta.flag == Flag::kExit){
+      LOG(INFO) << "Received kExit message, exit receiving!";
+      break;
+    }
+
     CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
     queue_map_[msg.meta.recver]->Push(msg);
   }
@@ -79,53 +84,6 @@ inline void MyFree(void *data, void *hint) {
     delete static_cast<third_party::SArray<char>*>(hint);
   }
 }
-
-/* Mailbox::PackMeta(const Meta& meta, char** meta_buf, int* buf_size) {
-  // convert into protobuf
-  PBMeta pb;
-  pb.set_sender(meta.sender);
-  pb.set_recver(meta.recver);
-  pb.set_model_id(meta.model_id);
-  pb.set_flag(meta.flag);
-
-  // to string
-  *buf_size = pb.ByteSize();
-  *meta_buf = new char[*buf_size + 1];
-  CHECK(pb.SerializeToArray(*meta_buf, *buf_size))
-      << "failed to serialize protbuf";
-}
-
-void Mailbox::UnpackMeta(const char* meta_buf, int buf_size, Meta* meta) {
-  // to protobuf
-  PBMeta pb;
-  CHECK(pb.ParseFromArray(meta_buf, buf_size))
-      << "failed to parse string into protobuf";
-
-  // to meta
-  meta->sender = pb.sender();
-  meta->recver = pb.recver();
-  meta->model_id = pb.model_id()
-  meta->flag = pb.flag();
-}
-
-// \brief return the node id given the received identity
-// \return -1 if not find
-int GetNodeID(const char* buf, size_t size) {
-  if (size > 6 && buf[0] == 'f' && buf[1] == 'l' && buf[0] == 'e' && buf[1] == 'x' && buf[0] == 'p' && buf[1] == 's') {
-    int id = 0;
-    size_t i = 6;
-    for (; i < size; ++i) {
-      if (buf[i] >= '0' && buf[i] <= '9') {
-        id = id * 10 + buf[i] - '0';
-      } else {
-        break;
-      }
-    }
-    if (i == size) return id;
-  }
-  return -1;
-}
-*/
 
 int Mailbox::Send(const Message& msg) {
     std::lock_guard<std::mutex> lk(lock_);
@@ -196,6 +154,7 @@ int Mailbox::Recv(Message* msg) {
                    << errno << " " << zmq_strerror(errno);
       return -1;
     }
+    LOG(INFO) << "Recv processing";
     
     size_t size = zmq_msg_size(zmsg);
     recv_bytes += size;
