@@ -27,7 +27,11 @@ void Mailbox::Connect(const Node& node) {
     zmq_close(it->second);
   }
   void* sender = zmq_socket(context_, ZMQ_DEALER);
-  CHECK(sender != nullptr) << zmq_strerror(errno);
+  // CHECK(sender != nullptr) << zmq_strerror(errno);
+  CHECK(sender != NULL)
+        << zmq_strerror(errno)
+        << ". it often can be solved by \"sudo ulimit -n 65536\""
+        << " or edit /etc/security/limits.conf";
   std::string my_id = "ps" + std::to_string(node_.id);
   zmq_setsockopt(sender, ZMQ_IDENTITY, my_id.data(), my_id.size());
   std::string addr = "tcp://" + node.hostname + ":" + std::to_string(node.port);
