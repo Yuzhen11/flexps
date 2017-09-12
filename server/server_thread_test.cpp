@@ -5,6 +5,7 @@
 #include "base/magic.hpp"
 #include "server/abstract_model.hpp"
 #include "server/server_thread.hpp"
+#include "server/ssp_model.hpp"
 
 namespace flexps {
 namespace {
@@ -24,6 +25,7 @@ class FakeModel : public AbstractModel {
   virtual void Clock(Message&) override { clock_count_ += 1; }
   virtual void Add(Message&) override { add_count_ += 1; }
   virtual void Get(Message&) override { get_count_ += 1; }
+  virtual int GetProgress(int tid) override { return -1; }
 
   int clock_count_ = 0;
   int add_count_ = 0;
@@ -61,6 +63,7 @@ TEST_F(TestServerThread, Basic) {
 
   Message m4;
   m4.meta.flag = Flag::kExit;
+  m4.meta.model_id = model_id;
   work_queue->Push(m4);
 
   server_thread.Stop();

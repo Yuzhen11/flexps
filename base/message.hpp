@@ -15,9 +15,9 @@ enum class Flag : char { kExit, kClock, kAdd, kGet };
 static const char* FlagName[] = {"kExit", "kClock", "kAdd", "kGet"};
 
 struct Meta {
-  uint32_t sender;
-  uint32_t recver;
-  uint32_t model_id;
+  int sender;
+  int recver;
+  int model_id;
   Flag flag;  // {kExit, kClock, kAdd, kGet}
 
   std::string DebugString() const {
@@ -36,8 +36,8 @@ struct Meta {
 struct Message {
   Meta meta;
   std::vector<third_party::SArray<char>> data;
-  
-  template<typename V>
+
+  template <typename V>
   void AddData(const third_party::SArray<V>& val) {
     data.push_back(third_party::SArray<char>(val));
   }
