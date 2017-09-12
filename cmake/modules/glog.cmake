@@ -30,6 +30,7 @@ else(GLOG_SEARCH_PATH)
     ExternalProject_Add(
         glog
         GIT_REPOSITORY "https://github.com/google/glog"
+        GIT_TAG v0.3.5
         PREFIX ${THIRDPARTY_DIR}
         CMAKE_ARGS -DCMAKE_INSTALL_PREFIX:PATH=${PROJECT_BINARY_DIR}
         CMAKE_ARGS -DWITH_GFLAGS=OFF
@@ -40,9 +41,9 @@ else(GLOG_SEARCH_PATH)
     list(APPEND external_project_dependencies glog)
     set(GLOG_INCLUDE_DIR "${PROJECT_BINARY_DIR}/include")
     if(WIN32)
-        set(GLOG_LIBRARY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libglog.lib")
+        set(GLOG_LIBRARY "${PROJECT_BINARY_DIR}/lib/libglog.lib")
     else(WIN32)
-        set(GLOG_LIBRARY "${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_LIBDIR}/libglog.a")
+        set(GLOG_LIBRARY "${PROJECT_BINARY_DIR}/lib/libglog.a")
     endif(WIN32)
     message(STATUS "GLog will be built as a third party")
     message(STATUS "  (Headers should be)       ${GLOG_INCLUDE_DIR}")
