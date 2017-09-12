@@ -18,39 +18,25 @@ class TestSSPModel : public testing::Test {
 };
 
 TEST_F(TestSSPModel, CheckConstructor) {
-  ThreadsafeQueue<Message> threadsafe_queue;
+  ThreadsafeQueue<Message> work_queue;
+  ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &threadsafe_queue));
+  std::unique_ptr<AbstractModel> model(
+      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
 }
 
 TEST_F(TestSSPModel, CheckGetAndAdd) {
-  ThreadsafeQueue<Message> threadsafe_queue;
+  ThreadsafeQueue<Message> work_queue;
+  ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &threadsafe_queue));
-
-  // Message1
-  Message m1;
-  m1.meta.flag = Flag::kGet;
-  m1.meta.model_id = 0;
-  m1.meta.sender = 2;
-  m1.meta.recver = 0;
-  third_party::SArray<int> m1_keys({0});
-  m1.AddData(m1_keys);
-
-  // Message2
-  Message m2;
-  m2.meta.flag = Flag::kGet;
-  m2.meta.model_id = 0;
-  m2.meta.sender = 3;
-  m2.meta.recver = 0;
-  third_party::SArray<int> m2_keys({1});
-  m2.AddData(m2_keys);
+  std::unique_ptr<AbstractModel> model(
+      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
 
   // Message3
   Message m3;
@@ -92,8 +78,6 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   third_party::SArray<int> m6_keys({1});
   m6.AddData(m6_keys);
 
-  model.get()->Get(m1);
-  model.get()->Get(m2);
   model.get()->Add(m3);
   model.get()->Add(m4);
   model.get()->Get(m5);
@@ -104,27 +88,9 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   auto rep_keys = third_party::SArray<int>();
   auto rep_vals = third_party::SArray<int>();
 
-  EXPECT_EQ(threadsafe_queue.size(), 4);
+  EXPECT_EQ(reply_queue.Size(), 2);
 
-  threadsafe_queue.WaitAndPop(&check_message);
-  EXPECT_EQ(check_message.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_message.data[0]);
-  rep_vals = third_party::SArray<int>(check_message.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 0);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  threadsafe_queue.WaitAndPop(&check_message);
-  EXPECT_EQ(check_message.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_message.data[0]);
-  rep_vals = third_party::SArray<int>(check_message.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 1);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  threadsafe_queue.WaitAndPop(&check_message);
+  reply_queue.WaitAndPop(&check_message);
   EXPECT_EQ(check_message.data.size(), 2);
   rep_keys = third_party::SArray<int>(check_message.data[0]);
   rep_vals = third_party::SArray<int>(check_message.data[1]);
@@ -133,7 +99,7 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   EXPECT_EQ(rep_keys[0], 0);
   EXPECT_EQ(rep_vals[0], 1);
 
-  threadsafe_queue.WaitAndPop(&check_message);
+  reply_queue.WaitAndPop(&check_message);
   EXPECT_EQ(check_message.data.size(), 2);
   rep_keys = third_party::SArray<int>(check_message.data[0]);
   rep_vals = third_party::SArray<int>(check_message.data[1]);
@@ -144,12 +110,14 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
 }
 
 TEST_F(TestSSPModel, CheckClock) {
-  ThreadsafeQueue<Message> threadsafe_queue;
+  ThreadsafeQueue<Message> work_queue;
+  ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &threadsafe_queue));
+  std::unique_ptr<AbstractModel> model(
+      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
 
   // Message1
   Message m1;
@@ -180,12 +148,14 @@ TEST_F(TestSSPModel, CheckClock) {
 }
 
 TEST_F(TestSSPModel, CheckStaleness) {
-  ThreadsafeQueue<Message> threadsafe_queue;
+  ThreadsafeQueue<Message> work_queue;
+  ThreadsafeQueue<Message> reply_queue;
   int staleness = 2;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &threadsafe_queue));
+  std::unique_ptr<AbstractModel> model(
+      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
 
   // Message1
   Message m1;
@@ -196,7 +166,7 @@ TEST_F(TestSSPModel, CheckStaleness) {
   third_party::SArray<int> m1_keys({0});
   m1.AddData(m1_keys);
   model.get()->Get(m1);
-  threadsafe_queue.WaitAndPop(&m1);
+  reply_queue.WaitAndPop(&m1);
 
   // Message2
   Message m2;

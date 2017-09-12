@@ -15,9 +15,6 @@ void TestServer() {
   std::vector<int> server_id_vec{0, 1};
   ServerThreadGroup server_thread_group(server_id_vec);
 
-  // std::thread's copy constructor is deleted
-  // std::vector<ServerThread> server_thread_group{ServerThread(0), ServerThread(1)};
-
   // Create models and register models into ServerThread
   const int num_models = 3;
   int model_staleness = 1;
@@ -26,8 +23,9 @@ void TestServer() {
     for (auto& server_thread : server_thread_group) {
       // TODO(Ruoyu Wu): Each server thread should have its own model?
       std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-      std::unique_ptr<AbstractModel> model(
-          new SSPModel(i, tids, std::move(storage), model_staleness, server_thread->GetWorkQueue()));
+      std::unique_ptr<AbstractModel> model(new SSPModel(i, tids, std::move(storage), model_staleness,
+                                                        server_thread->GetWorkQueue(),
+                                                        server_thread_group.GetReplyQueue()));
       server_thread->RegisterModel(i, std::move(model));
     }
   }
@@ -40,12 +38,6 @@ void TestServer() {
 
   // Dispatch messages to queues
   std::vector<Message> messages;
-
-  for (auto& msg : messages) {
-    CHECK(server_queues.find(msg.meta.recver) != server_queues.end());
-    // TODO(Ruoyu Wu): server_queues should check the msg sender?
-    server_queues[msg.meta.recver]->Push(msg);
-  }
 
   // Start
   for (auto& server_thread : server_thread_group) {
@@ -63,6 +55,7 @@ void TestServer() {
     third_party::SArray<int> m1_vals({1});
     m1.AddData(m1_keys);
     m1.AddData(m1_vals);
+    messages.push_back(m1);
 
     Message m2;
     m2.meta.flag = Flag::kAdd;
@@ -73,8 +66,6 @@ void TestServer() {
     third_party::SArray<int> m2_vals({2});
     m2.AddData(m2_keys);
     m2.AddData(m2_vals);
-
-    messages.push_back(m1);
     messages.push_back(m2);
   }
 
@@ -88,6 +79,7 @@ void TestServer() {
     m1.meta.recver = 0;
     third_party::SArray<int> m1_keys({0});
     m1.AddData(m1_keys);
+    messages.push_back(m1);
 
     // Message2
     Message m2;
@@ -97,7 +89,41 @@ void TestServer() {
     m2.meta.recver = 0;
     third_party::SArray<int> m2_keys({1});
     m2.AddData(m2_keys);
+    messages.push_back(m2);
   }
+
+  // Push the messages into queues
+  for (auto& msg : messages) {
+    CHECK(server_queues.find(msg.meta.recver) != server_queues.end());
+    server_queues[msg.meta.recver]->Push(msg);
+  }
+
+  // Wait some time
+  std::this_thread::sleep_for(std::chrono::nanoseconds(10));
+
+  // Check
+  Message check_message;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+  ThreadsafeQueue<Message>* reply_queue = server_thread_group.GetReplyQueue();
+
+  reply_queue->WaitAndPop(&check_message);
+  CHECK(check_message.data.size() == 2);
+  rep_keys = third_party::SArray<int>(check_message.data[0]);
+  rep_vals = third_party::SArray<int>(check_message.data[1]);
+  CHECK(rep_keys.size() == 1);
+  CHECK(rep_vals.size() == 1);
+  CHECK(rep_keys[0] == 0);
+  CHECK(rep_vals[0] == 1);
+
+  reply_queue->WaitAndPop(&check_message);
+  CHECK(check_message.data.size() == 2);
+  rep_keys = third_party::SArray<int>(check_message.data[0]);
+  rep_vals = third_party::SArray<int>(check_message.data[1]);
+  CHECK(rep_keys.size() == 1);
+  CHECK(rep_vals.size() == 1);
+  CHECK(rep_keys[0] == 1);
+  CHECK(rep_vals[0] == 2);
 
   // EXIT msg
   {

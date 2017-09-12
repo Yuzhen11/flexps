@@ -31,7 +31,7 @@ class ThreadsafeQueue {
     queue_.pop();
   }
 
-  int size() {
+  int Size() {
     std::lock_guard<std::mutex> lk(mu_);
     return queue_.size();
   }

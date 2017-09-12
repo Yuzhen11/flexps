@@ -4,8 +4,8 @@
 namespace flexps {
 
 SSPModel::SSPModel(uint32_t model_id, std::vector<int>& tids, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                   int staleness, ThreadsafeQueue<Message>* threadsafe_queue)
-    : model_id_(model_id), staleness_(staleness), threadsafe_queue_(threadsafe_queue) {
+                   int staleness, ThreadsafeQueue<Message>* work_queue, ThreadsafeQueue<Message>* reply_queue)
+    : model_id_(model_id), staleness_(staleness), work_queue_(work_queue), reply_queue_(reply_queue) {
   this->progress_tracker_.Init(std::move(tids));
   this->storage_ = std::move(storage_ptr);
 }
@@ -15,7 +15,7 @@ void SSPModel::Clock(Message& message) {
   if (updated_min_clock != -1) {  // min clock updated
     auto reqs_blocked_at_this_min_clock = buffer_.Pop(updated_min_clock);
     for (auto req : reqs_blocked_at_this_min_clock) {
-      threadsafe_queue_->Push(storage_->Get(req));
+      reply_queue_->Push(storage_->Get(req));
     }
     storage_->FinishIter();
   }
@@ -33,7 +33,7 @@ void SSPModel::Get(Message& message) {
   if (progress - min_clock > staleness_) {
     buffer_.Push(progress - staleness_, message);
   } else {
-    threadsafe_queue_->Push(storage_->Get(message));
+    reply_queue_->Push(storage_->Get(message));
   }
 }
 
