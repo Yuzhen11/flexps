@@ -17,31 +17,32 @@ class Storage : public AbstractStorage {
   // Storage(ThreadsafeQueue<Message>* const threadsafe_queue) : threadsafe_queue_(threadsafe_queue) {}
 
   virtual void Add(Message& message) override {
-    // TODO(Ruoyu Wu): check if message is legal
-    int size;
-    message.bin >> size;
-    while (size --) {
-      // size_t key;
-      int key;
-      T val;
-      message.bin >> key >> val;
-      FindAndCreate(key);
-      storage_[key] += val;
+    CHECK(message.data.size() == 2);
+    CHECK(message.data[0].size() == message.data[1].size());
+    // Todo(Ruoyu Wu): Type Check
+    auto keys = third_party::SArray<int>(message.data[0]);
+    auto vals = third_party::SArray<T>(message.data[1]);
+    for (int index = 0; index < keys.size(); index ++) {
+      FindAndCreate(keys[index]);
+      storage_[keys[index]] += vals[index];
     }
   }
 
   virtual Message Get(Message& message) override {
-    // TODO(Ruoyu Wu): check if message is legal
-    int size;
-    Message rep;
-    message.bin >> size;
-    while (size --) {
-      int key;
-      message.bin >> key;
+    CHECK(message.data.size() == 1);
+    // Todo(Ruoyu Wu): Type Check
+    auto keys = third_party::SArray<T>(message.data[0]);
+    Message reply;
+    std::vector<T> reply_vec;
+    for (auto& key : keys) {
       FindAndCreate(key);
-      rep.bin << key << storage_[key];
+      reply_vec.push_back(storage_[key]);
     }
-    return rep;    
+    third_party::SArray<int> reply_keys(keys);
+    third_party::SArray<int> reply_vals(reply_vec);
+    reply.AddData<int>(reply_keys);
+    reply.AddData<T>(reply_vals);
+    return reply;
   }
 
   virtual void FinishIter() override {}

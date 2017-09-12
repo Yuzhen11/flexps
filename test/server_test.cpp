@@ -40,17 +40,6 @@ void TestServer() {
 
   // Dispatch messages to queues
   std::vector<Message> messages;
-
-  // Message1
-  {
-    Message m;
-    m.meta.flag = Flag::kGet;
-    m.meta.model_id = 0;
-    m.meta.sender = 2;
-    m.meta.recver = 0;
-    m.bin << 1 << 0;
-    messages.push_back(m);
-  }
   
   for (auto& msg : messages) {
     CHECK(server_queues.find(msg.meta.recver) != server_queues.end());
