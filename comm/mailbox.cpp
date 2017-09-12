@@ -73,7 +73,7 @@ inline void MyFree(void *data, void *hint) {
   }
 }
 
-void Mailbox::PackMeta(const Meta& meta, char** meta_buf, int* buf_size) {
+/* Mailbox::PackMeta(const Meta& meta, char** meta_buf, int* buf_size) {
   // convert into protobuf
   PBMeta pb;
   pb.set_sender(meta.sender);
@@ -118,6 +118,7 @@ int GetNodeID(const char* buf, size_t size) {
   }
   return -1;
 }
+*/
 
 int Mailbox::Send(const Message& msg) override {
     std::lock_guard<std::mutex> lk(lock_);
@@ -131,13 +132,13 @@ int Mailbox::Send(const Message& msg) override {
     void *socket = it->second;
 
     // send meta
-    int meta_size; char* meta_buf;
-    PackMeta(msg.meta, &meta_buf, &meta_size);
+    int meta_size = sizeof(msg.meta);
+
     int tag = ZMQ_SNDMORE;
     int num_data = msg.data.size();
     if (num_data == 0) tag = 0;
     zmq_msg_t meta_msg;
-    zmq_msg_init_data(&meta_msg, meta_buf, meta_size, MyFree, NULL);
+    zmq_msg_init_data(&meta_msg, &msg.meta, meta_size, MyFree, NULL);
     while (true) {
       if (zmq_msg_send(&meta_msg, socket, tag) == meta_size) break;
       if (errno == EINTR) continue;
@@ -182,26 +183,30 @@ int Mailbox::Recv(Message* msg) override {
                    << errno << " " << zmq_strerror(errno);
       return -1;
     }
-    char* buf = CHECK_NOTNULL((char *)zmq_msg_data(zmsg));
+    
     size_t size = zmq_msg_size(zmsg);
     recv_bytes += size;
 
     if (i == 0) {
-      // identify
-      msg->meta.sender = GetNodeID(buf, size);
-      msg->meta.recver = node_.id;
+      // identify, don't care
       CHECK(zmq_msg_more(zmsg));
       zmq_msg_close(zmsg);
       delete zmsg;
     } else if (i == 1) {
       // task
-      UnpackMeta(buf, size, &(msg->meta));
+      // Unpack the meta
+      Meta* meta = zmq_msg_data(zmsg);
+      msg->meta.sender = meta->sender;
+      msg->meta.recver = meta->recver;
+      msg->meta.model_id = meta->model_id;
+      msg->meta.flag = meta->flag;
       zmq_msg_close(zmsg);
       bool more = zmq_msg_more(zmsg);
       delete zmsg;
       if (!more) break;
     } else {
       // zero-copy
+      char* buf = CHECK_NOTNULL((char *)zmq_msg_data(zmsg));
       SArray<char> data;
       data.reset(buf, size, [zmsg, size](char* buf) {
           zmq_msg_close(zmsg);
