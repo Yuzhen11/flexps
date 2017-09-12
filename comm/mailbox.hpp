@@ -18,8 +18,8 @@ class Mailbox {
  public:
   Mailbox(const Node& node): node_(node) {}
   void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue);
-  int Send(const Message& msg) = 0;
-  int Recv(Message* msg) = 0;
+  int Send(const Message& msg);
+  int Recv(Message* msg);
   void Start(const std::vector<Node>& nodes);
   void Stop();
 

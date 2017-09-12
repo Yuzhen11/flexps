@@ -59,9 +59,9 @@ void Mailbox::Receiving() {
     int recv_bytes = Recv(&msg);
     // For debug, show received message
     LOG(INFO) << "Received message " << msg.DebugString();
-    
-    CHECK(queue_map_.find(msg.recver) != queue_map_.end());
-    queue_map_[msg.recver].Push(msg);
+
+    CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
+    queue_map_[msg.meta.recver].Push(msg);
   }
 }
 
@@ -121,7 +121,7 @@ int GetNodeID(const char* buf, size_t size) {
 }
 */
 
-int Mailbox::Send(const Message& msg) override {
+int Mailbox::Send(const Message& msg) {
     std::lock_guard<std::mutex> lk(lock_);
     // find the socket
     int id = msg.meta.recver;
@@ -171,7 +171,7 @@ int Mailbox::Send(const Message& msg) override {
     return send_bytes;
   }
 
-int Mailbox::Recv(Message* msg) override {
+int Mailbox::Recv(Message* msg) {
   msg->data.clear();
   size_t recv_bytes = 0;
   for (int i = 0; ; ++i) {
