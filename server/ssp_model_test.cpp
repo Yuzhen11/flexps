@@ -1,9 +1,8 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "server/ssp_model.hpp"
 #include "base/threadsafe_queue.hpp"
-
+#include "server/ssp_model.hpp"
 
 namespace flexps {
 namespace {

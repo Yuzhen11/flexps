@@ -1,14 +1,14 @@
 #pragma once
 
-#include "comm/node.hpp"
-#include "base/threadsafe_queue.hpp"
 #include "base/message.hpp"
+#include "base/threadsafe_queue.hpp"
+#include "comm/node.hpp"
 
 #include <atomic>
 #include <map>
 #include <thread>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include <zmq.h>
 
@@ -16,10 +16,11 @@ namespace flexps {
 
 class Mailbox {
  public:
-  Mailbox(const Node& node): node_(node) {}
+  Mailbox(const Node& node) : node_(node) {}
   void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue);
   void Start(const std::vector<Node>& nodes);
   void Stop();
+
  private:
   void Connect(const Node& node);
   void Bind(const Node& node);

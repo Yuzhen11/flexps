@@ -39,9 +39,9 @@ TEST_F(TestStorage, Add_Get) {
   EXPECT_EQ(rep.data.size(), 2);
   auto rep_keys = third_party::SArray<int>(rep.data[0]);
   auto rep_vals = third_party::SArray<int>(rep.data[1]);
-  for (int index = 0; index < keys.size(); index ++) {
-  	EXPECT_EQ(rep_keys[index], index + 1);
-  	EXPECT_EQ(rep_vals[index], index + 1);
+  for (int index = 0; index < keys.size(); index++) {
+    EXPECT_EQ(rep_keys[index], index + 1);
+    EXPECT_EQ(rep_vals[index], index + 1);
   }
 }
 

@@ -36,8 +36,8 @@ struct Meta {
 struct Message {
   Meta meta;
   std::vector<third_party::SArray<char>> data;
-  
-  template<typename V>
+
+  template <typename V>
   void AddData(const third_party::SArray<V>& val) {
     data.push_back(third_party::SArray<char>(val));
   }

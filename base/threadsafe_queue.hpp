@@ -23,7 +23,7 @@ class ThreadsafeQueue {
     mu_.unlock();
     cond_.notify_all();
   }
-  
+
   void WaitAndPop(T* elem) {
     std::unique_lock<std::mutex> lk(mu_);
     cond_.wait(lk, [this] { return !queue_.empty(); });
@@ -32,11 +32,8 @@ class ThreadsafeQueue {
   }
 
   int size() {
-    int size_temp;
-    mu_.lock();
-    size_temp = queue_.size();
-    mu_.unlock();
-    return size_temp;
+    std::lock_guard<std::mutex> lk(mu_);
+    return queue_.size();
   }
 
  private:

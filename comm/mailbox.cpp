@@ -17,9 +17,7 @@ void Mailbox::Start(const std::vector<Node>& nodes) {
   receiver_thread_ = std::thread(&Mailbox::Receiving, this);
 }
 
-void Mailbox::Stop() {
-  receiver_thread_.join();
-}
+void Mailbox::Stop() { receiver_thread_.join(); }
 
 void Mailbox::Connect(const Node& node) {
   auto it = senders_.find(node.id);

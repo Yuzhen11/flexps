@@ -42,7 +42,6 @@ TEST_F(TestServerThread, Basic) {
   auto* p = static_cast<FakeModel*>(server_thread.GetModel(model_id));
   server_thread.Start();
 
-
   auto* work_queue = server_thread.GetWorkQueue();
   Message m;
   m.meta.flag = Flag::kClock;

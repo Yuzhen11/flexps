@@ -1,7 +1,7 @@
 #pragma once
 
-#include "server/abstract_storage.hpp"
 #include "base/message.hpp"
+#include "server/abstract_storage.hpp"
 
 #include "glog/logging.h"
 
@@ -22,7 +22,7 @@ class Storage : public AbstractStorage {
     // Todo(Ruoyu Wu): Type Check
     auto keys = third_party::SArray<int>(message.data[0]);
     auto vals = third_party::SArray<T>(message.data[1]);
-    for (int index = 0; index < keys.size(); index ++) {
+    for (int index = 0; index < keys.size(); index++) {
       FindAndCreate(keys[index]);
       storage_[keys[index]] += vals[index];
     }
