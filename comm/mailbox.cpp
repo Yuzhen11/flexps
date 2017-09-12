@@ -10,9 +10,11 @@ void Mailbox::Start(const std::vector<Node>& nodes) {
   zmq_ctx_set(context_, ZMQ_MAX_SOCKETS, 65536);
 
   Bind(node_);
+  LOG(INFO) << "Finished binding";
   for (const auto& node : nodes) {
     Connect(node);
   }
+  LOG(INFO) << "Finished connecting";
 
   receiver_thread_ = std::thread(&Mailbox::Receiving, this);
 }
@@ -137,6 +139,7 @@ int Mailbox::Send(const Message& msg) {
     void *socket = it->second;
 
     // send meta
+    LOG(INFO) << "Starting sending meta";
     int meta_size = sizeof(msg.meta);
     char meta_buf[meta_size];
     memcpy(meta_buf, &msg.meta, meta_size);
@@ -157,6 +160,7 @@ int Mailbox::Send(const Message& msg) {
     int send_bytes = meta_size;
 
     // send data
+    LOG(INFO) << "Start sending data";
     for (int i = 0; i < num_data; ++i) {
       zmq_msg_t data_msg;
       third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
@@ -174,12 +178,14 @@ int Mailbox::Send(const Message& msg) {
       zmq_msg_close(&data_msg);
       send_bytes += data_size;
     }
+    LOG(INFO) << "Finish sending data";
     return send_bytes;
   }
 
 int Mailbox::Recv(Message* msg) {
   msg->data.clear();
   size_t recv_bytes = 0;
+  LOG(INFO) << "Start Recv";
   for (int i = 0; ; ++i) {
     zmq_msg_t* zmsg = new zmq_msg_t;
     CHECK(zmq_msg_init(zmsg) == 0) << zmq_strerror(errno);
@@ -197,6 +203,7 @@ int Mailbox::Recv(Message* msg) {
 
     if (i == 0) {
       // identify, don't care
+      LOG(INFO) << "Received identify message";
       CHECK(zmq_msg_more(zmsg));
       zmq_msg_close(zmsg);
       delete zmsg;
@@ -224,6 +231,7 @@ int Mailbox::Recv(Message* msg) {
       if (!zmq_msg_more(zmsg)) { break; }
     }
   }
+  LOG(INFO) << "End Recv";
   return recv_bytes;
 }
 
