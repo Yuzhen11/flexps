@@ -4,6 +4,14 @@
 
 namespace flexps {
 
+inline void FreeData(void *data, void *hint) {
+  if (hint == NULL) {
+    delete [] static_cast<char*>(data);
+  } else {
+    delete static_cast<third_party::SArray<char>*>(hint);
+  }
+}
+
 void Mailbox::Start(const std::vector<Node>& nodes) {
   context_ = zmq_ctx_new();
   CHECK(context_ != nullptr) << "create zmq context failed";
@@ -53,7 +61,7 @@ void Mailbox::Bind(const Node& node) {
 }
 
 void Mailbox::RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue) {
-  CHECK(queue_map_.find(queue_id) != queue_map_.end());
+  CHECK(queue_map_.find(queue_id) == queue_map_.end());
   queue_map_.insert({queue_id, queue});
 }
 
@@ -94,8 +102,11 @@ int Mailbox::Send(const Message& msg) {
     int tag = ZMQ_SNDMORE;
     int num_data = msg.data.size();
     if (num_data == 0) tag = 0;
+    char* meta_buf = new char[meta_size];
+    memcpy(meta_buf, &msg.meta, meta_size);
     zmq_msg_t meta_msg;
-    zmq_msg_init_data(&meta_msg, (Meta*) &msg.meta, meta_size, NULL, NULL);
+    // zmq_msg_init_data(&meta_msg, (Meta*) &msg.meta, meta_size, FreeData, NULL);
+    zmq_msg_init_data(&meta_msg, meta_buf, meta_size, FreeData, NULL);
     while (true) {
       if (zmq_msg_send(&meta_msg, socket, tag) == meta_size) break;
       if (errno == EINTR) continue;
@@ -112,7 +123,7 @@ int Mailbox::Send(const Message& msg) {
       zmq_msg_t data_msg;
       third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
       int data_size = data->size();
-      zmq_msg_init_data(&data_msg, data->data(), data->size(), NULL, data);
+      zmq_msg_init_data(&data_msg, data->data(), data->size(), FreeData, data);
       if (i == num_data - 1) tag = 0;
       while (true) {
         if (zmq_msg_send(&data_msg, socket, tag) == data_size) break;

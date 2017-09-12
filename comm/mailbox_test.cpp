@@ -20,6 +20,8 @@ class TestMailbox : public testing::Test {
 TEST_F(TestMailbox, Construct) {
   Node node{0, "localhost", 32145};
   Mailbox mailbox(node);
+  ThreadsafeQueue<Message> queue;
+  mailbox.RegisterQueue(0, &queue);
   mailbox.Start({node});
 
   Message msg, msg2;
@@ -37,8 +39,8 @@ TEST_F(TestMailbox, Construct) {
 
   msg2.meta.sender = 0;
   msg2.meta.recver = 0;
-  msg.meta.model_id = 0;
-  msg.meta.flag = Flag::kExit;
+  msg2.meta.model_id = 0;
+  msg2.meta.flag = Flag::kExit;
   mailbox.Send(msg2);
   
   mailbox.Stop();
