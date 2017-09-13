@@ -5,23 +5,25 @@
 namespace flexps {
 
 void AppBlocker::SanityCheck(uint32_t app_thread_id, uint32_t model_id) {
-  CHECK(recv_handle_.find(app_thread_id) != recv_handle_.end()) 
-    << "recv_handle_ for app_thread_id:" << app_thread_id << " is not registered";
-  CHECK(recv_handle_[app_thread_id].find(model_id) != recv_handle_[app_thread_id].end()) 
-    << "recv_handle_ for model:" << model_id << " is not registered";
+  CHECK(recv_handle_.find(app_thread_id) != recv_handle_.end()) << "recv_handle_ for app_thread_id:" << app_thread_id
+                                                                << " is not registered";
+  CHECK(recv_handle_[app_thread_id].find(model_id) != recv_handle_[app_thread_id].end())
+      << "recv_handle_ for model:" << model_id << " is not registered";
 
-  CHECK(recv_finish_handle_.find(app_thread_id) != recv_finish_handle_.end()) 
-    << "recv_finish_handle_ for model:" << app_thread_id << " is not registered";
-  CHECK(recv_finish_handle_[app_thread_id].find(model_id) != recv_finish_handle_[app_thread_id].end()) 
-    << "recv_finish_handle_ for model:" << model_id << " is not registered";
+  CHECK(recv_finish_handle_.find(app_thread_id) != recv_finish_handle_.end())
+      << "recv_finish_handle_ for model:" << app_thread_id << " is not registered";
+  CHECK(recv_finish_handle_[app_thread_id].find(model_id) != recv_finish_handle_[app_thread_id].end())
+      << "recv_finish_handle_ for model:" << model_id << " is not registered";
 }
 
-void AppBlocker::RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_handle) {
+void AppBlocker::RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id,
+                                    const std::function<void(Message&)>& recv_handle) {
   std::lock_guard<std::mutex> lk(mu_);
   recv_handle_[app_thread_id][model_id] = recv_handle;
 }
 
-void AppBlocker::RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void()>& recv_finish_handle) {
+void AppBlocker::RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id,
+                                          const std::function<void()>& recv_finish_handle) {
   std::lock_guard<std::mutex> lk(mu_);
   recv_finish_handle_[app_thread_id][model_id] = recv_finish_handle;
 }
@@ -42,7 +44,8 @@ void AppBlocker::AddResponse(uint32_t app_thread_id, uint32_t model_id, Message&
   bool recv_finish = false;
   {
     std::lock_guard<std::mutex> lk(mu_);
-    recv_finish = tracker_[app_thread_id][model_id].first == tracker_[app_thread_id][model_id].second + 1 ? true : false;
+    recv_finish =
+        tracker_[app_thread_id][model_id].first == tracker_[app_thread_id][model_id].second + 1 ? true : false;
   }
   recv_handle_[app_thread_id][model_id](msg);
   if (recv_finish) {

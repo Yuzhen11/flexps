@@ -1,9 +1,9 @@
 #pragma once
 
-#include <map>
-#include <vector>
 #include <condition_variable>
+#include <map>
 #include <mutex>
+#include <vector>
 
 #include "base/message.hpp"
 #include "worker/abstract_callback_runner.hpp"
@@ -23,15 +23,18 @@ namespace flexps {
  */
 class AppBlocker : public AbstractCallbackRunner, public AbstractReceiver {
  public:
-  virtual void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_handle) override;
-  virtual void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void()>& recv_finish_handle) override;
+  virtual void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id,
+                                  const std::function<void(Message&)>& recv_handle) override;
+  virtual void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id,
+                                        const std::function<void()>& recv_finish_handle) override;
 
   virtual void NewRequest(uint32_t app_thread_id, uint32_t model_id, uint32_t expected_responses) override;
   virtual void WaitRequest(uint32_t app_thread_id, uint32_t model_id) override;
 
   virtual void AddResponse(uint32_t app_thread_id, uint32_t model_id, Message& msg) override;
+
  private:
-  void SanityCheck(uint32_t app_thread_id, uint32_t model_id); 
+  void SanityCheck(uint32_t app_thread_id, uint32_t model_id);
 
   std::condition_variable cond_;
   std::mutex mu_;

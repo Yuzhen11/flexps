@@ -18,6 +18,7 @@ class FakeReceiver : public AbstractReceiver {
     expected_app_thread_id_ = app_thread_id;
     expected_model_id_ = model_id;
   }
+
  private:
   uint32_t expected_app_thread_id_;
   uint32_t expected_model_id_;
@@ -43,6 +44,10 @@ TEST_F(TestWorkerHelperThread, StartStop) {
   WorkerHelperThread helper_thread(0, &receiver);
   auto* work_queue = helper_thread.GetWorkQueue();
   helper_thread.Start();
+
+  Message exit_msg;
+  exit_msg.meta.flag = Flag::kExit;
+  work_queue->Push(exit_msg);
   helper_thread.Stop();
 }
 
@@ -60,6 +65,9 @@ TEST_F(TestWorkerHelperThread, AddResponse) {
   receiver.SetExpected(kRecver, kModelId);
   work_queue->Push(msg1);
 
+  Message exit_msg;
+  exit_msg.meta.flag = Flag::kExit;
+  work_queue->Push(exit_msg);
   helper_thread.Stop();
 }
 

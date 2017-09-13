@@ -4,9 +4,9 @@
 
 #include "worker/kv_client_table.hpp"
 
-#include <thread>
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 namespace flexps {
 namespace {
@@ -23,14 +23,10 @@ class TestKVClientTable : public testing::Test {
 
 class FakeRangeManager : public AbstractRangeManager {
  public:
-  FakeRangeManager(const std::vector<third_party::Range>& ranges)
-    : ranges_(ranges) {}
-  virtual size_t GetNumServers() const override {
-    return ranges_.size();
-  }
-  virtual const std::vector<third_party::Range>& GetRanges() const override {
-    return ranges_;
-  }
+  FakeRangeManager(const std::vector<third_party::Range>& ranges) : ranges_(ranges) {}
+  virtual size_t GetNumServers() const override { return ranges_.size(); }
+  virtual const std::vector<third_party::Range>& GetRanges() const override { return ranges_; }
+
  private:
   std::vector<third_party::Range> ranges_;
 };
@@ -41,15 +37,17 @@ const uint32_t kTestModelId = 23;
 class FakeCallbackRunner : public AbstractCallbackRunner {
  public:
   FakeCallbackRunner() {}
-  virtual void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void(Message&)>& recv_handle) override {
+  virtual void RegisterRecvHandle(uint32_t app_thread_id, uint32_t model_id,
+                                  const std::function<void(Message&)>& recv_handle) override {
     EXPECT_EQ(app_thread_id, kTestAppThreadId);
     EXPECT_EQ(model_id, kTestModelId);
     recv_handle_ = recv_handle;
   }
-  virtual void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id, const std::function<void()>& recv_finish_handle) override {
+  virtual void RegisterRecvFinishHandle(uint32_t app_thread_id, uint32_t model_id,
+                                        const std::function<void()>& recv_finish_handle) override {
     EXPECT_EQ(app_thread_id, kTestAppThreadId);
     EXPECT_EQ(model_id, kTestModelId);
-    recv_finish_handle_= recv_finish_handle;
+    recv_finish_handle_ = recv_finish_handle;
   }
 
   virtual void NewRequest(uint32_t app_thread_id, uint32_t model_id, uint32_t expected_responses) override {
@@ -61,16 +59,14 @@ class FakeCallbackRunner : public AbstractCallbackRunner {
     EXPECT_EQ(app_thread_id, kTestAppThreadId);
     EXPECT_EQ(model_id, kTestModelId);
     std::unique_lock<std::mutex> lk(mu_);
-    cond_.wait(lk, [this] {
-      return tracker_.first == tracker_.second;
-    });
+    cond_.wait(lk, [this] { return tracker_.first == tracker_.second; });
   }
   void AddResponse(Message m) {
     EXPECT_NE(recv_handle_, nullptr);
     bool recv_finish = false;
     {
       std::lock_guard<std::mutex> lk(mu_);
-      recv_finish = tracker_.first == tracker_.second + 1 ?  true : false;
+      recv_finish = tracker_.first == tracker_.second + 1 ? true : false;
     }
     recv_handle_(m);
     if (recv_finish) {
@@ -84,6 +80,7 @@ class FakeCallbackRunner : public AbstractCallbackRunner {
       }
     }
   }
+
  private:
   std::function<void(Message&)> recv_handle_;
   std::function<void()> recv_finish_handle_;
@@ -174,7 +171,7 @@ TEST_F(TestKVClientTable, Get) {
   third_party::SArray<float> r1_vals{0.1};
   r1.AddData(r1_keys);
   r1.AddData(r1_vals);
-  third_party::SArray<Key> r2_keys{4,5,6};
+  third_party::SArray<Key> r2_keys{4, 5, 6};
   third_party::SArray<float> r2_vals{0.4, 0.2, 0.3};
   r2.AddData(r2_keys);
   r2.AddData(r2_vals);

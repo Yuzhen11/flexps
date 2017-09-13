@@ -7,12 +7,7 @@ namespace flexps {
 void ServerThread::Start() {
   work_thread_ = std::thread([this] { Main(); });
 }
-void ServerThread::Stop() { 
-  Message exit_msg;
-  exit_msg.meta.flag = Flag::kExit;
-  work_queue_.Push(exit_msg);
-  work_thread_.join(); 
-}
+void ServerThread::Stop() { work_thread_.join(); }
 
 void ServerThread::RegisterModel(uint32_t model_id, std::unique_ptr<AbstractModel>&& model) {
   CHECK(models_.find(model_id) == models_.end());

@@ -8,12 +8,7 @@ void WorkerHelperThread::Start() {
   work_thread_ = std::thread([this] { Main(); });
 }
 
-void WorkerHelperThread::Stop() { 
-  Message exit_msg;
-  exit_msg.meta.flag = Flag::kExit; 
-  work_queue_.Push(exit_msg);
-  work_thread_.join(); 
-}
+void WorkerHelperThread::Stop() { work_thread_.join(); }
 
 ThreadsafeQueue<Message>* WorkerHelperThread::GetWorkQueue() { return &work_queue_; }
 
