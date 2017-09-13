@@ -12,6 +12,10 @@ inline void FreeData(void *data, void *hint) {
   }
 }
 
+size_t Mailbox::GetQueueMapSize() const {
+  return queue_map_.size();
+}
+
 void Mailbox::Start(const std::vector<Node>& nodes) {
   context_ = zmq_ctx_new();
   CHECK(context_ != nullptr) << "create zmq context failed";

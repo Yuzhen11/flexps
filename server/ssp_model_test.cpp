@@ -18,25 +18,23 @@ class TestSSPModel : public testing::Test {
 };
 
 TEST_F(TestSSPModel, CheckConstructor) {
-  ThreadsafeQueue<Message> work_queue;
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(
-      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
+      new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
 }
 
 TEST_F(TestSSPModel, CheckGetAndAdd) {
-  ThreadsafeQueue<Message> work_queue;
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(
-      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
+      new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
 
   // Message3
   Message m3;
@@ -110,14 +108,13 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
 }
 
 TEST_F(TestSSPModel, CheckClock) {
-  ThreadsafeQueue<Message> work_queue;
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(
-      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
+      new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
 
   // Message1
   Message m1;
@@ -148,14 +145,13 @@ TEST_F(TestSSPModel, CheckClock) {
 }
 
 TEST_F(TestSSPModel, CheckStaleness) {
-  ThreadsafeQueue<Message> work_queue;
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 2;
   std::vector<int> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(
-      new SSPModel(model_id, tids, std::move(storage), staleness, &work_queue, &reply_queue));
+      new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
 
   // Message1
   Message m1;

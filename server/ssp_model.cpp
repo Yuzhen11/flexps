@@ -4,8 +4,8 @@
 namespace flexps {
 
 SSPModel::SSPModel(uint32_t model_id, std::vector<int>& tids, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                   int staleness, ThreadsafeQueue<Message>* work_queue, ThreadsafeQueue<Message>* reply_queue)
-    : model_id_(model_id), staleness_(staleness), work_queue_(work_queue), reply_queue_(reply_queue) {
+                   int staleness, ThreadsafeQueue<Message>* reply_queue)
+    : model_id_(model_id), staleness_(staleness), reply_queue_(reply_queue) {
   this->progress_tracker_.Init(std::move(tids));
   this->storage_ = std::move(storage_ptr);
 }

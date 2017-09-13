@@ -22,6 +22,7 @@ class Mailbox {
   int Recv(Message* msg);
   void Start(const std::vector<Node>& nodes);
   void Stop();
+  size_t GetQueueMapSize() const;
 
  private:
   void Connect(const Node& node);
