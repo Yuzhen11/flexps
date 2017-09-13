@@ -1,6 +1,8 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
 file(GLOB driver-src-files
+  node_parser.cpp
+  simple_id_mapper.cpp
   )
 
 add_library(driver-objs OBJECT ${driver-src-files})
