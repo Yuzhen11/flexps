@@ -18,10 +18,26 @@ class TestMailbox : public testing::Test {
 };
 
 TEST_F(TestMailbox, Construct) {
-  // Node node{0, "localhost", 32145};
-  // Mailbox mailbox(node);
-  // mailbox.Start({node});
-  // mailbox.Stop();
+  Node node{0, "localhost", 32145};
+  Mailbox mailbox(node);
+  ThreadsafeQueue<Message> queue;
+  mailbox.RegisterQueue(0, &queue);
+  mailbox.Start({node});
+
+  Message msg;
+  msg.meta.sender = 0;
+  msg.meta.recver = 0;
+  msg.meta.model_id = 0;
+  msg.meta.flag = Flag::kGet;
+
+  third_party::SArray<Key> keys{4,5,6};
+  third_party::SArray<float> vals{0.4, 0.2, 0.3};
+  msg.AddData(keys);
+  msg.AddData(vals);
+
+  mailbox.Send(msg);
+  
+  mailbox.Stop();
 }
 
 }  // namespace

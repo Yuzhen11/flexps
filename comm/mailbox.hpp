@@ -1,14 +1,14 @@
 #pragma once
 
-#include "base/message.hpp"
-#include "base/threadsafe_queue.hpp"
 #include "comm/node.hpp"
+#include "base/threadsafe_queue.hpp"
+#include "base/message.hpp"
 
 #include <atomic>
 #include <map>
 #include <thread>
-#include <unordered_map>
 #include <vector>
+#include <unordered_map>
 
 #include <zmq.h>
 
@@ -16,8 +16,10 @@ namespace flexps {
 
 class Mailbox {
  public:
-  Mailbox(const Node& node) : node_(node) {}
+  Mailbox(const Node& node): node_(node) {}
   void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue);
+  int Send(const Message& msg);
+  int Recv(Message* msg);
   void Start(const std::vector<Node>& nodes);
   void Stop();
 
@@ -35,6 +37,7 @@ class Mailbox {
   void* context_ = nullptr;
   std::unordered_map<uint32_t, void*> senders_;
   void* receiver_ = nullptr;
+  std::mutex lock_;
 };
 
 }  // namespace flexps

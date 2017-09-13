@@ -6,4 +6,3 @@ file(GLOB comm-src-files
 add_library(comm-objs OBJECT ${comm-src-files})
 set_property(TARGET comm-objs PROPERTY CXX_STANDARD 11)
 add_dependencies(comm-objs ${external_project_dependencies})
-
