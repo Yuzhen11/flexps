@@ -1,6 +1,6 @@
 #pragma once
 
-#include "comm/node.hpp"
+#include "base/node.hpp"
 #include "base/threadsafe_queue.hpp"
 #include "base/message.hpp"
 
