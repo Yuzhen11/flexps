@@ -30,7 +30,7 @@ if(ZMQ_FOUND)
 else(ZMQ_FOUND)
     message (STATUS "ZeroMQ will be included as a third party:")
     include(ExternalProject)
-    set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/third_party)
+    set(THIRDPARTY_DIR ${PROJECT_BINARY_DIR}/third_party)
     if(NOT ZMQ_INCLUDE_DIR)
         ExternalProject_Add(
             cppzmq

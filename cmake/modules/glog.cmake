@@ -26,7 +26,7 @@ if(GLOG_SEARCH_PATH)
     message(STATUS "  (Library)       ${GLOG_LIBRARY}")
 else(GLOG_SEARCH_PATH)
     include(ExternalProject)
-    set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/third_party)
+    set(THIRDPARTY_DIR ${PROJECT_BINARY_DIR}/third_party)
     ExternalProject_Add(
         glog
         GIT_REPOSITORY "https://github.com/google/glog"

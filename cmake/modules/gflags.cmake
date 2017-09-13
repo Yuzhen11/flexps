@@ -10,7 +10,7 @@ if(GFLAGS_SEARCH_PATH)
     message(STATUS "  (Library)       ${GFLAGS_LIBRARY}")
 else(GFLAGS_SEARCH_PATH)
     include(ExternalProject)
-    set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/third_party)
+    set(THIRDPARTY_DIR ${PROJECT_BINARY_DIR}/third_party)
     ExternalProject_Add(
         gflags
         GIT_REPOSITORY "https://github.com/gflags/gflags"
