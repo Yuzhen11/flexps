@@ -16,11 +16,11 @@ namespace flexps {
 
 class Mailbox {
  public:
-  Mailbox(const Node& node): node_(node) {}
+  Mailbox(const Node& node, const std::vector<Node>& nodes): node_(node), nodes_(nodes) {}
   void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue);
   int Send(const Message& msg);
   int Recv(Message* msg);
-  void Start(const std::vector<Node>& nodes);
+  void Start();
   void Stop();
   size_t GetQueueMapSize() const;
 
@@ -30,15 +30,16 @@ class Mailbox {
 
   void Receiving();
 
-  std::atomic<bool> ready{false};
   std::map<uint32_t, ThreadsafeQueue<Message>* const> queue_map_;
 
   std::thread receiver_thread_;
   Node node_;
+  std::vector<Node> nodes_;
+  int finish_count_ = 0;
   void* context_ = nullptr;
   std::unordered_map<uint32_t, void*> senders_;
   void* receiver_ = nullptr;
-  std::mutex lock_;
+  std::mutex mu_;
 };
 
 }  // namespace flexps

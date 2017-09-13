@@ -19,10 +19,10 @@ class TestMailbox : public testing::Test {
 
 TEST_F(TestMailbox, Construct) {
   Node node{0, "localhost", 32145};
-  Mailbox mailbox(node);
+  Mailbox mailbox(node, {node});
   ThreadsafeQueue<Message> queue;
   mailbox.RegisterQueue(0, &queue);
-  mailbox.Start({node});
+  mailbox.Start();
 
   Message msg;
   msg.meta.sender = 0;

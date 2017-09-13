@@ -16,26 +16,28 @@ size_t Mailbox::GetQueueMapSize() const {
   return queue_map_.size();
 }
 
-void Mailbox::Start(const std::vector<Node>& nodes) {
+void Mailbox::Start() {
   context_ = zmq_ctx_new();
   CHECK(context_ != nullptr) << "create zmq context failed";
   zmq_ctx_set(context_, ZMQ_MAX_SOCKETS, 65536);
 
   Bind(node_);
-  LOG(INFO) << "Finished binding";
-  for (const auto& node : nodes) {
+  VLOG(1) << "Finished binding";
+  for (const auto& node : nodes_) {
     Connect(node);
   }
-  LOG(INFO) << "Finished connecting";
+  VLOG(1) << "Finished connecting";
 
   receiver_thread_ = std::thread(&Mailbox::Receiving, this);
 }
 
 void Mailbox::Stop() {
-  Message exit_msg;
-  exit_msg.meta.recver = node_.id;
-  exit_msg.meta.flag = Flag::kExit;
-  Send(exit_msg);
+  for (auto& node : nodes_) {
+    Message exit_msg;
+    exit_msg.meta.recver = node.id;
+    exit_msg.meta.flag = Flag::kExit;
+    Send(exit_msg);
+  }
   receiver_thread_.join();
 }
 
@@ -70,17 +72,19 @@ void Mailbox::RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const q
 }
 
 void Mailbox::Receiving() {
-
-  LOG(INFO) << "Start receiving";
+  VLOG(1) << "Start receiving";
   while (true) {
     Message msg;
     int recv_bytes = Recv(&msg);
     // For debugging, show received message
-    LOG(INFO) << "Received message " << msg.DebugString();
+    VLOG(1) << "Received message " << msg.DebugString();
 
     if (msg.meta.flag == Flag::kExit){
-      LOG(INFO) << "Received kExit message, exiting!";
-      break;
+      finish_count_ += 1;
+      if (finish_count_ == nodes_.size()) {
+        VLOG(1) << "Collected " << nodes_.size() << " exit, Node" << node_.id << " exiting";
+        break;
+      }
     }
 
     CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
@@ -89,7 +93,7 @@ void Mailbox::Receiving() {
 }
 
 int Mailbox::Send(const Message& msg) {
-    std::lock_guard<std::mutex> lk(lock_);
+    std::lock_guard<std::mutex> lk(mu_);
     // find the socket
     int id = msg.meta.recver;
     auto it = senders_.find(id);
@@ -120,7 +124,7 @@ int Mailbox::Send(const Message& msg) {
     int send_bytes = meta_size;
 
     // send data
-    LOG(INFO) << "Start sending data";
+    VLOG(1) << "Start sending data";
     for (int i = 0; i < num_data; ++i) {
       zmq_msg_t data_msg;
       third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
