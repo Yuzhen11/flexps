@@ -58,9 +58,9 @@ TEST_F(TestSender, Start) {
   msg.AddData(keys);
   msg.AddData(vals);
 
-  message_queue->Push(msg);
-
   sender.Start();
+
+  message_queue->Push(msg);
 
   // Wait some time
   std::this_thread::sleep_for(std::chrono::nanoseconds(10000));
@@ -73,8 +73,6 @@ TEST_F(TestSender, Start) {
   std::this_thread::sleep_for(std::chrono::nanoseconds(10000));
 
   EXPECT_EQ(mailbox.CheckSize(), 2);
-
-  // How to trigger stop
 
   sender.Stop();
   mailbox.Stop();
