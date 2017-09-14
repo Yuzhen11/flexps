@@ -22,57 +22,66 @@ class TestSender : public testing::Test {
 class FakeMailbox : public AbstractMailbox {
  public:
   virtual int Send(const Message& msg) override {
-    to_send.push_back(msg);
+    to_send_.Push(msg);
     return -1;
   }
   virtual int Recv(Message* msg) override { return -1; };
-  virtual void Start() override{};
-  virtual void Stop() override{};
-  int CheckSize() { return to_send.size(); }
+  virtual void Start() override {}
+  virtual void Stop() override {}
 
+  void WaitAndPop(Message* msg) {
+    to_send_.WaitAndPop(msg);
+  }
  private:
-  virtual void Connect(const Node& node) override{};
-  virtual void Bind(const Node& node) override{};
+  virtual void Connect(const Node& node) override {}
+  virtual void Bind(const Node& node) override {}
 
-  virtual void Receiving() override{};
+  virtual void Receiving() override {}
 
-  std::vector<Message> to_send;
+  ThreadsafeQueue<Message> to_send_;
 };
 
-TEST_F(TestSender, Start) {
+TEST_F(TestSender, StartStop) {
   FakeMailbox mailbox;
   mailbox.Start();
 
   Sender sender(&mailbox);
-  auto message_queue = sender.GetMessageQueue();
+  sender.Start();
+
+  sender.Stop();
+  mailbox.Stop();
+}
+
+TEST_F(TestSender, Send) {
+  FakeMailbox mailbox;
+  mailbox.Start();
+
+  Sender sender(&mailbox);
+  sender.Start();
+  auto* send_queue = sender.GetMessageQueue();
 
   // Msg
   Message msg;
-  msg.meta.sender = 0;
+  msg.meta.sender = 123;
   msg.meta.recver = 0;
   msg.meta.model_id = 0;
   msg.meta.flag = Flag::kGet;
-
-  third_party::SArray<Key> keys{4, 5, 6};
-  third_party::SArray<float> vals{0.4, 0.2, 0.3};
+  third_party::SArray<Key> keys{1};
+  third_party::SArray<float> vals{0.1};
   msg.AddData(keys);
   msg.AddData(vals);
 
-  sender.Start();
+  // Push the firstbmsg
+  send_queue->Push(msg);
+  Message res;
+  mailbox.WaitAndPop(&res);
+  EXPECT_EQ(res.meta.sender, msg.meta.sender);
 
-  message_queue->Push(msg);
-
-  // Wait some time
-  std::this_thread::sleep_for(std::chrono::nanoseconds(10000));
-
-  EXPECT_EQ(mailbox.CheckSize(), 1);
-
-  message_queue->Push(msg);
-
-  // Wait some time
-  std::this_thread::sleep_for(std::chrono::nanoseconds(10000));
-
-  EXPECT_EQ(mailbox.CheckSize(), 2);
+  // Push the second msg
+  msg.meta.sender = 543;
+  send_queue->Push(msg);
+  mailbox.WaitAndPop(&res);
+  EXPECT_EQ(res.meta.sender, msg.meta.sender);
 
   sender.Stop();
   mailbox.Stop();

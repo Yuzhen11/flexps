@@ -2,7 +2,7 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "comm/abstract_sender.hpp"
-#include "comm/mailbox.hpp"
+#include "comm/abstract_mailbox.hpp"
 
 #include <thread>
 
@@ -18,6 +18,7 @@ class Sender : public AbstractSender {
 
  private:
   ThreadsafeQueue<Message> send_message_queue_;
+  // Not owned
   AbstractMailbox* mailbox_;
   std::thread sender_thread_;
 };
