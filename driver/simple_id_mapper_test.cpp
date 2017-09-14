@@ -35,9 +35,9 @@ TEST_F(TestSimpleIdMapper, Init) {
   EXPECT_EQ(id_mapper.GetServerThreadsForId(3)[0], 3*SimpleIdMapper::kMaxThreadsPerNode);
   EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(3)[0], 3*SimpleIdMapper::kMaxThreadsPerNode + 1);
 
-  EXPECT_EQ(id_mapper.GetNodeIdForThreads(3*SimpleIdMapper::kMaxThreadsPerNode), 3);
-  EXPECT_EQ(id_mapper.GetNodeIdForThreads(3*SimpleIdMapper::kMaxThreadsPerNode + 1), 3);
-  EXPECT_EQ(id_mapper.GetNodeIdForThreads(0), 0);
+  EXPECT_EQ(id_mapper.GetNodeIdForThread(3*SimpleIdMapper::kMaxThreadsPerNode), 3);
+  EXPECT_EQ(id_mapper.GetNodeIdForThread(3*SimpleIdMapper::kMaxThreadsPerNode + 1), 3);
+  EXPECT_EQ(id_mapper.GetNodeIdForThread(0), 0);
 }
 
 TEST_F(TestSimpleIdMapper, AllocateDeallocateThread) {
@@ -59,7 +59,7 @@ TEST_F(TestSimpleIdMapper, AllocateDeallocateThread) {
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 1);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1)[0], SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode + 1);
 
-  EXPECT_EQ(id_mapper.GetNodeIdForThreads(SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode), 1);
+  EXPECT_EQ(id_mapper.GetNodeIdForThread(SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode), 1);
 }
 
 }  // namespace

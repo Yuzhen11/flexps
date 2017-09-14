@@ -93,7 +93,7 @@ void Mailbox::Receiving() {
 int Mailbox::Send(const Message& msg) {
   std::lock_guard<std::mutex> lk(mu_);
   // find the socket
-  int id = msg.meta.recver;
+  int id = id_mapper_->GetNodeIdForThread(msg.meta.recver);
   auto it = senders_.find(id);
   if (it == senders_.end()) {
     LOG(WARNING) << "there is no socket to node " << id;

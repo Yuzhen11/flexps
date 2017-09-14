@@ -7,6 +7,7 @@ namespace flexps {
 
 class AbstractMailbox {
  public:
+  virtual ~AbstractMailbox() {}
   virtual int Send(const Message& msg) = 0;
   virtual int Recv(Message* msg) = 0;
   virtual void Start() = 0;

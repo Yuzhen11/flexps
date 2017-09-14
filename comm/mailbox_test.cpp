@@ -17,9 +17,31 @@ class TestMailbox : public testing::Test {
   void TearDown() {}
 };
 
-TEST_F(TestMailbox, Construct) {
+class FakeIdMapper : public AbstractIdMapper {
+ public:
+  virtual uint32_t GetNodeIdForThread(uint32_t tid) override {
+    return tid;
+  }
+};
+
+TEST_F(TestMailbox, StartStop) {
   Node node{0, "localhost", 32145};
-  Mailbox mailbox(node, {node});
+  FakeIdMapper id_mapper;
+  Mailbox mailbox(node, {node}, &id_mapper);
+  ThreadsafeQueue<Message> queue;
+  mailbox.RegisterQueue(0, &queue);
+  mailbox.Start();
+  mailbox.Stop();
+}
+
+// TODO(Jasper): Test for Send and Recv
+
+TEST_F(TestMailbox, Send) {
+  // TODO(Jasper): We cannot reuse the same port, maybe it's because we did not destroy the zmq context?
+  // Please check and add zmq_ctx_destroy in Mailbox::Stop()
+  Node node{0, "localhost", 32142};
+  FakeIdMapper id_mapper;
+  Mailbox mailbox(node, {node}, &id_mapper);
   ThreadsafeQueue<Message> queue;
   mailbox.RegisterQueue(0, &queue);
   mailbox.Start();
@@ -36,6 +58,7 @@ TEST_F(TestMailbox, Construct) {
   msg.AddData(vals);
 
   mailbox.Send(msg);
+  // TODO(Jasper): Check the message in queue
 
   mailbox.Stop();
 }

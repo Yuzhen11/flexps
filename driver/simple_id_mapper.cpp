@@ -35,7 +35,7 @@ void SimpleIdMapper::DeallocateWorkerThread(uint32_t node_id, uint32_t tid) {
   node2worker_[node_id].erase(tid);
 }
 
-uint32_t SimpleIdMapper::GetNodeIdForThreads(uint32_t tid) {
+uint32_t SimpleIdMapper::GetNodeIdForThread(uint32_t tid) {
   return tid / kMaxThreadsPerNode;
 }
 
