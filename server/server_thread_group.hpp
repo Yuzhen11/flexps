@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cinttypes>
 #include <vector>
+#include <memory>
 
 #include "server/server_thread.hpp"
 
@@ -8,20 +10,20 @@ namespace flexps {
 
 class ServerThreadGroup {
  public:
-  ServerThreadGroup(std::vector<int>& server_id_vec, ThreadsafeQueue<Message>* reply_queue)
+  ServerThreadGroup(const std::vector<uint32_t>& server_id_vec, ThreadsafeQueue<Message>* reply_queue)
       : reply_queue_(reply_queue) {
     for (auto& server_id : server_id_vec)
-      server_threads.push_back(new ServerThread(server_id));
+      server_threads.emplace_back(new ServerThread(server_id));
   }
 
-  ThreadsafeQueue<Message>* GetReplyQueue() { return &reply_queue_; }
+  ThreadsafeQueue<Message>* GetReplyQueue() { return reply_queue_; }
 
-  std::vector<ServerThread*>::iterator begin() { return server_threads.begin(); }
+  std::vector<std::unique_ptr<ServerThread>>::iterator begin() { return server_threads.begin(); }
 
-  std::vector<ServerThread*>::iterator end() { return server_threads.end(); }
+  std::vector<std::unique_ptr<ServerThread>>::iterator end() { return server_threads.end(); }
 
  private:
-  std::vector<ServerThread*> server_threads;
+  std::vector<std::unique_ptr<ServerThread>> server_threads;
   ThreadsafeQueue<Message>* reply_queue_;
 };
 

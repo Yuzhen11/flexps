@@ -80,13 +80,17 @@ void Mailbox::Receiving() {
     if (msg.meta.flag == Flag::kExit) {
       finish_count_ += 1;
       if (finish_count_ == nodes_.size()) {
-        VLOG(1) << "Collected " << nodes_.size() << " exit, Node" << node_.id << " exiting";
+        VLOG(1) << "Collected " << nodes_.size() << " exit, Node:" << node_.id << " exiting";
+        // Kill all the registered threads
+        for (auto& queue : queue_map_) {
+          queue.second->Push(msg);
+        }
         break;
       }
     }
 
     CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
-    queue_map_[msg.meta.recver]->Push(msg);
+    queue_map_[msg.meta.recver]->Push(std::move(msg));
   }
 }
 

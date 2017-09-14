@@ -1,10 +1,11 @@
 #pragma once
 
 #include <cinttypes>
-#include <funtional>
+#include <functional>
 #include <map>
 #include <vector>
 
+#include "driver/info.hpp"
 #include "driver/worker_spec.hpp"
 
 namespace flexps {

@@ -3,6 +3,8 @@
 #include <map>
 #include <vector>
 
+#include "glog/logging.h"
+
 namespace flexps {
 
 class WorkerSpec {
@@ -17,10 +19,10 @@ class WorkerSpec {
   const std::vector<uint32_t>& GetLocalWorkers(uint32_t proc_id) const {
     auto it = proc_to_workers.find(proc_id);
     CHECK(it != proc_to_workers.end());
-    return *it;
+    return it->second;
   }
  private:
-  Init(const std::map<uint32_t, uint32_t>& proc_workers) {
+  void Init(const std::map<uint32_t, uint32_t>& proc_workers) {
     uint32_t worker_count = 0;
     for (const auto& kv : proc_workers) {
       for (int i = 0; i < kv.second; ++ i) {

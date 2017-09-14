@@ -15,7 +15,7 @@ void TestServer() {
   ThreadsafeQueue<Message> reply_queue;
 
   // Create a group of ServerThread
-  std::vector<int> server_id_vec{0, 1};
+  std::vector<uint32_t> server_id_vec{0, 1};
   ServerThreadGroup server_thread_group(server_id_vec, &reply_queue);
 
   // Create models and register models into ServerThread

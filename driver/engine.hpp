@@ -5,9 +5,15 @@
 
 #include "base/node.hpp"
 #include "worker/worker_helper_thread.hpp"
+#include "worker/app_blocker.hpp"
+#include "worker/simple_range_manager.hpp"
 #include "server/server_thread.hpp"
+#include "server/server_thread_group.hpp"
 #include "comm/mailbox.hpp"
+#include "comm/sender.hpp"
 #include "driver/ml_task.hpp"
+#include "driver/simple_id_mapper.hpp"
+#include "driver/info.hpp"
 
 namespace flexps {
 
@@ -46,10 +52,13 @@ class Engine {
   void Run(const MLTask& task);
  private:
   std::map<uint32_t, SimpleRangeManager> range_manager_map_;
+  // nodes
   Node node_;
   std::vector<Node> nodes_;
   // mailbox
+  std::unique_ptr<SimpleIdMapper> id_mapper_;
   std::unique_ptr<Mailbox> mailbox_;
+  std::unique_ptr<Sender> sender_;
   // worker elements
   std::unique_ptr<AppBlocker> app_blocker_;
   std::unique_ptr<WorkerHelperThread> worker_helper_thread_;
