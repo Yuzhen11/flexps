@@ -8,7 +8,7 @@ namespace flexps {
 
 class ServerThreadGroup {
  public:
-  ServerThreadGroup(std::vector<int>& server_id_vec) {
+  ServerThreadGroup(std::vector<int>& server_id_vec, ThreadsafeQueue<Message>* reply_queue) : reply_queue_(reply_queue) {
     for (auto& server_id : server_id_vec)
       server_threads.push_back(new ServerThread(server_id));
   }
@@ -21,7 +21,7 @@ class ServerThreadGroup {
 
  private:
   std::vector<ServerThread*> server_threads;
-  ThreadsafeQueue<Message> reply_queue_;
+  ThreadsafeQueue<Message>* reply_queue_;
 };
 
 }  // namespace flexps

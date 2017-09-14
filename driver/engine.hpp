@@ -17,24 +17,29 @@ class Engine {
   /*
    * The flow of starting the engine:
    * 1. Create a mailbox
-   * 2. Create ServerThreads and WorkerHelperThreads
-   * 3. Register the threads to mailbox through ThreadsafeQueue
-   * 4. Start the mailbox: bind and connect to all other nodes
+   * 2. Create Sender
+   * 3. Create ServerThreads and WorkerHelperThreads
+   * 4. Register the threads to mailbox through ThreadsafeQueue
+   * 5. Start the mailbox: bind and connect to all other nodes
    */
   void CreateMailbox();
+  void CreateSender();
   void StartServerThreads();
   void StartWorkerHelperThreads();
   void StartMailbox();
+  void StartSender();
 
   /*
    * The flow of stopping the engine:
    * 1. Stop the mailbox: by sending each node an exit message
    * 2. The mailbox will stop the corresponding registered threads
    * 3. Join the ServerThreads and WorkerHelperThreads
-   * 4. Join the mailbox
+   * 4. Join the Sender
+   * 5. Join the mailbox
    */
   void StopServerThreads();
   void StopWorkerHelperThreads();
+  void StopSender();
   void StopMailbox();
  
   void CreateTable(uint32_t table_id, const SimpleRangeManager& range_manager);

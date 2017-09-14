@@ -11,9 +11,12 @@
 namespace flexps {
 
 void TestServer() {
+  // This should be owned by the sender
+  ThreadsafeQueue<Message> reply_queue;
+
   // Create a group of ServerThread
   std::vector<int> server_id_vec{0, 1};
-  ServerThreadGroup server_thread_group(server_id_vec);
+  ServerThreadGroup server_thread_group(server_id_vec, &reply_queue);
 
   // Create models and register models into ServerThread
   const int num_models = 3;
@@ -104,9 +107,8 @@ void TestServer() {
   Message check_message;
   auto rep_keys = third_party::SArray<int>();
   auto rep_vals = third_party::SArray<int>();
-  ThreadsafeQueue<Message>* reply_queue = server_thread_group.GetReplyQueue();
 
-  reply_queue->WaitAndPop(&check_message);
+  reply_queue.WaitAndPop(&check_message);
   CHECK(check_message.data.size() == 2);
   rep_keys = third_party::SArray<int>(check_message.data[0]);
   rep_vals = third_party::SArray<int>(check_message.data[1]);
@@ -115,7 +117,7 @@ void TestServer() {
   CHECK(rep_keys[0] == 0);
   CHECK(rep_vals[0] == 1);
 
-  reply_queue->WaitAndPop(&check_message);
+  reply_queue.WaitAndPop(&check_message);
   CHECK(check_message.data.size() == 2);
   rep_keys = third_party::SArray<int>(check_message.data[0]);
   rep_vals = third_party::SArray<int>(check_message.data[1]);
