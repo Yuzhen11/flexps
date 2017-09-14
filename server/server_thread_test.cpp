@@ -1,5 +1,5 @@
-#include "gtest/gtest.h"
 #include "glog/logging.h"
+#include "gtest/gtest.h"
 
 #include "base/magic.hpp"
 #include "server/abstract_model.hpp"
