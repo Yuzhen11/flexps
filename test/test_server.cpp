@@ -27,7 +27,8 @@ void TestServer() {
       // TODO(Ruoyu Wu): Each server thread should have its own model?
       std::unique_ptr<AbstractStorage> storage(new Storage<int>());
       std::unique_ptr<AbstractModel> model(
-          new SSPModel(i, tids, std::move(storage), model_staleness, server_thread_group.GetReplyQueue()));
+          new SSPModel(i, std::move(storage), model_staleness, server_thread_group.GetReplyQueue()));
+      model->ResetWorker(tids);
       server_thread->RegisterModel(i, std::move(model));
     }
   }
