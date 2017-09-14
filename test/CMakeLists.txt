@@ -26,3 +26,10 @@ target_link_libraries(TestWorker flexps)
 target_link_libraries(TestWorker ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET TestWorker PROPERTY CXX_STANDARD 11)
 add_dependencies(TestWorker ${external_project_dependencies})
+
+# TestServer
+add_executable(TestServer test_worker.cpp)
+target_link_libraries(TestServer flexps)
+target_link_libraries(TestServer ${HUSKY_EXTERNAL_LIB})
+set_property(TARGET TestServer PROPERTY CXX_STANDARD 11)
+add_dependencies(TestServer ${external_project_dependencies})

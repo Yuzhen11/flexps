@@ -30,13 +30,13 @@ TEST_F(TestMailbox, Construct) {
   msg.meta.model_id = 0;
   msg.meta.flag = Flag::kGet;
 
-  third_party::SArray<Key> keys{4,5,6};
+  third_party::SArray<Key> keys{4, 5, 6};
   third_party::SArray<float> vals{0.4, 0.2, 0.3};
   msg.AddData(keys);
   msg.AddData(vals);
 
   mailbox.Send(msg);
-  
+
   mailbox.Stop();
 }
 

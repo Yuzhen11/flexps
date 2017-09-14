@@ -1,34 +1,33 @@
 #pragma once
 
-#include "base/node.hpp"
 #include "base/threadsafe_queue.hpp"
-#include "base/message.hpp"
+#include "comm/abstract_mailbox.hpp"
 
 #include <atomic>
 #include <map>
 #include <thread>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include <zmq.h>
 
 namespace flexps {
 
-class Mailbox {
+class Mailbox : public AbstractMailbox {
  public:
-  Mailbox(const Node& node, const std::vector<Node>& nodes): node_(node), nodes_(nodes) {}
+  Mailbox(const Node& node, const std::vector<Node>& nodes) : node_(node), nodes_(nodes) {}
   void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue);
-  int Send(const Message& msg);
-  int Recv(Message* msg);
-  void Start();
-  void Stop();
+  virtual int Send(const Message& msg) override;
+  virtual int Recv(Message* msg) override;
+  virtual void Start() override;
+  virtual void Stop() override;
   size_t GetQueueMapSize() const;
 
  private:
-  void Connect(const Node& node);
-  void Bind(const Node& node);
+  virtual void Connect(const Node& node) override;
+  virtual void Bind(const Node& node) override;
 
-  void Receiving();
+  virtual void Receiving() override;
 
   std::map<uint32_t, ThreadsafeQueue<Message>* const> queue_map_;
 
