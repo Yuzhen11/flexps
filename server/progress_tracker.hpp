@@ -5,7 +5,7 @@ namespace flexps {
 
 class ProgressTracker {
  public:
-  void Init(const std::vector<int>& tids);
+  void Init(const std::vector<uint32_t>& tids);
   /*
    * Advance the progress.
    * Return -1 if min_clock_ does not change,

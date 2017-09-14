@@ -8,18 +8,21 @@ const uint32_t SimpleIdMapper::kMaxNodeId;
 const uint32_t SimpleIdMapper::kMaxThreadsPerNode;
 const uint32_t SimpleIdMapper::kMaxBgThreadsPerNode;
 
-void SimpleIdMapper::Init() {
+void SimpleIdMapper::Init(int num_server_threads_per_node) {
   // Suppose there are 1 server and 1 worker_helper_thread for each node
   for (const auto& node : nodes_) {
     CHECK_LT(node.id, kMaxNodeId);
-    // {0, 1000, 2000, ...} are server threads
-    node2server_[node.id].push_back(node.id * kMaxThreadsPerNode);
+    // {0, 1000, 2000, ...} are server threads if num_server_threads_per_node is 1
+    for (int i = 0; i < num_server_threads_per_node; ++ i) {
+      node2server_[node.id].push_back(node.id * kMaxThreadsPerNode + i);
+    }
     // {1, 1001, 2001, ...} are worker helper threads
     node2worker_helper_[node.id].push_back(node.id * kMaxThreadsPerNode + 1);
   }
 }
 
 uint32_t SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
+  CHECK(node2worker_helper_.find(node_id) != node2worker_helper_.end());
   CHECK_LT(node2worker_[node_id].size(), kMaxThreadsPerNode - kMaxBgThreadsPerNode);
   for (int i = kMaxBgThreadsPerNode; i < kMaxThreadsPerNode; ++ i) {
     int tid = i + node_id * kMaxThreadsPerNode;
@@ -31,6 +34,7 @@ uint32_t SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
 }
 
 void SimpleIdMapper::DeallocateWorkerThread(uint32_t node_id, uint32_t tid) {
+  CHECK(node2worker_helper_.find(node_id) != node2worker_helper_.end());
   CHECK(node2worker_[node_id].find(tid) != node2worker_[node_id].end());
   node2worker_[node_id].erase(tid);
 }
@@ -49,6 +53,14 @@ std::vector<uint32_t> SimpleIdMapper::GetWorkerHelperThreadsForId(uint32_t node_
 
 std::vector<uint32_t> SimpleIdMapper::GetWorkerThreadsForId(uint32_t node_id) {
   std::vector<uint32_t> ret(node2worker_[node_id].begin(), node2worker_[node_id].end());
+  return ret;
+}
+
+std::vector<uint32_t> SimpleIdMapper::GetAllServerThreads() {
+  std::vector<uint32_t> ret;
+  for (auto& kv : node2server_) {
+    ret.insert(ret.end(), kv.second.begin(), kv.second.end());
+  }
   return ret;
 }
 

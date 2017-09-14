@@ -21,12 +21,13 @@ class SimpleIdMapper : public AbstractIdMapper {
   // TODO(yuzhen): Make sure there is no thread-safety issue between (the Mailbox::Send and the engine thread).
   virtual uint32_t GetNodeIdForThread(uint32_t tid) override;
 
-  void Init();
+  void Init(int num_server_threads_per_node);
   uint32_t AllocateWorkerThread(uint32_t node_id);
   void DeallocateWorkerThread(uint32_t node_id, uint32_t tid);
   std::vector<uint32_t> GetServerThreadsForId(uint32_t node_id);
   std::vector<uint32_t> GetWorkerHelperThreadsForId(uint32_t node_id);
   std::vector<uint32_t> GetWorkerThreadsForId(uint32_t node_id);
+  std::vector<uint32_t> GetAllServerThreads();
 
   static const uint32_t kMaxNodeId = 1000;
   static const uint32_t kMaxThreadsPerNode = 1000;

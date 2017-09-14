@@ -21,16 +21,6 @@ class TestKVClientTable : public testing::Test {
   void TearDown() {}
 };
 
-class FakeRangeManager : public AbstractRangeManager {
- public:
-  FakeRangeManager(const std::vector<third_party::Range>& ranges) : ranges_(ranges) {}
-  virtual size_t GetNumServers() const override { return ranges_.size(); }
-  virtual const std::vector<third_party::Range>& GetRanges() const override { return ranges_; }
-
- private:
-  std::vector<third_party::Range> ranges_;
-};
-
 const uint32_t kTestAppThreadId = 15;
 const uint32_t kTestModelId = 23;
 
@@ -92,14 +82,14 @@ class FakeCallbackRunner : public AbstractCallbackRunner {
 
 TEST_F(TestKVClientTable, Init) {
   ThreadsafeQueue<Message> queue;
-  FakeRangeManager manager({{2, 4}, {4, 7}});
+  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner;
   KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
 }
 
 TEST_F(TestKVClientTable, Add) {
   ThreadsafeQueue<Message> queue;
-  FakeRangeManager manager({{2, 4}, {4, 7}});
+  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner;
   KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
   std::vector<Key> keys = {3, 4, 5, 6};
@@ -133,7 +123,7 @@ TEST_F(TestKVClientTable, Add) {
 
 TEST_F(TestKVClientTable, Get) {
   ThreadsafeQueue<Message> queue;
-  FakeRangeManager manager({{2, 4}, {4, 7}});
+  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner;
   std::thread th([&queue, &manager, &callback_runner]() {
     KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);

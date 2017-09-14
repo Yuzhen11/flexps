@@ -1,5 +1,8 @@
 #include "driver/engine.hpp"
 
+#include "server/storage.hpp"
+#include "server/ssp_model.hpp"
+
 #include <thread>
 #include <vector>
 
@@ -9,7 +12,8 @@ namespace flexps {
 
 void Engine::CreateMailbox() {
   id_mapper_.reset(new SimpleIdMapper(node_, nodes_));
-  id_mapper_->Init();
+  const int kNumServerThreadPerNode = 1;
+  id_mapper_->Init(kNumServerThreadPerNode);
   mailbox_.reset(new Mailbox(node_, nodes_, id_mapper_.get()));
 }
 
@@ -76,22 +80,37 @@ void Engine::StopMailbox() {
   VLOG(1) << "mailbox stops on node" << node_.id;
 }
 
-void Engine::CreateTable(uint32_t table_id, const SimpleRangeManager& range_manager) {
-  /*
+void Engine::AllocateWorkers(WorkerSpec* const worker_spec) {
+  CHECK(id_mapper_);
+  for (auto& kv : worker_spec->GetNodeToWorkers()) {
+    for (int i = 0; i < kv.second.size(); ++ i) {
+      uint32_t tid = id_mapper_->AllocateWorkerThread(kv.first);
+      worker_spec->InsertWorkerIdThreadId(kv.second[i], tid);
+    }
+  }
+}
+
+
+void Engine::CreateTable(uint32_t table_id,
+    const std::vector<third_party::Range>& ranges,
+    const std::vector<uint32_t>& worker_threads) {
+  CHECK(id_mapper_);
+  auto server_thread_ids = id_mapper_->GetAllServerThreads();
+  CHECK_EQ(ranges.size(), server_thread_ids.size());
+  SimpleRangeManager range_manager(ranges, server_thread_ids);
+  CHECK(server_thread_group_);
   CHECK(range_manager_map_.find(table_id) == range_manager_map_.end());
   range_manager_map_.insert({table_id, range_manager});
+  const int model_staleness = 1;  // TODO
   for (auto& server_thread : *server_thread_group_) {
     std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-    // TODO: model_id, tids
-    std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), model_staleness,
-                                                      server_thread_group.GetReplyQueue()));
-    server_thread->RegisterModel(i, std::move(model));
+    std::unique_ptr<AbstractModel> model(new SSPModel(table_id, worker_threads, std::move(storage), model_staleness,
+                                                      server_thread_group_->GetReplyQueue()));
+    server_thread->RegisterModel(table_id, std::move(model));
   }
-  */
 }
 
 void Engine::Run(const MLTask& task) {
-  /*
   const auto& worker_spec = task.GetWorkerSpec();
   if (worker_spec.HasLocalWorkers(node_.id)) {
     const auto& local_workers = worker_spec.GetLocalWorkers(node_.id);
@@ -107,7 +126,6 @@ void Engine::Run(const MLTask& task) {
       th.join();
     }
   }
-  */
 }
 
 }  // namespace flexps

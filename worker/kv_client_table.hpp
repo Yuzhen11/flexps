@@ -6,8 +6,8 @@
 #include "base/third_party/sarray.h"
 #include "base/threadsafe_queue.hpp"
 
-#include "abstract_callback_runner.hpp"
-#include "abstract_range_manager.hpp"
+#include "worker/abstract_callback_runner.hpp"
+#include "worker/simple_range_manager.hpp"
 
 #include "glog/logging.h"
 
@@ -26,7 +26,7 @@ template <typename Val>
 class KVClientTable {
  public:
   KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
-                const AbstractRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner);
+                const SimpleRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner);
 
   void Init();
 
@@ -55,12 +55,12 @@ class KVClientTable {
   // Not owned.
   AbstractCallbackRunner* const callback_runner_;
   // Not owned.
-  const AbstractRangeManager* const range_manager_;
+  const SimpleRangeManager* const range_manager_;
 };
 
 template <typename Val>
 KVClientTable<Val>::KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
-                                  const AbstractRangeManager* const range_manager,
+                                  const SimpleRangeManager* const range_manager,
                                   AbstractCallbackRunner* const callback_runner)
     : app_thread_id_(app_thread_id),
       model_id_(model_id),
@@ -178,15 +178,15 @@ void KVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
 
 template <typename Val>
 void KVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
+  const auto& server_thread_ids = range_manager_->GetServerThreadIds();
+  CHECK_EQ(server_thread_ids.size(), sliced.size());
   for (size_t i = 0; i < sliced.size(); ++i) {
     if (!sliced[i].first) {
       continue;
     }
     Message msg;
-    // TODO: Fill the meta
-    // msg.meta = ...;
     msg.meta.sender = app_thread_id_;
-    msg.meta.recver = i;
+    msg.meta.recver = server_thread_ids[i];
     msg.meta.model_id = model_id_;
     msg.meta.flag = is_add ? Flag::kAdd : Flag::kGet;
     const auto& kvs = sliced[i].second;

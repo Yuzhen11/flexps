@@ -14,6 +14,7 @@
 #include "driver/ml_task.hpp"
 #include "driver/simple_id_mapper.hpp"
 #include "driver/info.hpp"
+#include "driver/worker_spec.hpp"
 
 namespace flexps {
 
@@ -48,7 +49,10 @@ class Engine {
   void StopSender();
   void StopMailbox();
  
-  void CreateTable(uint32_t table_id, const SimpleRangeManager& range_manager);
+  void AllocateWorkers(WorkerSpec* const worker_spec);
+  void CreateTable(uint32_t table_id,
+    const std::vector<third_party::Range>& ranges,
+    const std::vector<uint32_t>& worker_threads);
   void Run(const MLTask& task);
  private:
   std::map<uint32_t, SimpleRangeManager> range_manager_map_;

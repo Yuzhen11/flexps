@@ -21,7 +21,7 @@ void TestServer() {
   // Create models and register models into ServerThread
   const int num_models = 3;
   int model_staleness = 1;
-  std::vector<int> tids{2, 3};
+  std::vector<uint32_t> tids{2, 3};
   for (int i = 0; i < num_models; ++i) {
     for (auto& server_thread : server_thread_group) {
       // TODO(Ruoyu Wu): Each server thread should have its own model?

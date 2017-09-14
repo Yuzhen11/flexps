@@ -17,7 +17,7 @@ void TestBgWorker() {
   std::atomic<bool> ready(false);
 
   // Create a worker thread which runs the KVClientTable
-  SimpleRangeManager range_manager({{2, 4}, {4, 7}});
+  SimpleRangeManager range_manager({{2, 4}, {4, 7}}, {0, 1});
   ThreadsafeQueue<Message> downstream_queue;
 
   const uint32_t kTestAppThreadId1 = 1;

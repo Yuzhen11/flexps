@@ -14,7 +14,7 @@ namespace flexps {
 
 class SSPModel : public AbstractModel {
  public:
-  explicit SSPModel(uint32_t model_id, std::vector<int>& tids, std::unique_ptr<AbstractStorage>&& storage_ptr,
+  explicit SSPModel(uint32_t model_id, const std::vector<uint32_t>& tids, std::unique_ptr<AbstractStorage>&& storage_ptr,
                     int staleness, ThreadsafeQueue<Message>* reply_queue);
 
   virtual void Clock(Message& message) override;

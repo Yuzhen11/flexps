@@ -22,7 +22,7 @@ TEST_F(TestSimpleIdMapper, Init) {
   Node n2{1, "worker1", 12353};
   Node n3{3, "worker1", 12354};
   SimpleIdMapper id_mapper(n1, {n1, n2, n3});
-  id_mapper.Init();
+  id_mapper.Init(1);
   EXPECT_EQ(id_mapper.GetServerThreadsForId(0).size(), 1);
   EXPECT_EQ(id_mapper.GetServerThreadsForId(0)[0], 0);
   EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(0)[0], 1);
@@ -46,7 +46,7 @@ TEST_F(TestSimpleIdMapper, AllocateDeallocateThread) {
   Node n3{3, "worker1", 12354};
   SimpleIdMapper id_mapper(n1, {n1, n2, n3});
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 0);
-  id_mapper.Init();
+  id_mapper.Init(1);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 0);
   EXPECT_EQ(id_mapper.AllocateWorkerThread(1), SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kMaxBgThreadsPerNode);
   EXPECT_EQ(id_mapper.GetWorkerThreadsForId(1).size(), 1);
