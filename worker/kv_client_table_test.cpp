@@ -98,6 +98,11 @@ TEST_F(TestKVClientTable, Add) {
   Message m1, m2;
   queue.WaitAndPop(&m1);
   queue.WaitAndPop(&m2);
+
+  EXPECT_EQ(m1.meta.sender, kTestAppThreadId);
+  EXPECT_EQ(m1.meta.recver, 0);
+  EXPECT_EQ(m1.meta.model_id, kTestModelId);
+  EXPECT_EQ(m1.meta.flag, Flag::kAdd);
   EXPECT_EQ(m1.data.size(), 2);
   third_party::SArray<Key> res_keys;
   res_keys = m1.data[0];
@@ -108,6 +113,10 @@ TEST_F(TestKVClientTable, Add) {
   EXPECT_EQ(res_keys[0], 3);
   EXPECT_EQ(res_vals[0], float(0.1));
 
+  EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
+  EXPECT_EQ(m2.meta.recver, 1);
+  EXPECT_EQ(m2.meta.model_id, kTestModelId);
+  EXPECT_EQ(m2.meta.flag, Flag::kAdd);
   EXPECT_EQ(m2.data.size(), 2);
   res_keys = m2.data[0];
   EXPECT_EQ(res_keys.size(), 3);
@@ -137,6 +146,11 @@ TEST_F(TestKVClientTable, Get) {
   Message m1, m2;
   queue.WaitAndPop(&m1);
   queue.WaitAndPop(&m2);
+
+  EXPECT_EQ(m1.meta.sender, kTestAppThreadId);
+  EXPECT_EQ(m1.meta.recver, 0);
+  EXPECT_EQ(m1.meta.model_id, kTestModelId);
+  EXPECT_EQ(m1.meta.flag, Flag::kGet);
   EXPECT_EQ(m1.data.size(), 2);
   third_party::SArray<Key> res_keys;
   res_keys = m1.data[0];
@@ -146,6 +160,11 @@ TEST_F(TestKVClientTable, Get) {
   EXPECT_EQ(res_vals.size(), 0);
   EXPECT_EQ(res_keys[0], 3);
 
+  EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
+  EXPECT_EQ(m2.meta.recver, 1);
+  EXPECT_EQ(m2.meta.model_id, kTestModelId);
+  EXPECT_EQ(m2.meta.flag, Flag::kGet);
+  EXPECT_EQ(m2.data.size(), 2);
   EXPECT_EQ(m2.data.size(), 2);
   res_keys = m2.data[0];
   EXPECT_EQ(res_keys.size(), 3);
@@ -168,6 +187,27 @@ TEST_F(TestKVClientTable, Get) {
   callback_runner.AddResponse(r1);
   callback_runner.AddResponse(r2);
   th.join();
+}
+
+TEST_F(TestKVClientTable, Clock) {
+  ThreadsafeQueue<Message> queue;
+  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  FakeCallbackRunner callback_runner;
+  KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
+  table.Clock();  // -> server 0 and server 1
+  Message m1, m2;
+  queue.WaitAndPop(&m1);
+  queue.WaitAndPop(&m2);
+
+  EXPECT_EQ(m1.meta.sender, kTestAppThreadId);
+  EXPECT_EQ(m1.meta.recver, 0);
+  EXPECT_EQ(m1.meta.model_id, kTestModelId);
+  EXPECT_EQ(m1.meta.flag, Flag::kClock);
+
+  EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
+  EXPECT_EQ(m2.meta.recver, 1);
+  EXPECT_EQ(m2.meta.model_id, kTestModelId);
+  EXPECT_EQ(m2.meta.flag, Flag::kClock);
 }
 
 }  // namespace

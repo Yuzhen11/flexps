@@ -133,6 +133,7 @@ void KVClientTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* val
 
 template <typename Val>
 void KVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
+  CHECK_NOTNULL(range_manager_);
   sliced->resize(range_manager_->GetNumServers());
   const auto& ranges = range_manager_->GetRanges();
 
@@ -178,6 +179,7 @@ void KVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
 
 template <typename Val>
 void KVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
+  CHECK_NOTNULL(range_manager_);
   const auto& server_thread_ids = range_manager_->GetServerThreadIds();
   CHECK_EQ(server_thread_ids.size(), sliced.size());
   for (size_t i = 0; i < sliced.size(); ++i) {
@@ -194,6 +196,20 @@ void KVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
       msg.AddData(kvs.keys);
       msg.AddData(kvs.vals);
     }
+    downstream_->Push(std::move(msg));
+  }
+}
+
+template <typename Val>
+void KVClientTable<Val>::Clock() {
+  CHECK_NOTNULL(range_manager_);
+  const auto& server_thread_ids = range_manager_->GetServerThreadIds();
+  for (uint32_t server_id : server_thread_ids) {
+    Message msg;
+    msg.meta.sender = app_thread_id_;
+    msg.meta.recver = server_id;
+    msg.meta.model_id = model_id_;
+    msg.meta.flag = Flag::kClock;
     downstream_->Push(std::move(msg));
   }
 }
