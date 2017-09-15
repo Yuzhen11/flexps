@@ -129,4 +129,9 @@ void Engine::Run(const MLTask& task) {
   }
 }
 
+void Engine::Barrier() {
+  CHECK(mailbox_);
+  mailbox_->Barrier();
+}
+
 }  // namespace flexps

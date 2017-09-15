@@ -1,5 +1,7 @@
 #include "comm/mailbox.hpp"
 
+#include <algorithm>
+
 #include "glog/logging.h"
 
 namespace flexps {
@@ -10,6 +12,14 @@ inline void FreeData(void* data, void* hint) {
   } else {
     delete static_cast<third_party::SArray<char>*>(hint);
   }
+}
+
+Mailbox::Mailbox(const Node& node, const std::vector<Node>& nodes, AbstractIdMapper* id_mapper)
+  : node_(node), nodes_(nodes), id_mapper_(id_mapper) {
+  // Do some checks
+  CHECK(nodes_.size());
+  CHECK(std::find(nodes_.begin(), nodes_.end(), node_) != nodes_.end());
+  CHECK_NOTNULL(id_mapper_);
 }
 
 size_t Mailbox::GetQueueMapSize() const { return queue_map_.size(); }

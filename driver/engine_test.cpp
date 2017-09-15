@@ -75,6 +75,7 @@ TEST_F(TestEngine, CreateTable) {
   });
   auto worker_threads = worker_spec.GetThreadIds();
   engine.CreateTable(0, {{0, 10}}, worker_threads);  // table 0, range [0,10)
+  engine.Barrier();
   engine.Run(task);
 
   // stop

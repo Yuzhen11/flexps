@@ -49,6 +49,7 @@ class Engine {
   void StopSender();
   void StopMailbox();
  
+  void Barrier();
   void AllocateWorkers(WorkerSpec* const worker_spec);
   void CreateTable(uint32_t table_id,
     const std::vector<third_party::Range>& ranges,
