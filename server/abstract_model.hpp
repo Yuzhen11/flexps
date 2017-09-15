@@ -12,6 +12,7 @@ class AbstractModel {
   virtual void Add(Message& message) = 0;
   virtual void Get(Message& message) = 0;
   virtual int GetProgress(int tid) = 0;
+  virtual void ResetWorker(const std::vector<uint32_t> tids) = 0;
   virtual ~AbstractModel() {}
 };
 

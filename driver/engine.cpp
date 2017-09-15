@@ -104,8 +104,9 @@ void Engine::CreateTable(uint32_t table_id,
   const int model_staleness = 1;  // TODO
   for (auto& server_thread : *server_thread_group_) {
     std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-    std::unique_ptr<AbstractModel> model(new SSPModel(table_id, worker_threads, std::move(storage), model_staleness,
+    std::unique_ptr<AbstractModel> model(new SSPModel(table_id, std::move(storage), model_staleness,
                                                       server_thread_group_->GetReplyQueue()));
+    model->ResetWorker(worker_threads);
     server_thread->RegisterModel(table_id, std::move(model));
   }
 }

@@ -3,10 +3,9 @@
 
 namespace flexps {
 
-SSPModel::SSPModel(uint32_t model_id, const std::vector<uint32_t>& tids, std::unique_ptr<AbstractStorage>&& storage_ptr,
+SSPModel::SSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
                    int staleness, ThreadsafeQueue<Message>* reply_queue)
     : model_id_(model_id), staleness_(staleness), reply_queue_(reply_queue) {
-  this->progress_tracker_.Init(std::move(tids));
   this->storage_ = std::move(storage_ptr);
 }
 
@@ -40,5 +39,9 @@ void SSPModel::Get(Message& message) {
 int SSPModel::GetProgress(int tid) { return progress_tracker_.GetProgress(tid); }
 
 int SSPModel::GetPendingSize(int progress) { return buffer_.Size(progress); }
+
+void SSPModel::ResetWorker(const std::vector<uint32_t> tids) {
+  this->progress_tracker_.Init(tids);
+}
 
 }  // namespace flexps
