@@ -12,10 +12,10 @@
 
 namespace flexps {
 
-class SSPModel : public AbstractModel {
+class BSPModel : public AbstractModel {
  public:
-  explicit SSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                    int staleness, ThreadsafeQueue<Message>* reply_queue);
+  explicit BSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
+                    ThreadsafeQueue<Message>* reply_queue);
 
   virtual void Clock(Message& message) override;
   virtual void Add(Message& message) override;
@@ -23,16 +23,17 @@ class SSPModel : public AbstractModel {
   virtual int GetProgress(int tid) override;
   virtual void ResetWorker(const std::vector<uint32_t> tids) override;
 
-  int GetPendingSize(int progress);
+  int GetGetPendingSize();
+  int GetAddPendingSize();
 
  private:
   uint32_t model_id_;
-  uint32_t staleness_;
 
   ThreadsafeQueue<Message>* reply_queue_;
   std::unique_ptr<AbstractStorage> storage_;
   ProgressTracker progress_tracker_;
-  PendingBuffer buffer_;
+  std::vector<Message> get_buffer_;
+  std::vector<Message> add_buffer_;
 };
 
 }  // namespace flexps

@@ -20,10 +20,9 @@ class TestSSPModel : public testing::Test {
 TEST_F(TestSSPModel, CheckConstructor) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
-  std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
+  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
 }
 
 TEST_F(TestSSPModel, CheckGetAndAdd) {
@@ -32,7 +31,8 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
+  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
+  model->ResetWorker(tids);
 
   // Message3
   Message m3;
@@ -111,7 +111,8 @@ TEST_F(TestSSPModel, CheckClock) {
   std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
+  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
+  model->ResetWorker(tids);
 
   // Message1
   Message m1;
@@ -147,7 +148,8 @@ TEST_F(TestSSPModel, CheckStaleness) {
   std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, tids, std::move(storage), staleness, &reply_queue));
+  std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
+  model->ResetWorker(tids);
 
   // Message1
   Message m1;
