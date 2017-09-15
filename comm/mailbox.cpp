@@ -30,13 +30,16 @@ void Mailbox::Start() {
 }
 
 void Mailbox::Stop() {
-  for (auto& node : nodes_) {
-    Message exit_msg;
-    exit_msg.meta.recver = node.id;
-    exit_msg.meta.flag = Flag::kExit;
-    Send(exit_msg);
-  }
+  Barrier();
+  Message exit_msg;
+  exit_msg.meta.recver = node_.id;
+  exit_msg.meta.flag = Flag::kExit;
+  Send(exit_msg);
   receiver_thread_.join();
+  // Kill all the registered threads
+  for (auto& queue : queue_map_) {
+    queue.second->Push(exit_msg);
+  }
 }
 
 void Mailbox::Connect(const Node& node) {
@@ -78,19 +81,19 @@ void Mailbox::Receiving() {
     VLOG(1) << "Received message " << msg.DebugString();
 
     if (msg.meta.flag == Flag::kExit) {
-      finish_count_ += 1;
-      if (finish_count_ == nodes_.size()) {
-        VLOG(1) << "Collected " << nodes_.size() << " exit, Node:" << node_.id << " exiting";
-        // Kill all the registered threads
-        for (auto& queue : queue_map_) {
-          queue.second->Push(msg);
-        }
-        break;
+      break;
+    } else if (msg.meta.flag == Flag::kBarrier) {
+      std::unique_lock<std::mutex> lk(mu_);
+      barrier_count_ += 1;
+      if (barrier_count_ == nodes_.size()) {
+        VLOG(1) << "Collected " << nodes_.size() << " barrier, Node:"
+          << node_.id << " unblocking main thread";
+        barrier_cond_.notify_one();
       }
+    } else {
+      CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
+      queue_map_[msg.meta.recver]->Push(std::move(msg));
     }
-
-    CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
-    queue_map_[msg.meta.recver]->Push(std::move(msg));
   }
 }
 
@@ -201,6 +204,20 @@ int Mailbox::Recv(Message* msg) {
     }
   }
   return recv_bytes;
+}
+
+void Mailbox::Barrier() {
+  for (auto& node : nodes_) {
+    Message barrier_msg;
+    barrier_msg.meta.sender = node_.id;
+    barrier_msg.meta.recver = node.id;
+    barrier_msg.meta.flag = Flag::kBarrier;
+    Send(barrier_msg);
+  }
+  std::unique_lock<std::mutex> lk(mu_);
+  // Very tricky. Consider to use all-one-all method instead of all-all.
+  barrier_cond_.wait(lk, [this]() { return barrier_count_ >= nodes_.size(); });
+  barrier_count_ -= nodes_.size();
 }
 
 }  // namespace flexps

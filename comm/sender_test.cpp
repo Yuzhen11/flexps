@@ -25,37 +25,23 @@ class FakeMailbox : public AbstractMailbox {
     to_send_.Push(msg);
     return -1;
   }
-  virtual int Recv(Message* msg) override { return -1; };
-  virtual void Start() override {}
-  virtual void Stop() override {}
 
   void WaitAndPop(Message* msg) {
     to_send_.WaitAndPop(msg);
   }
  private:
-  virtual void Connect(const Node& node) override {}
-  virtual void Bind(const Node& node) override {}
-
-  virtual void Receiving() override {}
-
   ThreadsafeQueue<Message> to_send_;
 };
 
 TEST_F(TestSender, StartStop) {
   FakeMailbox mailbox;
-  mailbox.Start();
-
   Sender sender(&mailbox);
   sender.Start();
-
   sender.Stop();
-  mailbox.Stop();
 }
 
 TEST_F(TestSender, Send) {
   FakeMailbox mailbox;
-  mailbox.Start();
-
   Sender sender(&mailbox);
   sender.Start();
   auto* send_queue = sender.GetMessageQueue();
@@ -84,7 +70,6 @@ TEST_F(TestSender, Send) {
   EXPECT_EQ(res.meta.sender, msg.meta.sender);
 
   sender.Stop();
-  mailbox.Stop();
 }
 
 }  // namespace
