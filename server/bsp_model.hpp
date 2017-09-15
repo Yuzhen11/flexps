@@ -21,7 +21,7 @@ class BSPModel : public AbstractModel {
   virtual void Add(Message& message) override;
   virtual void Get(Message& message) override;
   virtual int GetProgress(int tid) override;
-  virtual void ResetWorker(const std::vector<uint32_t> tids) override;
+  virtual void ResetWorker(const std::vector<uint32_t>& tids) override;
 
   int GetGetPendingSize();
   int GetAddPendingSize();

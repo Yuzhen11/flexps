@@ -57,7 +57,7 @@ int BSPModel::GetGetPendingSize() { return get_buffer_.size(); }
 
 int BSPModel::GetAddPendingSize() { return add_buffer_.size(); }
 
-void BSPModel::ResetWorker(const std::vector<uint32_t> tids) {
+void BSPModel::ResetWorker(const std::vector<uint32_t>& tids) {
   this->progress_tracker_.Init(tids);
 }
 

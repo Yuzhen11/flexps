@@ -11,14 +11,14 @@ namespace flexps {
 
 struct Control {};
 
-enum class Flag : char { kExit, kBarrier, kClock, kAdd, kGet };
-static const char* FlagName[] = {"kExit", "kBarrier", "kClock", "kAdd", "kGet"};
+enum class Flag : char { kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet };
+static const char* FlagName[] = {"kExit", "kBarrier", "kResetWorkerInModel", "kClock", "kAdd", "kGet"};
 
 struct Meta {
   int sender;
   int recver;
   int model_id;
-  Flag flag;  // {kExit, kClock, kAdd, kGet}
+  Flag flag;  // {kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet}
 
   std::string DebugString() const {
     std::stringstream ss;

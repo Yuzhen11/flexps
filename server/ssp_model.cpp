@@ -40,7 +40,7 @@ int SSPModel::GetProgress(int tid) { return progress_tracker_.GetProgress(tid); 
 
 int SSPModel::GetPendingSize(int progress) { return buffer_.Size(progress); }
 
-void SSPModel::ResetWorker(const std::vector<uint32_t> tids) {
+void SSPModel::ResetWorker(const std::vector<uint32_t>& tids) {
   this->progress_tracker_.Init(tids);
 }
 
