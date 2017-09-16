@@ -20,11 +20,24 @@ Mailbox::Mailbox(const Node& node, const std::vector<Node>& nodes, AbstractIdMap
   CHECK(nodes_.size());
   CHECK(std::find(nodes_.begin(), nodes_.end(), node_) != nodes_.end());
   CHECK_NOTNULL(id_mapper_);
+  // Check for uniqueness
+  for (int i = 0; i < nodes.size(); ++ i) {
+    for (int j = 0; j < nodes.size(); ++ j) {
+      if (i != j) {
+        CHECK_NE(nodes[i].id, nodes[j].id);
+      }
+    }
+  }
 }
 
 size_t Mailbox::GetQueueMapSize() const { return queue_map_.size(); }
 
 void Mailbox::Start() {
+  ConnectAndBind();
+  StartReceiving();
+}
+
+void Mailbox::ConnectAndBind() {
   context_ = zmq_ctx_new();
   CHECK(context_ != nullptr) << "create zmq context failed";
   zmq_ctx_set(context_, ZMQ_MAX_SOCKETS, 65536);
@@ -35,25 +48,36 @@ void Mailbox::Start() {
     Connect(node);
   }
   VLOG(1) << "Finished connecting";
+}
 
+void Mailbox::StartReceiving() {
   receiver_thread_ = std::thread(&Mailbox::Receiving, this);
 }
 
 void Mailbox::Stop() {
+  StopReceiving();
+  CloseSockets();
+}
+
+void Mailbox::StopReceiving() {
   Barrier();
   Message exit_msg;
   exit_msg.meta.recver = node_.id;
   exit_msg.meta.flag = Flag::kExit;
   Send(exit_msg);
   receiver_thread_.join();
+}
 
+void Mailbox::CloseSockets() {
   // Kill all the registered threads
+  Message exit_msg;
+  exit_msg.meta.recver = node_.id;
+  exit_msg.meta.flag = Flag::kExit;
   for (auto& queue : queue_map_) {
     queue.second->Push(exit_msg);
   }
-
   // close sockets
-  int linger = 0;
+  int linger = -1;  // infinite linger period. Wait for all pending messages to be sent.
   int rc = zmq_setsockopt(receiver_, ZMQ_LINGER, &linger, sizeof(linger));
   CHECK(rc == 0 || errno == ETERM);
   CHECK_EQ(zmq_close(receiver_), 0);

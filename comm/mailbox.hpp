@@ -25,6 +25,11 @@ class Mailbox : public AbstractMailbox {
   size_t GetQueueMapSize() const;
   void Barrier();
 
+  // For testing only
+  void ConnectAndBind();
+  void StartReceiving();
+  void StopReceiving();
+  void CloseSockets();
  private:
   void Connect(const Node& node);
   void Bind(const Node& node);
