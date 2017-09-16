@@ -2,8 +2,9 @@
 
 namespace flexps {
 
-std::vector<Message> PendingBuffer::Pop(int clock) {
-  std::vector<Message> poped_msg;
+
+std::vector<Message> PendingBuffer::Pop(int clock, int tid = -1) {
+  std::vector<Message> poped_message;
   if (buffer_.find(clock) != buffer_.end()) {
     poped_msg = std::move(buffer_[clock]);
     buffer_.erase(clock);
@@ -11,7 +12,7 @@ std::vector<Message> PendingBuffer::Pop(int clock) {
   return poped_msg;
 }
 
-void PendingBuffer::Push(int clock, Message& msg) {
+void PendingBuffer::Push(int clock, Message& message, int tid = -1) {
   // Todo(Ruoyu Wu): check the clock passed in is less than the minimum clock in the buffer
   if (buffer_.find(clock) == buffer_.end()) {
     buffer_[clock] = std::vector<Message>({std::move(msg)});
