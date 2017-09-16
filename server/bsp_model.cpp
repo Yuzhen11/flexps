@@ -57,8 +57,18 @@ int BSPModel::GetGetPendingSize() { return get_buffer_.size(); }
 
 int BSPModel::GetAddPendingSize() { return add_buffer_.size(); }
 
-void BSPModel::ResetWorker(const std::vector<uint32_t>& tids) {
-  this->progress_tracker_.Init(tids);
+void BSPModel::ResetWorker(Message& message) {
+  CHECK_EQ(message.data.size(), 1);
+  third_party::SArray<uint32_t> tids;
+  tids = message.data[0];
+  std::vector<uint32_t> tids_vec;
+  for (auto tid : tids) tids_vec.push_back(tid);
+  this->progress_tracker_.Init(tids_vec);
+  Message reply_msg;
+  reply_msg.meta.model_id = model_id_;
+  reply_msg.meta.recver = message.meta.sender;
+  reply_msg.meta.flag = Flag::kResetWorkerInModel;
+  reply_queue_->Push(reply_msg);
 }
 
 }  // namespace flexps

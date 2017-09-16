@@ -24,9 +24,16 @@ class MLTask {
   const WorkerSpec& GetWorkerSpec() const {
     return worker_spec_;
   }
+  void SetTables(const std::vector<uint32_t>& tables) {
+    tables_ = tables;
+  }
+  const std::vector<uint32_t>& GetTables() const {
+    return tables_;
+  }
  private:
   std::function<void(const Info&)> func_;
   WorkerSpec worker_spec_;
+  std::vector<uint32_t> tables_;
 };
 
 }  // namespace flexps

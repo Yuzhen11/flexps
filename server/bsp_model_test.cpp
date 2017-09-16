@@ -26,11 +26,16 @@ TEST_F(TestBSPModel, CheckConstructor) {
 
 TEST_F(TestBSPModel, CheckGetAndAdd) {
   ThreadsafeQueue<Message> reply_queue;
-  std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(new BSPModel(model_id, std::move(storage), &reply_queue));
-  model->ResetWorker(tids);
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
 
   // Message0
   Message m0;
@@ -119,16 +124,6 @@ TEST_F(TestBSPModel, CheckGetAndAdd) {
   EXPECT_EQ(rep_keys2.size(), 1);
   EXPECT_EQ(rep_vals2.size(), 1);
   EXPECT_EQ(rep_vals2[0], 100);
-}
-
-TEST_F(TestBSPModel, CheckClock) {
-  ThreadsafeQueue<Message> reply_queue;
-  std::vector<uint32_t> tids{2, 3};
-  int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
-  std::unique_ptr<AbstractModel> model(new BSPModel(model_id, std::move(storage), &reply_queue));
-  model->ResetWorker(tids);
-
 }
 
 }  // namespace

@@ -28,11 +28,16 @@ TEST_F(TestSSPModel, CheckConstructor) {
 TEST_F(TestSSPModel, CheckGetAndAdd) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
-  std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
-  model->ResetWorker(tids);
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
 
   // Message3
   Message m3;
@@ -108,11 +113,16 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
 TEST_F(TestSSPModel, CheckClock) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
-  std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
-  model->ResetWorker(tids);
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
 
   // Message1
   Message m1;
@@ -145,11 +155,16 @@ TEST_F(TestSSPModel, CheckClock) {
 TEST_F(TestSSPModel, CheckStaleness) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 2;
-  std::vector<uint32_t> tids{2, 3};
   int model_id = 0;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
-  model->ResetWorker(tids);
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
 
   // Message1
   Message m1;

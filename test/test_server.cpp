@@ -21,14 +21,12 @@ void TestServer() {
   // Create models and register models into ServerThread
   const int num_models = 3;
   int model_staleness = 1;
-  std::vector<uint32_t> tids{2, 3};
   for (int i = 0; i < num_models; ++i) {
     for (auto& server_thread : server_thread_group) {
       // TODO(Ruoyu Wu): Each server thread should have its own model?
       std::unique_ptr<AbstractStorage> storage(new Storage<int>());
       std::unique_ptr<AbstractModel> model(
           new SSPModel(i, std::move(storage), model_staleness, server_thread_group.GetReplyQueue()));
-      model->ResetWorker(tids);
       server_thread->RegisterModel(i, std::move(model));
     }
   }
@@ -45,6 +43,25 @@ void TestServer() {
   // Start
   for (auto& server_thread : server_thread_group) {
     server_thread->Start();
+  }
+
+  // ResetWorker
+  third_party::SArray<uint32_t> tids{2, 3};
+  for (auto& queue : server_queues) {
+    for (int i = 0; i < num_models; ++ i) {
+      Message reset_msg;
+      reset_msg.meta.model_id = i;
+      reset_msg.meta.recver = queue.first;
+      reset_msg.meta.flag = Flag::kResetWorkerInModel;
+      reset_msg.AddData(tids);
+      queue.second->Push(reset_msg);
+    }
+  }
+  for (auto& queue : server_queues) {
+    for (int i = 0; i < num_models; ++ i) {
+      Message reset_reply_msg;
+      reply_queue.WaitAndPop(&reset_reply_msg);
+    }
   }
 
   // ADD msg

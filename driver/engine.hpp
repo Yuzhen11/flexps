@@ -7,6 +7,7 @@
 #include "worker/worker_helper_thread.hpp"
 #include "worker/app_blocker.hpp"
 #include "worker/simple_range_manager.hpp"
+#include "worker/model_init_thread.hpp"
 #include "server/server_thread.hpp"
 #include "server/server_thread_group.hpp"
 #include "comm/mailbox.hpp"
@@ -25,7 +26,7 @@ class Engine {
    * The flow of starting the engine:
    * 1. Create a mailbox
    * 2. Create Sender
-   * 3. Create ServerThreads and WorkerHelperThreads
+   * 3. Create ServerThreads, WorkerHelperThreads and ModelInitThread
    * 4. Register the threads to mailbox through ThreadsafeQueue
    * 5. Start the mailbox: bind and connect to all other nodes
    */
@@ -33,6 +34,7 @@ class Engine {
   void CreateSender();
   void StartServerThreads();
   void StartWorkerHelperThreads();
+  void StartModelInitThread();
   void StartMailbox();
   void StartSender();
 
@@ -40,20 +42,20 @@ class Engine {
    * The flow of stopping the engine:
    * 1. Stop the mailbox: by sending each node an exit message
    * 2. The mailbox will stop the corresponding registered threads
-   * 3. Join the ServerThreads and WorkerHelperThreads
+   * 3. Join the ServerThreads, WorkerHelperThreads and ModelInitThread
    * 4. Join the Sender
    * 5. Join the mailbox
    */
   void StopServerThreads();
   void StopWorkerHelperThreads();
+  void StopModelInitThread();
   void StopSender();
   void StopMailbox();
  
   void Barrier();
   void AllocateWorkers(WorkerSpec* const worker_spec);
-  void CreateTable(uint32_t table_id,
-    const std::vector<third_party::Range>& ranges,
-    const std::vector<uint32_t>& worker_threads);
+  void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges);
+  void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
  private:
   std::map<uint32_t, SimpleRangeManager> range_manager_map_;
@@ -67,7 +69,7 @@ class Engine {
   // worker elements
   std::unique_ptr<AppBlocker> app_blocker_;
   std::unique_ptr<WorkerHelperThread> worker_helper_thread_;
-  std::unique_ptr<ThreadsafeQueue<Message>> worker_send_queue_;
+  std::unique_ptr<ModelInitThread> model_init_thread_;
   // server elements
   std::unique_ptr<ServerThreadGroup> server_thread_group_;
 };

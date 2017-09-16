@@ -51,7 +51,18 @@ void Engine::StartServerThreads() {
   VLOG(1) << "server_threads:" << ss.str() << " start on node:" << node_.id;
 }
 
+void Engine::StartModelInitThread() {
+  CHECK(id_mapper_);
+  CHECK(mailbox_);
+  uint32_t model_init_thread_id = id_mapper_->GetModelInitThreadForId(node_.id);
+  model_init_thread_.reset(new ModelInitThread(model_init_thread_id, sender_->GetMessageQueue()));
+  mailbox_->RegisterQueue(model_init_thread_->GetThreadId(), model_init_thread_->GetWorkQueue());
+  model_init_thread_->Start();
+  VLOG(1) << "model_init_thread:" << model_init_thread_->GetThreadId() << " starts on node:" << node_.id;
+}
+
 void Engine::StartMailbox() {
+  CHECK(mailbox_);
   LOG(INFO) << mailbox_->GetQueueMapSize() << " threads are registered to node:" << node_.id;
   mailbox_->Start();
   VLOG(1) << "mailbox starts on node" << node_.id;
@@ -59,23 +70,33 @@ void Engine::StartMailbox() {
 
 
 void Engine::StopWorkerHelperThreads() {
+  CHECK(worker_helper_thread_);
   worker_helper_thread_->Stop();
   VLOG(1) << "worker_helper_thread stops on node" << node_.id;
 }
 
 void Engine::StopServerThreads() {
+  CHECK(server_thread_group_);
   for (auto& server_thread : *server_thread_group_) {
     server_thread->Stop();
   }
   VLOG(1) << "server_threads stop on node" << node_.id;
 }
 
+void Engine::StopModelInitThread() {
+  CHECK(model_init_thread_);
+  model_init_thread_->Stop();
+  VLOG(1) << "model_init_thread stops on node" << node_.id;
+}
+
 void Engine::StopSender() {
+  CHECK(sender_);
   sender_->Stop();
   VLOG(1) << "sender stops on node" << node_.id;
 }
 
 void Engine::StopMailbox() {
+  CHECK(mailbox_);
   mailbox_->Stop();
   VLOG(1) << "mailbox stops on node" << node_.id;
 }
@@ -92,8 +113,7 @@ void Engine::AllocateWorkers(WorkerSpec* const worker_spec) {
 
 
 void Engine::CreateTable(uint32_t table_id,
-    const std::vector<third_party::Range>& ranges,
-    const std::vector<uint32_t>& worker_threads) {
+    const std::vector<third_party::Range>& ranges) {
   CHECK(id_mapper_);
   auto server_thread_ids = id_mapper_->GetAllServerThreads();
   CHECK_EQ(ranges.size(), server_thread_ids.size());
@@ -106,13 +126,25 @@ void Engine::CreateTable(uint32_t table_id,
     std::unique_ptr<AbstractStorage> storage(new Storage<int>());
     std::unique_ptr<AbstractModel> model(new SSPModel(table_id, std::move(storage), model_staleness,
                                                       server_thread_group_->GetReplyQueue()));
-    model->ResetWorker(worker_threads);
     server_thread->RegisterModel(table_id, std::move(model));
   }
 }
 
+void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids) {
+  CHECK(model_init_thread_);
+  std::vector<uint32_t> local_servers = id_mapper_->GetServerThreadsForId(node_.id);
+  model_init_thread_->ResetWorkerInModel(table_id, local_servers, worker_ids);
+  Barrier();
+}
+
 void Engine::Run(const MLTask& task) {
-  const auto& worker_spec = task.GetWorkerSpec();
+  const std::vector<uint32_t>& tables = task.GetTables();
+  WorkerSpec worker_spec = task.GetWorkerSpec();
+  AllocateWorkers(&worker_spec);
+  // Init tables
+  for (auto table : tables) {
+    InitTable(table, worker_spec.GetThreadIds());
+  }
   if (worker_spec.HasLocalWorkers(node_.id)) {
     const auto& local_workers = worker_spec.GetLocalWorkers(node_.id);
     std::vector<std::thread> thread_group(local_workers.size());

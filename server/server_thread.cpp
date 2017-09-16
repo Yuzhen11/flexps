@@ -44,12 +44,7 @@ void ServerThread::Main() {
       models_[model_id]->Get(msg);
       break;
     case Flag::kResetWorkerInModel: {
-      CHECK_EQ(msg.data.size(), 1);
-      third_party::SArray<uint32_t> tids;
-      tids = msg.data[0];
-      std::vector<uint32_t> tids_vec;
-      for (auto tid : tids) tids_vec.push_back(tid);
-      models_[model_id]->ResetWorker(tids_vec);
+      models_[model_id]->ResetWorker(msg);
       break;
     }
     default:

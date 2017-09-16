@@ -25,15 +25,15 @@ TEST_F(TestSimpleIdMapper, Init) {
   id_mapper.Init(1);
   EXPECT_EQ(id_mapper.GetServerThreadsForId(0).size(), 1);
   EXPECT_EQ(id_mapper.GetServerThreadsForId(0)[0], 0);
-  EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(0)[0], 1);
+  EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(0)[0], SimpleIdMapper::kWorkerHelperThreadId);
 
   EXPECT_EQ(id_mapper.GetServerThreadsForId(1).size(), 1);
   EXPECT_EQ(id_mapper.GetServerThreadsForId(1)[0], SimpleIdMapper::kMaxThreadsPerNode);
-  EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(1)[0], SimpleIdMapper::kMaxThreadsPerNode + 1);
+  EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(1)[0], SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kWorkerHelperThreadId);
 
   EXPECT_EQ(id_mapper.GetServerThreadsForId(3).size(), 1);
   EXPECT_EQ(id_mapper.GetServerThreadsForId(3)[0], 3*SimpleIdMapper::kMaxThreadsPerNode);
-  EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(3)[0], 3*SimpleIdMapper::kMaxThreadsPerNode + 1);
+  EXPECT_EQ(id_mapper.GetWorkerHelperThreadsForId(3)[0], 3*SimpleIdMapper::kMaxThreadsPerNode + SimpleIdMapper::kWorkerHelperThreadId);
 
   EXPECT_EQ(id_mapper.GetNodeIdForThread(3*SimpleIdMapper::kMaxThreadsPerNode), 3);
   EXPECT_EQ(id_mapper.GetNodeIdForThread(3*SimpleIdMapper::kMaxThreadsPerNode + 1), 3);

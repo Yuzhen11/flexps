@@ -25,6 +25,7 @@ void ModelInitThread::ResetWorkerInModel(uint32_t model_id, const std::vector<ui
   }
   for (auto local_server : local_servers) {
     Message msg;
+    msg.meta.sender = thread_id_;
     msg.meta.recver = local_server;
     msg.meta.model_id = model_id;
     msg.meta.flag = Flag::kResetWorkerInModel;

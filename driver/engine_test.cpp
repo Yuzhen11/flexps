@@ -47,6 +47,7 @@ TEST_F(TestEngine, StartAll) {
   engine.StartSender();
   engine.StartServerThreads();
   engine.StartWorkerHelperThreads();
+  engine.StartModelInitThread();
   engine.StartMailbox();
 
   // stop
@@ -54,6 +55,7 @@ TEST_F(TestEngine, StartAll) {
   engine.StopMailbox();
   engine.StopServerThreads();
   engine.StopWorkerHelperThreads();
+  engine.StopModelInitThread();
 }
 
 TEST_F(TestEngine, CreateTable) {
@@ -64,18 +66,18 @@ TEST_F(TestEngine, CreateTable) {
   engine.StartSender();
   engine.StartServerThreads();
   engine.StartWorkerHelperThreads();
+  engine.StartModelInitThread();
   engine.StartMailbox();
 
-  WorkerSpec worker_spec({{0, 3}});  // 3 workers on node 0
-  engine.AllocateWorkers(&worker_spec);
+  engine.CreateTable(0, {{0, 10}});  // table 0, range [0,10)
+  engine.Barrier();
   MLTask task;
+  WorkerSpec worker_spec({{0, 3}});  // 3 workers on node 0
   task.SetWorkerSpec(worker_spec);
+  task.SetTables({0});  // Use table 0
   task.SetLambda([](const Info& info){
     LOG(INFO) << "Hi";
   });
-  auto worker_threads = worker_spec.GetThreadIds();
-  engine.CreateTable(0, {{0, 10}}, worker_threads);  // table 0, range [0,10)
-  engine.Barrier();
   engine.Run(task);
 
   // stop
@@ -83,6 +85,7 @@ TEST_F(TestEngine, CreateTable) {
   engine.StopMailbox();
   engine.StopServerThreads();
   engine.StopWorkerHelperThreads();
+  engine.StopModelInitThread();
 }
 
 }  // namespace

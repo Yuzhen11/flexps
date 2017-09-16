@@ -40,8 +40,18 @@ int SSPModel::GetProgress(int tid) { return progress_tracker_.GetProgress(tid); 
 
 int SSPModel::GetPendingSize(int progress) { return buffer_.Size(progress); }
 
-void SSPModel::ResetWorker(const std::vector<uint32_t>& tids) {
-  this->progress_tracker_.Init(tids);
+void SSPModel::ResetWorker(Message& message) {
+  CHECK_EQ(message.data.size(), 1);
+  third_party::SArray<uint32_t> tids;
+  tids = message.data[0];
+  std::vector<uint32_t> tids_vec;
+  for (auto tid : tids) tids_vec.push_back(tid);
+  this->progress_tracker_.Init(tids_vec);
+  Message reply_msg;
+  reply_msg.meta.model_id = model_id_;
+  reply_msg.meta.recver = message.meta.sender;
+  reply_msg.meta.flag = Flag::kResetWorkerInModel;
+  reply_queue_->Push(reply_msg);
 }
 
 }  // namespace flexps

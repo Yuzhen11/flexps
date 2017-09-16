@@ -24,9 +24,12 @@ class SimpleIdMapper : public AbstractIdMapper {
   void Init(int num_server_threads_per_node);
   uint32_t AllocateWorkerThread(uint32_t node_id);
   void DeallocateWorkerThread(uint32_t node_id, uint32_t tid);
+
   std::vector<uint32_t> GetServerThreadsForId(uint32_t node_id);
   std::vector<uint32_t> GetWorkerHelperThreadsForId(uint32_t node_id);
+  uint32_t GetModelInitThreadForId(uint32_t node_id);
   std::vector<uint32_t> GetWorkerThreadsForId(uint32_t node_id);
+
   std::vector<uint32_t> GetAllServerThreads();
 
   static const uint32_t kMaxNodeId = 1000;
@@ -35,9 +38,13 @@ class SimpleIdMapper : public AbstractIdMapper {
   // Their ids are [0, 100) for node id 0.
   static const uint32_t kMaxBgThreadsPerNode = 100;
 
+  static const uint32_t kWorkerHelperThreadId = 10;
+  static const uint32_t kModelInitThreadId = 20;
+
  private:
   std::map<uint32_t, std::vector<uint32_t>> node2server_;
   std::map<uint32_t, std::vector<uint32_t>> node2worker_helper_;
+  std::map<uint32_t, uint32_t> node2model_init_;
   std::map<uint32_t, std::set<uint32_t>> node2worker_;
 
   Node node_;
