@@ -10,7 +10,7 @@ namespace flexps {
 class PendingBuffer {
  public:
   std::vector<Message> Pop(int clock);
-  void Push(int clock, Message& message);
+  void Push(int clock, Message& msg);
   int Size(int progress);
 
  private:

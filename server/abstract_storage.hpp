@@ -6,8 +6,8 @@ namespace flexps {
 
 class AbstractStorage {
  public:
-  virtual void Add(Message& message) = 0;
-  virtual Message Get(Message& message) = 0;
+  virtual void Add(Message& msg) = 0;
+  virtual Message Get(Message& msg) = 0;
   virtual void FinishIter() = 0;
 
  private:

@@ -16,22 +16,22 @@ class Storage : public AbstractStorage {
 
   // Storage(ThreadsafeQueue<Message>* const threadsafe_queue) : threadsafe_queue_(threadsafe_queue) {}
 
-  virtual void Add(Message& message) override {
-    CHECK(message.data.size() == 2);
-    CHECK(message.data[0].size() == message.data[1].size());
+  virtual void Add(Message& msg) override {
+    CHECK(msg.data.size() == 2);
+    CHECK(msg.data[0].size() == msg.data[1].size());
     // Todo(Ruoyu Wu): Type Check
-    auto keys = third_party::SArray<int>(message.data[0]);
-    auto vals = third_party::SArray<T>(message.data[1]);
+    auto keys = third_party::SArray<int>(msg.data[0]);
+    auto vals = third_party::SArray<T>(msg.data[1]);
     for (int index = 0; index < keys.size(); index++) {
       FindAndCreate(keys[index]);
       storage_[keys[index]] += vals[index];
     }
   }
 
-  virtual Message Get(Message& message) override {
-    CHECK(message.data.size() == 1);
+  virtual Message Get(Message& msg) override {
+    CHECK(msg.data.size() == 1);
     // Todo(Ruoyu Wu): Type Check
-    auto keys = third_party::SArray<T>(message.data[0]);
+    auto keys = third_party::SArray<T>(msg.data[0]);
     Message reply;
     std::vector<T> reply_vec;
     for (auto& key : keys) {

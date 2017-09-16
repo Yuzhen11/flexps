@@ -85,25 +85,25 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   model.get()->Get(m6);
 
   // Check
-  Message check_message;
+  Message check_msg;
   auto rep_keys = third_party::SArray<int>();
   auto rep_vals = third_party::SArray<int>();
 
   EXPECT_EQ(reply_queue.Size(), 2);
 
-  reply_queue.WaitAndPop(&check_message);
-  EXPECT_EQ(check_message.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_message.data[0]);
-  rep_vals = third_party::SArray<int>(check_message.data[1]);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
   EXPECT_EQ(rep_keys.size(), 1);
   EXPECT_EQ(rep_vals.size(), 1);
   EXPECT_EQ(rep_keys[0], 0);
   EXPECT_EQ(rep_vals[0], 1);
 
-  reply_queue.WaitAndPop(&check_message);
-  EXPECT_EQ(check_message.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_message.data[0]);
-  rep_vals = third_party::SArray<int>(check_message.data[1]);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
   EXPECT_EQ(rep_keys.size(), 1);
   EXPECT_EQ(rep_vals.size(), 1);
   EXPECT_EQ(rep_keys[0], 1);

@@ -17,11 +17,11 @@ class BSPModel : public AbstractModel {
   explicit BSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
                     ThreadsafeQueue<Message>* reply_queue);
 
-  virtual void Clock(Message& message) override;
-  virtual void Add(Message& message) override;
-  virtual void Get(Message& message) override;
+  virtual void Clock(Message& msg) override;
+  virtual void Add(Message& msg) override;
+  virtual void Get(Message& msg) override;
   virtual int GetProgress(int tid) override;
-  virtual void ResetWorker(Message& message) override;
+  virtual void ResetWorker(Message& msg) override;
 
   int GetGetPendingSize();
   int GetAddPendingSize();

@@ -85,11 +85,11 @@ TEST_F(TestBSPModel, CheckGetAndAdd) {
   cm1.AddData(cm1_keys);
   model->Get(cm1);
 
-  Message check_message;
+  Message check_msg;
   EXPECT_EQ(reply_queue.Size(), 1);
-  reply_queue.WaitAndPop(&check_message);
-  auto rep_keys = third_party::SArray<int>(check_message.data[0]);
-  auto rep_vals = third_party::SArray<int>(check_message.data[1]);
+  reply_queue.WaitAndPop(&check_msg);
+  auto rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  auto rep_vals = third_party::SArray<int>(check_msg.data[1]);
   EXPECT_EQ(rep_keys.size(), 1);
   EXPECT_EQ(rep_vals.size(), 1);
   EXPECT_EQ(rep_vals[0], 0);
@@ -116,11 +116,11 @@ TEST_F(TestBSPModel, CheckGetAndAdd) {
   cm2.AddData(cm2_keys);
   model->Get(cm2);
 
-  Message check_message2;
+  Message check_msg2;
   EXPECT_EQ(reply_queue.Size(), 1);
-  reply_queue.WaitAndPop(&check_message2);
-  auto rep_keys2 = third_party::SArray<int>(check_message2.data[0]);
-  auto rep_vals2 = third_party::SArray<int>(check_message2.data[1]);
+  reply_queue.WaitAndPop(&check_msg2);
+  auto rep_keys2 = third_party::SArray<int>(check_msg2.data[0]);
+  auto rep_vals2 = third_party::SArray<int>(check_msg2.data[1]);
   EXPECT_EQ(rep_keys2.size(), 1);
   EXPECT_EQ(rep_vals2.size(), 1);
   EXPECT_EQ(rep_vals2[0], 100);

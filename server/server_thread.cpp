@@ -48,7 +48,7 @@ void ServerThread::Main() {
       break;
     }
     default:
-      CHECK(false) << "Unknown flag in message: " << FlagName[static_cast<int>(msg.meta.flag)];
+      CHECK(false) << "Unknown flag in msg: " << FlagName[static_cast<int>(msg.meta.flag)];
     }
   }
 }
