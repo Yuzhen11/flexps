@@ -10,6 +10,15 @@
 
 namespace flexps {
 
+void Engine::StartEverything() {
+  CreateMailbox();
+  StartSender();
+  StartServerThreads();
+  StartWorkerHelperThreads();
+  StartModelInitThread();
+  StartMailbox();
+}
+
 void Engine::CreateMailbox() {
   id_mapper_.reset(new SimpleIdMapper(node_, nodes_));
   const int kNumServerThreadPerNode = 1;
@@ -68,6 +77,13 @@ void Engine::StartMailbox() {
   VLOG(1) << "mailbox starts on node" << node_.id;
 }
 
+void Engine::StopEverything() {
+  StopSender();
+  StopMailbox();
+  StopServerThreads();
+  StopWorkerHelperThreads();
+  StopModelInitThread();
+}
 
 void Engine::StopWorkerHelperThreads() {
   CHECK(worker_helper_thread_);
@@ -123,7 +139,7 @@ void Engine::CreateTable(uint32_t table_id,
   range_manager_map_.insert({table_id, range_manager});
   const int model_staleness = 1;  // TODO
   for (auto& server_thread : *server_thread_group_) {
-    std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+    std::unique_ptr<AbstractStorage> storage(new Storage<float>());
     std::unique_ptr<AbstractModel> model(new SSPModel(table_id, std::move(storage), model_staleness,
                                                       server_thread_group_->GetReplyQueue()));
     server_thread->RegisterModel(table_id, std::move(model));
@@ -146,12 +162,21 @@ void Engine::Run(const MLTask& task) {
     InitTable(table, worker_spec.GetThreadIds());
   }
   if (worker_spec.HasLocalWorkers(node_.id)) {
+    const auto& local_threads = worker_spec.GetLocalThreads(node_.id);
     const auto& local_workers = worker_spec.GetLocalWorkers(node_.id);
-    std::vector<std::thread> thread_group(local_workers.size());
+    CHECK_EQ(local_threads.size(), local_workers.size());
+    std::vector<std::thread> thread_group(local_threads.size());
     for (int i = 0; i < thread_group.size(); ++ i) {
+      // TODO:
+      mailbox_->RegisterQueue(local_threads[i], worker_helper_thread_->GetWorkQueue());
       LOG(INFO) << thread_group.size() << " workers run on proc: " << node_.id;
-      thread_group[i] = std::thread([&task](){
-        Info info;
+      Info info;
+      info.thread_id = local_threads[i];
+      info.worker_id = local_workers[i];
+      info.send_queue = sender_->GetMessageQueue();
+      info.range_manager_map = range_manager_map_;  // Now I just copy it
+      info.callback_runner = app_blocker_.get();
+      thread_group[i] = std::thread([&task, info](){
         task.RunLambda(info);
       });
     }

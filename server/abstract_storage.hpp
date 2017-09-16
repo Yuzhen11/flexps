@@ -11,7 +11,7 @@ class AbstractStorage {
   virtual void FinishIter() = 0;
 
  private:
-  virtual void FindAndCreate(int key) = 0;
+  virtual void FindAndCreate(Key key) = 0;
 };
 
 }  // namespace flexps

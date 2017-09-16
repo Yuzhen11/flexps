@@ -151,25 +151,19 @@ TEST_F(TestKVClientTable, Get) {
   EXPECT_EQ(m1.meta.recver, 0);
   EXPECT_EQ(m1.meta.model_id, kTestModelId);
   EXPECT_EQ(m1.meta.flag, Flag::kGet);
-  EXPECT_EQ(m1.data.size(), 2);
+  EXPECT_EQ(m1.data.size(), 1);
   third_party::SArray<Key> res_keys;
   res_keys = m1.data[0];
   EXPECT_EQ(res_keys.size(), 1);
-  third_party::SArray<float> res_vals;
-  res_vals = m1.data[1];
-  EXPECT_EQ(res_vals.size(), 0);
   EXPECT_EQ(res_keys[0], 3);
 
   EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
   EXPECT_EQ(m2.meta.recver, 1);
   EXPECT_EQ(m2.meta.model_id, kTestModelId);
   EXPECT_EQ(m2.meta.flag, Flag::kGet);
-  EXPECT_EQ(m2.data.size(), 2);
-  EXPECT_EQ(m2.data.size(), 2);
+  EXPECT_EQ(m2.data.size(), 1);
   res_keys = m2.data[0];
   EXPECT_EQ(res_keys.size(), 3);
-  res_vals = m2.data[1];
-  EXPECT_EQ(res_vals.size(), 0);
   EXPECT_EQ(res_keys[0], 4);
   EXPECT_EQ(res_keys[1], 5);
   EXPECT_EQ(res_keys[2], 6);

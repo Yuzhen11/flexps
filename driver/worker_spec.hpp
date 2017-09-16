@@ -27,6 +27,11 @@ class WorkerSpec {
     CHECK(it != node_to_workers_.end());
     return it->second;
   }
+  const std::vector<uint32_t>& GetLocalThreads(uint32_t node_id) const {
+    auto it = node_to_threads_.find(node_id);
+    CHECK(it != node_to_threads_.end());
+    return it->second;
+  }
 
   std::map<uint32_t, std::vector<uint32_t>> GetNodeToWorkers() {
     return node_to_workers_;
@@ -40,9 +45,11 @@ class WorkerSpec {
     CHECK(worker_to_thread_.find(worker_id) == worker_to_thread_.end());
     CHECK(thread_to_worker_.find(thread_id) == thread_to_worker_.end());
     CHECK(thread_ids_.find(thread_id) == thread_ids_.end());
+    CHECK(worker_to_node_.find(worker_id) != worker_to_node_.end());
     worker_to_thread_[worker_id] = thread_id;
     thread_to_worker_[thread_id] = worker_id;
     thread_ids_.insert(thread_id);
+    node_to_threads_[worker_to_node_[worker_id]].push_back(thread_id);
   }
  private:
   void Init(const std::vector<std::pair<uint32_t, uint32_t>>& node_workers) {
@@ -63,6 +70,7 @@ class WorkerSpec {
 
   std::map<uint32_t, uint32_t> worker_to_thread_;
   std::map<uint32_t, uint32_t> thread_to_worker_;
+  std::map<uint32_t, std::vector<uint32_t>> node_to_threads_;
   std::set<uint32_t> thread_ids_;
   uint32_t num_workers = 0;
 };

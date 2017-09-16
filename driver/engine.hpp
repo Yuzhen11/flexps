@@ -25,13 +25,13 @@ class Engine {
   /*
    * The flow of starting the engine:
    * 1. Create a mailbox
-   * 2. Create Sender
+   * 2. Start Sender
    * 3. Create ServerThreads, WorkerHelperThreads and ModelInitThread
    * 4. Register the threads to mailbox through ThreadsafeQueue
    * 5. Start the mailbox: bind and connect to all other nodes
    */
+  void StartEverything();
   void CreateMailbox();
-  void CreateSender();
   void StartServerThreads();
   void StartWorkerHelperThreads();
   void StartModelInitThread();
@@ -40,12 +40,12 @@ class Engine {
 
   /*
    * The flow of stopping the engine:
-   * 1. Stop the mailbox: by sending each node an exit message
-   * 2. The mailbox will stop the corresponding registered threads
-   * 3. Join the ServerThreads, WorkerHelperThreads and ModelInitThread
-   * 4. Join the Sender
-   * 5. Join the mailbox
+   * 1. Stop the Sender
+   * 2. Stop the mailbox: by Barrier() and then exit
+   * 3. The mailbox will stop the corresponding registered threads
+   * 4. Stop the ServerThreads, WorkerHelperThreads and ModelInitThread
    */
+  void StopEverything();
   void StopServerThreads();
   void StopWorkerHelperThreads();
   void StopModelInitThread();

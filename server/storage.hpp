@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "base/message.hpp"
 #include "server/abstract_storage.hpp"
 
@@ -20,9 +21,9 @@ class Storage : public AbstractStorage {
     CHECK(msg.data.size() == 2);
     CHECK(msg.data[0].size() == msg.data[1].size());
     // Todo(Ruoyu Wu): Type Check
-    auto keys = third_party::SArray<int>(msg.data[0]);
+    auto keys = third_party::SArray<Key>(msg.data[0]);
     auto vals = third_party::SArray<T>(msg.data[1]);
-    for (int index = 0; index < keys.size(); index++) {
+    for (size_t index = 0; index < keys.size(); index++) {
       FindAndCreate(keys[index]);
       storage_[keys[index]] += vals[index];
     }
@@ -31,16 +32,20 @@ class Storage : public AbstractStorage {
   virtual Message Get(Message& msg) override {
     CHECK(msg.data.size() == 1);
     // Todo(Ruoyu Wu): Type Check
-    auto keys = third_party::SArray<T>(msg.data[0]);
+    auto keys = third_party::SArray<Key>(msg.data[0]);
     Message reply;
+    reply.meta.recver = msg.meta.sender;
+    reply.meta.sender = msg.meta.recver;
+    reply.meta.flag = msg.meta.flag;
+    reply.meta.model_id = msg.meta.model_id;
     std::vector<T> reply_vec;
     for (auto& key : keys) {
       FindAndCreate(key);
       reply_vec.push_back(storage_[key]);
     }
-    third_party::SArray<int> reply_keys(keys);
-    third_party::SArray<int> reply_vals(reply_vec);
-    reply.AddData<int>(reply_keys);
+    third_party::SArray<Key> reply_keys(keys);
+    third_party::SArray<T> reply_vals(reply_vec);
+    reply.AddData<Key>(reply_keys);
     reply.AddData<T>(reply_vals);
     return reply;
   }
@@ -48,13 +53,13 @@ class Storage : public AbstractStorage {
   virtual void FinishIter() override {}
 
  private:
-  virtual void FindAndCreate(int key) override {
+  virtual void FindAndCreate(Key key) override {
     if (storage_.find(key) == storage_.end()) {
       storage_[key] = T();
     }
   }
 
-  std::map<int, T> storage_;
+  std::map<Key, T> storage_;
 };
 
 }  // namespace flexps

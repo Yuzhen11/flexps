@@ -194,7 +194,9 @@ void KVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
     const auto& kvs = sliced[i].second;
     if (kvs.keys.size()) {
       msg.AddData(kvs.keys);
-      msg.AddData(kvs.vals);
+      if (is_add) {
+        msg.AddData(kvs.vals);
+      }
     }
     downstream_->Push(std::move(msg));
   }
