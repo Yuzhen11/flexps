@@ -45,6 +45,7 @@ void ServerThread::Main() {
       break;
     case Flag::kResetWorkerInModel: {
       models_[model_id]->ResetWorker(msg);
+
       break;
     }
     default:

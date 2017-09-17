@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cinttypes>
-#include <vector>
 #include <memory>
+#include <vector>
 
 #include "server/server_thread.hpp"
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "base/message.hpp"
-#include "server/abstract_pending_buffer"
+#include "server/abstract_pending_buffer.hpp"
 
 #include <unordered_map>
 

@@ -2,7 +2,7 @@
 
 namespace flexps {
 
-std::vector<Message> PendingBuffer::Pop(int clock, int tid) {
+std::vector<Message> SparsePendingBuffer::Pop(int clock, int tid) {
   std::vector<Message> poped_message;
   if (buffer_.find(clock) != buffer_.end()) {
     poped_message = std::move(buffer_[clock]);
@@ -11,7 +11,7 @@ std::vector<Message> PendingBuffer::Pop(int clock, int tid) {
   return poped_message;
 }
 
-void PendingBuffer::Push(int clock, Message& message, int tid) {
+void SparsePendingBuffer::Push(int clock, Message& message, int tid) {
   // Todo(Ruoyu Wu): check the clock passed in is less than the minimum clock in the buffer
   if (buffer_.find(clock) == buffer_.end()) {
     buffer_[clock] = std::vector<Message>({std::move(message)});
@@ -20,7 +20,7 @@ void PendingBuffer::Push(int clock, Message& message, int tid) {
   }
 }
 
-int PendingBuffer::Size(int progress) { 
+int SparsePendingBuffer::Size(int progress) {
   CHECK(buffer_.find(progress) != buffer_.end()) << "[ERROR]sparse_pending_buffer: progress out of index";
   int size = 0;
   for (auto& tid_messages_in_this_progress : buffer_) {

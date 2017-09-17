@@ -4,7 +4,7 @@
 namespace flexps {
 
 BSPModel::BSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                    ThreadsafeQueue<Message>* reply_queue)
+                   ThreadsafeQueue<Message>* reply_queue)
     : model_id_(model_id), reply_queue_(reply_queue) {
   this->storage_ = std::move(storage_ptr);
 }
@@ -70,5 +70,6 @@ void BSPModel::ResetWorker(Message& msg) {
   reply_msg.meta.flag = Flag::kResetWorkerInModel;
   reply_queue_->Push(reply_msg);
 }
+
 
 }  // namespace flexps

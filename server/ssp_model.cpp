@@ -3,8 +3,8 @@
 
 namespace flexps {
 
-SSPModel::SSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                   int staleness, ThreadsafeQueue<Message>* reply_queue)
+SSPModel::SSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr, int staleness,
+                   ThreadsafeQueue<Message>* reply_queue)
     : model_id_(model_id), staleness_(staleness), reply_queue_(reply_queue) {
   this->storage_ = std::move(storage_ptr);
 }
@@ -53,5 +53,6 @@ void SSPModel::ResetWorker(Message& msg) {
   reply_msg.meta.flag = Flag::kResetWorkerInModel;
   reply_queue_->Push(reply_msg);
 }
+
 
 }  // namespace flexps
