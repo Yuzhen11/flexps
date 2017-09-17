@@ -27,7 +27,7 @@ std::vector<Node> ParseFile(const std::string& filename) {
       node.id = std::stoi(id);
       node.hostname = std::move(hostname);
       node.port = std::stoi(port);
-      LOG(INFO) << node.id << " " << node.hostname << " " << node.port;
+      LOG(INFO) << node.DebugString();
       nodes.push_back(std::move(node));
     }
     catch(const std::invalid_argument& ia) {

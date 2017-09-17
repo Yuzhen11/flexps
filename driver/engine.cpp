@@ -119,7 +119,7 @@ void Engine::StopMailbox() {
 
 WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc) {
   CHECK(id_mapper_);
-  WorkerSpec worker_spec;
+  WorkerSpec worker_spec(worker_alloc);
   for (auto& kv : worker_spec.GetNodeToWorkers()) {
     for (int i = 0; i < kv.second.size(); ++ i) {
       uint32_t tid = id_mapper_->AllocateWorkerThread(kv.first);

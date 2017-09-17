@@ -17,7 +17,7 @@ namespace flexps {
 class WorkerSpec {
  public:
   // {{0, 3}, {1, 2}}: 3 workers on node 0, 2 workers on node 1.
-  WorkerSpec() = default;
+  WorkerSpec() = delete;
   WorkerSpec(const std::vector<WorkerAlloc>& worker_alloc) {
     Init(worker_alloc);
   }
