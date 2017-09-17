@@ -117,14 +117,16 @@ void Engine::StopMailbox() {
   VLOG(1) << "mailbox stops on node" << node_.id;
 }
 
-void Engine::AllocateWorkers(WorkerSpec* const worker_spec) {
+WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc) {
   CHECK(id_mapper_);
-  for (auto& kv : worker_spec->GetNodeToWorkers()) {
+  WorkerSpec worker_spec;
+  for (auto& kv : worker_spec.GetNodeToWorkers()) {
     for (int i = 0; i < kv.second.size(); ++ i) {
       uint32_t tid = id_mapper_->AllocateWorkerThread(kv.first);
-      worker_spec->InsertWorkerIdThreadId(kv.second[i], tid);
+      worker_spec.InsertWorkerIdThreadId(kv.second[i], tid);
     }
   }
+  return worker_spec;
 }
 
 
@@ -150,13 +152,13 @@ void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_id
   CHECK(model_init_thread_);
   std::vector<uint32_t> local_servers = id_mapper_->GetServerThreadsForId(node_.id);
   model_init_thread_->ResetWorkerInModel(table_id, local_servers, worker_ids);
-  Barrier();
+  Barrier();  // TODO: Now for each InitTable we will invoke a barrier.
 }
 
 void Engine::Run(const MLTask& task) {
+  CHECK(task.IsSetup());
   const std::vector<uint32_t>& tables = task.GetTables();
-  WorkerSpec worker_spec = task.GetWorkerSpec();
-  AllocateWorkers(&worker_spec);
+  WorkerSpec worker_spec = AllocateWorkers(task.GetWorkerAlloc());
   // Init tables
   for (auto table : tables) {
     InitTable(table, worker_spec.GetThreadIds());

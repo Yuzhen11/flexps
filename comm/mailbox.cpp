@@ -147,7 +147,13 @@ void Mailbox::Receiving() {
 int Mailbox::Send(const Message& msg) {
   std::lock_guard<std::mutex> lk(mu_);
   // find the socket
-  int id = id_mapper_->GetNodeIdForThread(msg.meta.recver);
+  int id;
+  if (msg.meta.flag == Flag::kBarrier || msg.meta.flag == Flag::kExit) {
+    // For kBarrier and kExit which are sent by the Mailbox directly, no need to lookup for node id.
+    id = msg.meta.recver;
+  } else {
+    id = id_mapper_->GetNodeIdForThread(msg.meta.recver);
+  }
   auto it = senders_.find(id);
   if (it == senders_.end()) {
     LOG(WARNING) << "there is no socket to node " << id;

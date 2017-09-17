@@ -1,5 +1,7 @@
 #pragma once
 
+#include "driver/ml_task.hpp"
+
 #include <map>
 #include <vector>
 
@@ -16,8 +18,8 @@ class WorkerSpec {
  public:
   // {{0, 3}, {1, 2}}: 3 workers on node 0, 2 workers on node 1.
   WorkerSpec() = default;
-  WorkerSpec(const std::vector<std::pair<uint32_t, uint32_t>>& node_workers) {
-    Init(node_workers);
+  WorkerSpec(const std::vector<WorkerAlloc>& worker_alloc) {
+    Init(worker_alloc);
   }
   bool HasLocalWorkers(uint32_t node_id) const {
     return node_to_workers_.find(node_id) != node_to_workers_.end();
@@ -52,12 +54,12 @@ class WorkerSpec {
     node_to_threads_[worker_to_node_[worker_id]].push_back(thread_id);
   }
  private:
-  void Init(const std::vector<std::pair<uint32_t, uint32_t>>& node_workers) {
+  void Init(const std::vector<WorkerAlloc>& worker_alloc) {
     uint32_t worker_count = 0;
-    for (const auto& kv : node_workers) {
-      for (int i = 0; i < kv.second; ++ i) {
-        worker_to_node_[num_workers] = kv.first;
-        node_to_workers_[kv.first].push_back(num_workers);
+    for (const auto& worker : worker_alloc) {
+      for (int i = 0; i < worker.num_workers; ++ i) {
+        worker_to_node_[num_workers] = worker.node_id;
+        node_to_workers_[worker.node_id].push_back(num_workers);
         num_workers += 1;
       }
     }

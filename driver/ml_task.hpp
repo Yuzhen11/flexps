@@ -6,9 +6,13 @@
 #include <vector>
 
 #include "driver/info.hpp"
-#include "driver/worker_spec.hpp"
 
 namespace flexps {
+
+struct WorkerAlloc {
+  uint32_t node_id;
+  uint32_t num_workers;
+};
 
 class MLTask {
  public:
@@ -18,11 +22,11 @@ class MLTask {
   void RunLambda(const Info& info) const {
     func_(info);
   }
-  void SetWorkerSpec(const WorkerSpec& worker_spec) {
-    worker_spec_ = worker_spec;
+  void SetWorkerAlloc(const std::vector<WorkerAlloc>& worker_alloc) {
+    worker_alloc_ = worker_alloc;
   }
-  const WorkerSpec& GetWorkerSpec() const {
-    return worker_spec_;
+  const std::vector<WorkerAlloc>& GetWorkerAlloc() const {
+    return worker_alloc_;
   }
   void SetTables(const std::vector<uint32_t>& tables) {
     tables_ = tables;
@@ -30,9 +34,12 @@ class MLTask {
   const std::vector<uint32_t>& GetTables() const {
     return tables_;
   }
+  bool IsSetup() const {
+    return func_ && !worker_alloc_.empty() && !tables_.empty();
+  }
  private:
   std::function<void(const Info&)> func_;
-  WorkerSpec worker_spec_;
+  std::vector<WorkerAlloc> worker_alloc_;
   std::vector<uint32_t> tables_;
 };
 

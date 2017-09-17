@@ -53,7 +53,7 @@ class Engine {
   void StopMailbox();
  
   void Barrier();
-  void AllocateWorkers(WorkerSpec* const worker_spec);
+  WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
