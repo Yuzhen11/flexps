@@ -15,14 +15,14 @@ namespace flexps {
 
 class SparseSSPModel : public AbstractModel {
  public:
-  explicit SparseSSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                          ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation);
+  explicit SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
+                          ThreadsafeQueue<Message>* reply_queue, const int staleness, const int speculation);
 
   virtual void Clock(Message& message) override;
   virtual void Add(Message& message) override;
   virtual void Get(Message& message) override;
   virtual int GetProgress(int tid) override;
-  virtual void ResetWorker(const std::vector<uint32_t>& tids) override;
+  virtual void ResetWorker(Message& msg) override;
 
   void InitGet(Message& message);
 

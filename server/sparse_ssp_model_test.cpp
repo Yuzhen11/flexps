@@ -1,0 +1,201 @@
+#include "glog/logging.h"
+#include "gtest/gtest.h"
+
+#include "base/threadsafe_queue.hpp"
+#include "server/sparse_ssp_model.hpp"
+
+namespace flexps {
+namespace {
+
+class TestSparseSSPModel : public testing::Test {
+ public:
+  TestSparseSSPModel() {}
+  ~TestSparseSSPModel() {}
+
+ protected:
+  void SetUp() {}
+  void TearDown() {}
+};
+
+TEST_F(TestSparseSSPModel, CheckConstructor) {
+  const int model_id = 0;
+  const int staleness = 2;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+
+  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, staleness, speculation));
+}
+
+TEST_F(TestSparseSSPModel, SArrayCasting) {
+  third_party::SArray<uint32_t> test({0});
+  auto hehe = third_party::SArray<char>(test);
+  auto haha = third_party::SArray<uint32_t>(hehe);
+  EXPECT_EQ(haha[0], 0);
+}
+
+TEST_F(TestSparseSSPModel, GetAndAdd) {
+  const int model_id = 0;
+  const int staleness = 2;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, staleness, speculation));
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  // Message3
+  Message m3;
+  m3.meta.flag = Flag::kAdd;
+  m3.meta.model_id = 0;
+  m3.meta.sender = 2;
+  m3.meta.recver = 0;
+  m3.meta.version = 0;
+  third_party::SArray<int> m3_keys({0});
+  third_party::SArray<int> m3_vals({0});
+  m3.AddData(m3_keys);
+  m3.AddData(m3_vals);
+  model->Add(m3);
+
+  // Message4
+  Message m4;
+  m4.meta.flag = Flag::kAdd;
+  m4.meta.model_id = 0;
+  m4.meta.sender = 3;
+  m4.meta.recver = 0;
+  m4.meta.version = 0;
+  third_party::SArray<int> m4_keys({1});
+  third_party::SArray<int> m4_vals({1});
+  m4.AddData(m4_keys);
+  m4.AddData(m4_vals);
+  model->Add(m4);
+
+  // Message5
+  Message m5;
+  m5.meta.flag = Flag::kGet;
+  m5.meta.model_id = 0;
+  m5.meta.sender = 2;
+  m5.meta.recver = 0;
+  m5.meta.version = 0;
+  third_party::SArray<int> m5_keys({0});
+  m5.AddData(m5_keys);
+  model->Get(m5);
+
+  // Check
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+
+  // Message6
+  Message m6;
+  m6.meta.flag = Flag::kGet;
+  m6.meta.model_id = 0;
+  m6.meta.sender = 3;
+  m6.meta.recver = 0;
+  m6.meta.version = 0;
+  third_party::SArray<int> m6_keys({1});
+  m6.AddData(m6_keys);
+  model.get()->Get(m6);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 1);
+  EXPECT_EQ(rep_vals[0], 1);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.meta.version, 0);
+
+  // Message 7
+  Message m7;
+  m7.meta.flag = Flag::kAdd;
+  m7.meta.model_id = 0;
+  m7.meta.sender = 3;
+  m7.meta.recver = 0;
+  m7.meta.version = 0;
+  third_party::SArray<int> m7_keys({1});
+  third_party::SArray<int> m7_vals({1});
+  m7.AddData(m7_keys);
+  m7.AddData(m7_vals);
+  model->Add(m7);
+
+  // Message 8
+  Message m8;
+  m8.meta.flag = Flag::kGet;
+  m8.meta.model_id = 0;
+  m8.meta.sender = 3;
+  m8.meta.recver = 0;
+  m8.meta.version = 1;
+  third_party::SArray<int> m8_keys({1});
+  m8.AddData(m8_keys);
+  model.get()->Get(m8);
+
+  // Message 10
+  Message m10;
+  m10.meta.flag = Flag::kGet;
+  m10.meta.model_id = 0;
+  m10.meta.sender = 3;
+  m10.meta.recver = 0;
+  m10.meta.version = 2;
+  third_party::SArray<int> m10_keys({1});
+  m10.AddData(m10_keys);
+  model.get()->Get(m10);
+
+  // TODO(Ruoyu Wu): How to check no reply
+
+  // Message 9
+  Message m11;
+  m11.meta.flag = Flag::kClock;
+  m11.meta.model_id = 0;
+  m11.meta.sender = 3;
+  m11.meta.recver = 0;
+  model.get()->Clock(m11);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 1);
+  EXPECT_EQ(rep_vals[0], 2);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.meta.version, 1);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+}
+
+TEST_F(TestSparseSSPModel, SpeculationNoConflict) {
+  
+}
+
+TEST_F(TestSparseSSPModel, SpeculationSeveralConflict) {
+  
+}
+
+}  // namespace
+}  // namespace flexps

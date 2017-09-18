@@ -23,14 +23,16 @@ bool SparseConflictDetector::ConflictInfo(const third_party::SArray<uint32_t>& p
   return false;
 }
 
-void SparseConflictDetector::AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) {
+void SparseConflictDetector::AddRecord(const int version, const uint32_t tid,
+                                       const third_party::SArray<uint32_t>& paramIDs) {
   // TODO(Ruoyu Wu): should use key in the magic.h
   for (auto& key : paramIDs) {
     recorder_[version][key].insert(tid);
   }
 }
 
-void SparseConflictDetector::RemoveRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) {
+void SparseConflictDetector::RemoveRecord(const int version, const uint32_t tid,
+                                          const third_party::SArray<uint32_t>& paramIDs) {
   // TODO(Ruoyu Wu): should use key in the magic.h
   CHECK(recorder_.find(version) != recorder_.end());
   for (auto& key : paramIDs) {
@@ -44,9 +46,7 @@ void SparseConflictDetector::RemoveRecord(const int version, const uint32_t tid,
   }
 }
 
-void SparseConflictDetector::ClockRemoveRecord(const int version) { 
-  recorder_.erase(version);
-}
+void SparseConflictDetector::ClockRemoveRecord(const int version) { recorder_.erase(version); }
 
 int SparseConflictDetector::ParamSize(const int version) {
   if (recorder_.find(version) == recorder_.end())
@@ -72,7 +72,7 @@ int SparseConflictDetector::TotalSize(const int version) {
   int total_count = 0;
   for (auto& param_map : recorder_[version]) {
     for (auto& thread : param_map.second) {
-      total_count ++;
+      total_count++;
     }
   }
   return total_count;

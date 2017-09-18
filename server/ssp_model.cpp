@@ -45,7 +45,8 @@ void SSPModel::ResetWorker(Message& msg) {
   third_party::SArray<uint32_t> tids;
   tids = msg.data[0];
   std::vector<uint32_t> tids_vec;
-  for (auto tid : tids) tids_vec.push_back(tid);
+  for (auto tid : tids)
+    tids_vec.push_back(tid);
   this->progress_tracker_.Init(tids_vec);
   Message reply_msg;
   reply_msg.meta.model_id = model_id_;
@@ -53,6 +54,5 @@ void SSPModel::ResetWorker(Message& msg) {
   reply_msg.meta.flag = Flag::kResetWorkerInModel;
   reply_queue_->Push(reply_msg);
 }
-
 
 }  // namespace flexps

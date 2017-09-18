@@ -9,9 +9,9 @@ namespace flexps {
 
 class PendingBuffer : public AbstractPendingBuffer {
  public:
-  virtual std::vector<Message> Pop(int clock, int tid = -1) override;
-  virtual void Push(int clock, Message& message, int tid = -1) override;
-  virtual int Size(int progress) override;
+  virtual std::vector<Message> Pop(const int clock, const int tid = -1) override;
+  virtual void Push(const int clock, Message& message, const int tid = -1) override;
+  virtual int Size(const int progress) override;
 
  private:
   // TODO(Ruoyu Wu): each vec of buffer_ should be pop one by one, now it is not guaranteed

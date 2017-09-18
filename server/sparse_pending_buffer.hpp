@@ -9,14 +9,14 @@ namespace flexps {
 
 class SparsePendingBuffer : public AbstractPendingBuffer {
  public:
-  virtual std::vector<Message> Pop(int clock, int tid = -1) override;
-  virtual void Push(int clock, Message& message, int tid = -1) override;
-  virtual int Size(int progress) override;
+  virtual std::vector<Message> Pop(const int version, const int tid = -1) override;
+  virtual void Push(const int version, Message& message, const int tid = -1) override;
+  virtual int Size(const int version) override;
 
  private:
-  // <Progress, <tid, Message>>
+  // <version, <tid, Message>>
   // TODO(Ruoyu Wu): There should be more efficient data structure
-  std::unordered_map<int, std::unordered_map<int, Message>> buffer_;
+  std::unordered_map<int, std::unordered_map<int, std::vector<Message>>> buffer_;
 };
 
 }  // namespace flexps

@@ -3,8 +3,8 @@
 #include "base/message.hpp"
 #include "server/abstract_conflict_detector.hpp"
 
-#include <unordered_map>
 #include <set>
+#include <unordered_map>
 
 namespace flexps {
 
@@ -13,7 +13,8 @@ class SparseConflictDetector : public AbstractConflictDetector {
   virtual bool ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                             const int end_version, int& forwarded_thread_id, int& forwarded_version) override;
   virtual void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) override;
-  virtual void RemoveRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) override;
+  virtual void RemoveRecord(const int version, const uint32_t tid,
+                            const third_party::SArray<uint32_t>& paramIDs) override;
   virtual void ClockRemoveRecord(const int version) override;
 
   int ParamSize(const int version);
