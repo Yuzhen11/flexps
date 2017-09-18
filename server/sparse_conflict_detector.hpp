@@ -2,28 +2,28 @@
 
 #include "base/message.hpp"
 #include "server/abstract_conflict_detector.hpp"
-#include "server/abstract_pending_buffer.hpp"
 
-#include <set>
 #include <unordered_map>
+#include <set>
 
 namespace flexps {
 
 class SparseConflictDetector : public AbstractConflictDetector {
  public:
-  SparseConflictDetector() = delete;
-
-  virtual bool ConflictInfo(const third_party::SArray<char>& paramIDs, const int begin_version,
-                            const int end_version) override;
-  virtual void AddRecord(const int version, const third_party::SArray<char>& paramIDs) override;
-  virtual void RemoveRecord(const int version, const third_party::SArray<char>& paramIDs) override;
+  virtual bool ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+                            const int end_version, int& forwarded_thread_id, int& forwarded_version) override;
+  virtual void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) override;
+  virtual void RemoveRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) override;
   virtual void ClockRemoveRecord(const int version) override;
-  virtual int RecorderSize(const int version) override;
+
+  int ParamSize(const int version);
+  int WorkerSize(const int version);
+  int TotalSize(const int version);
 
  private:
-  // Should be cleared
-  // <clock, <paramID, count>>
-  std::unordered_map<int, unordered_map<uint32_t, int>> recorder_;
+  // TODO(Ruoyu Wu): Not the best data structrue
+  // <clock, <paramID, <thread_id>>>
+  std::unordered_map<int, std::unordered_map<uint32_t, std::set<uint32_t>>> recorder_;
 };
 
 }  // namespace flexps

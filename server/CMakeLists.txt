@@ -7,6 +7,7 @@ file(GLOB server-src-files
   server_thread.cpp
   pending_buffer.cpp
   sparse_pending_buffer.cpp
+  sparse_conflict_detector.cpp
   bsp_model.cpp)
 
 add_library(server-objs OBJECT ${server-src-files})
