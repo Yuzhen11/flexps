@@ -18,6 +18,18 @@ class TestSparseSSPModel : public testing::Test {
   void TearDown() {}
 };
 
+class MessageFactory {
+  static Message Create(Flag _flag, int _model_id, int _sender, int _recver, int _version) {
+    Message m;
+    m.meta.flag = _flag;
+    m.meta.model_id = _model_id;
+    m.meta.sender = _sender;
+    m.meta.recver = _recver;
+    m.meta.version = _version;
+    return m;
+  }
+};
+
 TEST_F(TestSparseSSPModel, CheckConstructor) {
   const int model_id = 0;
   const int staleness = 2;
