@@ -92,14 +92,14 @@ TEST_F(TestSparseConflictDetector, ConflictInfo) {
 
   EXPECT_EQ(check_flag, true);
   EXPECT_EQ(forwarded_thread_id, 2);
-  EXPECT_EQ(forwarded_version, 2);
+  EXPECT_EQ(forwarded_version, 1);
 
   detector_->RemoveRecord(1, 2, m4_keys);
   check_flag = detector_->ConflictInfo(check_keys, 0, 1, forwarded_thread_id, forwarded_version);
 
   EXPECT_EQ(check_flag, true);
   EXPECT_EQ(forwarded_thread_id, 3);
-  EXPECT_EQ(forwarded_version, 1);
+  EXPECT_EQ(forwarded_version, 0);
 
   detector_->RemoveRecord(0, 3, m5_keys);
   check_flag = detector_->ConflictInfo(check_keys, 0, 1, forwarded_thread_id, forwarded_version);

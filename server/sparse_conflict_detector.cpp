@@ -17,7 +17,7 @@ bool SparseConflictDetector::ConflictInfo(const third_party::SArray<uint32_t>& p
       auto it = recorder_[check_version].find(key);
       if (it != recorder_[check_version].end()) {
         forwarded_thread_id = *((it->second).begin());
-        forwarded_version = check_version + 1;
+        forwarded_version = check_version;
         return true;
       }
     }

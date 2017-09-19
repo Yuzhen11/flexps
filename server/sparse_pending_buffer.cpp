@@ -21,7 +21,9 @@ void SparsePendingBuffer::Push(const int version, Message& message, const int ti
 }
 
 int SparsePendingBuffer::Size(const int version) {
-  CHECK(buffer_.find(version) != buffer_.end()) << "[ERROR]sparse_pending_buffer: version error";
+  if (buffer_.find(version) == buffer_.end()) {
+    return 0;
+  }
   int size = 0;
   for (auto& tid_messages : buffer_[version]) {
     size += tid_messages.second.size();
