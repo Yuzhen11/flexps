@@ -216,16 +216,16 @@ TEST_F(TestSparseSSPModel, SpeculationNoConflict) {
   model->Add(m2);
 
   // Message3
-  Message m3 = MessageFactory::Create(Flag::kGet, 0, 2, 0, 2, {0});
+  Message m3 = MessageFactory::Create(Flag::kGet, 0, 2, 0, 0, {0});
   model->Get(m3);
   reply_queue.WaitAndPop(&check_msg);
 
   // Message4
-  Message m4 = MessageFactory::Create(Flag::kGet, 0, 2, 0, 1, {0});
+  Message m4 = MessageFactory::Create(Flag::kGet, 0, 3, 0, 0, {1});
   model->Get(m4);
 
   // Message5
-  Message m5 = MessageFactory::Create(Flag::kGet, 0, 3, 0, 0, {1});;
+  Message m5 = MessageFactory::Create(Flag::kGet, 0, 2, 0, 1, {0});;
   model->Get(m5);
   reply_queue.WaitAndPop(&check_msg);
 
