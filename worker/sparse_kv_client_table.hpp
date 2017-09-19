@@ -106,8 +106,6 @@ void SparseKVClientTable<Val>::Add(const std::vector<Key>& keys, const std::vect
   // 2. send
   Send(sliced, true);
 
-  // 3. clock
-  Clock();  // Clock() is called here.
 }
 
 template <typename Val>
@@ -157,6 +155,8 @@ void SparseKVClientTable<Val>::Get(std::vector<Val>* vals) {
   } else {
     // For later Get(), send out Get request in get_count_ - 1 + speculation_.
     callback_runner_->NewRequest(app_thread_id_, model_id_, num_reqs_[get_count_ - 1]);
+    // Call Clock after NewRequest
+    Clock();  // Clock() is called here. When the clock is called. The response message may be sent back.
     KVPairs<Val> kvs;
     kvs.keys = keys_[get_count_ - 1 + speculation_];
     SlicedKVs sliced;

@@ -129,6 +129,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   Message msg;
   third_party::SArray<Key> res_keys;
 
+  // The Get requests for 1st iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
@@ -149,6 +150,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], keys[0][1]);  // 5
 
+  // The Get requests for 2nd iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
@@ -169,7 +171,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], keys[1][1]);  // 6
 
-  // AddResponse, so that Get() can unblock
+  // AddResponse for the Get for the 1st iteration, so that Get() can unblock
   Message r1, r2;
   third_party::SArray<Key> r1_keys{2};
   third_party::SArray<float> r1_vals{0.1};
@@ -182,7 +184,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   callback_runner.AddResponse(r1);
   callback_runner.AddResponse(r2);
 
-  // The add result
+  // The Add Requests for the 1st iteration
   third_party::SArray<float> res_vals;
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
@@ -209,23 +211,6 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(res_vals.size(), 1);
   EXPECT_EQ(res_keys[0], keys[0][1]);  // 5
   EXPECT_EQ(res_vals[0], float(0.02));
-
-  // Clock
-  queue.WaitAndPop(&msg);
-  EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
-  EXPECT_EQ(msg.meta.recver, 0);  // to 0
-  EXPECT_EQ(msg.meta.model_id, kTestModelId);
-  EXPECT_EQ(msg.meta.flag, Flag::kClock);
-  queue.WaitAndPop(&msg);
-  EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
-  EXPECT_EQ(msg.meta.recver, 1);  // to 1
-  EXPECT_EQ(msg.meta.model_id, kTestModelId);
-  EXPECT_EQ(msg.meta.flag, Flag::kClock);
-  queue.WaitAndPop(&msg);
-  EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
-  EXPECT_EQ(msg.meta.recver, 2);  // to 2
-  EXPECT_EQ(msg.meta.model_id, kTestModelId);
-  EXPECT_EQ(msg.meta.flag, Flag::kClock);
 
   th.join();
 }
@@ -255,6 +240,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   Message msg;
   third_party::SArray<Key> res_keys;
 
+  // The Get requests for 1st iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
@@ -275,6 +261,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], keys[0][1]);  // 5
 
+  // The Get requests for 2nd iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
@@ -295,7 +282,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], keys[1][1]);  // 6
 
-  // AddResponse, so that Get() can unblock
+  // AddResponse for the Get requests for 1st iteration, so that Get() can unblock
   Message r1, r2;
   third_party::SArray<Key> r1_keys{2};
   third_party::SArray<float> r1_vals{0.1};
@@ -308,7 +295,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   callback_runner.AddResponse(r1);
   callback_runner.AddResponse(r2);
 
-  // The add result
+  // The Add requests for the 1st iteration
   third_party::SArray<float> res_vals;
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
@@ -336,7 +323,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(res_keys[0], keys[0][1]);  // 5
   EXPECT_EQ(res_vals[0], float(0.02));
 
-  // Clock
+  // The Clock messages for the 1st iteration, sent before next Get
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
@@ -353,7 +340,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kClock);
 
-  // next Get
+  // The Get requests for the 3rd iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 2);  // to 2
@@ -364,7 +351,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], keys[2][0]);  // 7
 
-  // AddResponse, so that Get() can unblock
+  // AddResponse for the Get requests for 2nd iteration, so that Get() can unblock
   Message r3, r4;
   third_party::SArray<Key> r3_keys{3};
   third_party::SArray<float> r3_vals{0.3};
