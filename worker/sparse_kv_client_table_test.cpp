@@ -52,11 +52,13 @@ TEST_F(TestSparseKVClientTable, Get) {
   Message msg;
   third_party::SArray<Key> res_keys;
 
+  // The Get requests for 1st iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -67,16 +69,19 @@ TEST_F(TestSparseKVClientTable, Get) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], keys[0][1]);  // 5
 
+  // The Get requests for 2nd iteration
   queue.WaitAndPop(&msg);
   EXPECT_EQ(msg.meta.sender, kTestAppThreadId);
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 1);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -87,6 +92,7 @@ TEST_F(TestSparseKVClientTable, Get) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 1);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -135,6 +141,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -145,6 +152,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -156,6 +164,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 1);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -166,6 +175,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 1);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -191,6 +201,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kAdd);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 2);
   res_keys = msg.data[0];
   res_vals = msg.data[1];
@@ -204,6 +215,7 @@ TEST_F(TestSparseKVClientTable, GetAdd) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kAdd);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 2);
   res_keys = msg.data[0];
   res_vals = msg.data[1];
@@ -246,6 +258,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -256,6 +269,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -267,6 +281,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 1);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -277,6 +292,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 1);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);
@@ -302,6 +318,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 0);  // to 0
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kAdd);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 2);
   res_keys = msg.data[0];
   res_vals = msg.data[1];
@@ -315,6 +332,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 1);  // to 1
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kAdd);
+  EXPECT_EQ(msg.meta.version, 0);
   EXPECT_EQ(msg.data.size(), 2);
   res_keys = msg.data[0];
   res_vals = msg.data[1];
@@ -346,6 +364,7 @@ TEST_F(TestSparseKVClientTable, GetAddGet) {
   EXPECT_EQ(msg.meta.recver, 2);  // to 2
   EXPECT_EQ(msg.meta.model_id, kTestModelId);
   EXPECT_EQ(msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(msg.meta.version, 2);
   EXPECT_EQ(msg.data.size(), 1);
   res_keys = msg.data[0];
   EXPECT_EQ(res_keys.size(), 1);

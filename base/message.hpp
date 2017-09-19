@@ -19,6 +19,7 @@ struct Meta {
   int recver;
   int model_id;
   Flag flag;  // {kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet}
+  int version;
 
   std::string DebugString() const {
     std::stringstream ss;
@@ -27,6 +28,7 @@ struct Meta {
     ss << ", recver: " << recver;
     ss << ", model_id: " << model_id;
     ss << ", flag: " << FlagName[static_cast<int>(flag)];
+    ss << ", version: " << version;
 
     ss << "}";
     return ss.str();

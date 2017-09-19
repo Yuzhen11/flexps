@@ -23,7 +23,10 @@ struct KVPairs {
 };
 
 /*
- * Get/Add/Get/Add...
+ * Get -> Add -> 
+ * Get(Clock) -> Add -> 
+ * Get(Clock) -> Add ->
+ * ...
  */
 template <typename Val>
 class SparseKVClientTable {
@@ -40,7 +43,7 @@ class SparseKVClientTable {
  private:
   void Clock();
   int Slice(const KVPairs<Val>& send, SlicedKVs* sliced);
-  void Send(const SlicedKVs& sliced, bool is_add);
+  void Send(const SlicedKVs& sliced, bool is_add, int version);
   void AddRequest(const SlicedKVs& sliced);
 
   void SendKeys(uint32_t version);
@@ -104,7 +107,7 @@ void SparseKVClientTable<Val>::Add(const std::vector<Key>& keys, const std::vect
   // 1. slice
   Slice(kvs, &sliced);
   // 2. send
-  Send(sliced, true);
+  Send(sliced, true, get_count_ - 1);
 
 }
 
@@ -150,7 +153,7 @@ void SparseKVClientTable<Val>::Get(std::vector<Val>* vals) {
         callback_runner_->NewRequest(app_thread_id_, model_id_, num_reqs);
       }
       num_reqs_.push_back(num_reqs);
-      Send(sliced, false);
+      Send(sliced, false, i);
     }
   } else {
     // For later Get(), send out Get request in get_count_ - 1 + speculation_.
@@ -162,7 +165,7 @@ void SparseKVClientTable<Val>::Get(std::vector<Val>* vals) {
     SlicedKVs sliced;
     int num_reqs = Slice(kvs, &sliced);
     num_reqs_.push_back(num_reqs);
-    Send(sliced, false);
+    Send(sliced, false, get_count_ - 1 + speculation_);
   }
   // 3. wait request
   callback_runner_->WaitRequest(app_thread_id_, model_id_);
@@ -219,7 +222,7 @@ int SparseKVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced)
 }
 
 template <typename Val>
-void SparseKVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
+void SparseKVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add, int version) {
   CHECK_NOTNULL(range_manager_);
   const auto& server_thread_ids = range_manager_->GetServerThreadIds();
   CHECK_EQ(server_thread_ids.size(), sliced.size());
@@ -232,6 +235,7 @@ void SparseKVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
     msg.meta.recver = server_thread_ids[i];
     msg.meta.model_id = model_id_;
     msg.meta.flag = is_add ? Flag::kAdd : Flag::kGet;
+    msg.meta.version = version;
     const auto& kvs = sliced[i].second;
     if (kvs.keys.size()) {
       msg.AddData(kvs.keys);
