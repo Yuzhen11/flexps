@@ -99,6 +99,8 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   EXPECT_EQ(rep_vals.size(), 1);
   EXPECT_EQ(rep_keys[0], 0);
   EXPECT_EQ(rep_vals[0], 1);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
 
   reply_queue.WaitAndPop(&check_msg);
   EXPECT_EQ(check_msg.data.size(), 2);
@@ -108,6 +110,8 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   EXPECT_EQ(rep_vals.size(), 1);
   EXPECT_EQ(rep_keys[0], 1);
   EXPECT_EQ(rep_vals[0], 2);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
 }
 
 TEST_F(TestSSPModel, CheckClock) {

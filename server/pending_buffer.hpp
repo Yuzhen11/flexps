@@ -1,17 +1,17 @@
 #pragma once
 
 #include "base/message.hpp"
+#include "server/abstract_pending_buffer.hpp"
 
 #include <unordered_map>
-#include <vector>
 
 namespace flexps {
 
-class PendingBuffer {
+class PendingBuffer : public AbstractPendingBuffer {
  public:
-  std::vector<Message> Pop(int clock);
-  void Push(int clock, Message& msg);
-  int Size(int progress);
+  virtual std::vector<Message> Pop(const int clock, const int tid = -1) override;
+  virtual void Push(const int clock, Message& message, const int tid = -1) override;
+  virtual int Size(const int progress) override;
 
  private:
   // TODO(Ruoyu Wu): each vec of buffer_ should be pop one by one, now it is not guaranteed

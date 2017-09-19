@@ -19,7 +19,9 @@ struct Meta {
   int recver;
   int model_id;
   Flag flag;  // {kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet}
-  int version;
+  uint32_t version;
+
+
 
   std::string DebugString() const {
     std::stringstream ss;

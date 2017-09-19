@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "base/message.hpp"
 #include "server/abstract_storage.hpp"
 
@@ -38,6 +37,7 @@ class Storage : public AbstractStorage {
     reply.meta.sender = msg.meta.recver;
     reply.meta.flag = msg.meta.flag;
     reply.meta.model_id = msg.meta.model_id;
+    reply.meta.version = msg.meta.version;
     std::vector<T> reply_vec;
     for (auto& key : keys) {
       FindAndCreate(key);
