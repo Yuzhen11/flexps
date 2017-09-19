@@ -56,9 +56,6 @@ struct Message {
     }
     return ss.str();
   }
-
-  Message(int _sender, int _recver, int _model_id, Flag _flag, uint32_t _version) : 
-  meta.sender(_sender), meta.recver(_recver), meta.model_id(_model_id), meta.flag(_flag), meta.version(_version) {}
 };
 
 }  // namespace flexps
