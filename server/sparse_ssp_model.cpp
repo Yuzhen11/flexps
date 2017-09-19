@@ -25,17 +25,23 @@ void SparseSSPModel::Clock(Message& message) {
     CHECK((get_message.meta.version > min_clock) || (get_message.meta.version < min_clock + staleness_ + speculation_))
         << "[Error]SparseSSPModel: progress invalid";
     CHECK(get_message.data.size() == 1);
-    if (get_message.meta.version - min_clock <= staleness_) {
+    std::cout << get_message.meta.version << " " << staleness_ + speculation_ + min_clock << std::endl;
+    if (get_message.meta.version <= staleness_ + min_clock) {
       reply_queue_->Push(storage_->Get(get_message));
-    } else if (get_message.meta.version - min_clock <= staleness_ + speculation_) {
+      detector_->RemoveRecord(get_message.meta.version, get_message.meta.sender,
+                                third_party::SArray<uint32_t>(get_message.data[0]));
+    } else if (get_message.meta.version <= staleness_ + speculation_ + min_clock) {
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
       if (!detector_->ConflictInfo(third_party::SArray<uint32_t>(get_message.data[0]), min_clock,
                                    get_message.meta.version - staleness_, forwarded_worker_id, forwarded_version)) {
+      	std::cout << "Not conflict" << std::endl;
         reply_queue_->Push(storage_->Get(get_message));
         detector_->RemoveRecord(get_message.meta.version, get_message.meta.sender,
                                 third_party::SArray<uint32_t>(get_message.data[0]));
       } else {
+      	std::cout << "Conflict" << std::endl;
+      	std::cout << forwarded_worker_id << std::endl << forwarded_version << std::endl;
         CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         CHECK(progress_tracker_.CheckThreadValid(forwarded_worker_id))
             << "[Error]SparseSSPModel: forwarded_worker_id invalid";
@@ -57,10 +63,10 @@ void SparseSSPModel::Clock(Message& message) {
 void SparseSSPModel::Get(Message& message) {
   CHECK(progress_tracker_.CheckThreadValid(message.meta.sender));
   CHECK(message.data.size() == 1);
-  detector_->AddRecord(message.meta.version, message.meta.sender, third_party::SArray<uint32_t>(message.data[0]));
   if (message.meta.version == 0) {
     reply_queue_->Push(storage_->Get(message));
   } else {
+  	detector_->AddRecord(message.meta.version, message.meta.sender, third_party::SArray<uint32_t>(message.data[0]));
     get_buffer_->Push(message.meta.version, message, message.meta.sender);
   }
 }
