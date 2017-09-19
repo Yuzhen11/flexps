@@ -3,6 +3,7 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "server/sparse_ssp_model.hpp"
+#include "server/sparse_ssp_controller.hpp"
 
 namespace flexps {
 namespace {
@@ -24,8 +25,12 @@ TEST_F(TestSparseSSPModel, CheckConstructor) {
   ThreadsafeQueue<Message> reply_queue;
 
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), &reply_queue, staleness, speculation));
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
 }
 
 TEST_F(TestSparseSSPModel, SArrayCasting) {
@@ -41,8 +46,13 @@ TEST_F(TestSparseSSPModel, GetAndAdd) {
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), &reply_queue, staleness, speculation));
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
   reset_msg.AddData(tids);
@@ -195,8 +205,13 @@ TEST_F(TestSparseSSPModel, SpeculationNoConflict) {
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), &reply_queue, staleness, speculation));
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
   reset_msg.AddData(tids);

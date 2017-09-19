@@ -8,7 +8,8 @@ file(GLOB server-src-files
   pending_buffer.cpp
   sparse_pending_buffer.cpp
   sparse_conflict_detector.cpp
-  bsp_model.cpp)
+  bsp_model.cpp
+  sparse_ssp_controller.cpp)
 
 add_library(server-objs OBJECT ${server-src-files})
 set_property(TARGET server-objs PROPERTY CXX_STANDARD 11)

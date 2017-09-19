@@ -5,12 +5,10 @@
 
 namespace flexps {
 
-SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
-                               ThreadsafeQueue<Message>* reply_queue, const int staleness, const int speculation)
-    : model_id_(model_id), reply_queue_(reply_queue), staleness_(staleness), speculation_(speculation) {
-  this->storage_ = std::move(storage_ptr);
-  this->get_buffer_ = std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer());
-  this->detector_ = std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector());
+SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage,
+                               ThreadsafeQueue<Message>* reply_queue, std::unique_ptr<AbstractSparseSSPController>&& sparse_ssp_controller)
+    : model_id_(model_id), reply_queue_(reply_queue),
+    storage_(std::move(storage)), sparse_ssp_controller_(std::move(sparse_ssp_controller)) {
 }
 
 void SparseSSPModel::Clock(Message& message) {
@@ -19,43 +17,12 @@ void SparseSSPModel::Clock(Message& message) {
   int min_clock = progress_tracker_.GetMinClock();
   int progress = progress_tracker_.GetProgress(message.meta.sender);
   // Although we assume only one get message in a version, multiple messages can still be poped out
-  std::vector<Message> get_messages = get_buffer_->Pop(progress, sender);
-
-  for (auto& get_message : get_messages) {
-    CHECK((get_message.meta.version > min_clock) || (get_message.meta.version < min_clock + staleness_ + speculation_))
-        << "[Error]SparseSSPModel: progress invalid";
-    CHECK(get_message.data.size() == 1);
-    std::cout << get_message.meta.version << " " << staleness_ + speculation_ + min_clock << std::endl;
-    if (get_message.meta.version <= staleness_ + min_clock) {
-      reply_queue_->Push(storage_->Get(get_message));
-      detector_->RemoveRecord(get_message.meta.version, get_message.meta.sender,
-                                third_party::SArray<uint32_t>(get_message.data[0]));
-    } else if (get_message.meta.version <= staleness_ + speculation_ + min_clock) {
-      int forwarded_worker_id = -1;
-      int forwarded_version = -1;
-      if (!detector_->ConflictInfo(third_party::SArray<uint32_t>(get_message.data[0]), min_clock,
-                                   get_message.meta.version - staleness_, forwarded_worker_id, forwarded_version)) {
-      	std::cout << "Not conflict" << std::endl;
-        reply_queue_->Push(storage_->Get(get_message));
-        detector_->RemoveRecord(get_message.meta.version, get_message.meta.sender,
-                                third_party::SArray<uint32_t>(get_message.data[0]));
-      } else {
-      	std::cout << "Conflict" << std::endl;
-      	std::cout << forwarded_worker_id << std::endl << forwarded_version << std::endl;
-        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
-        CHECK(progress_tracker_.CheckThreadValid(forwarded_worker_id))
-            << "[Error]SparseSSPModel: forwarded_worker_id invalid";
-        get_buffer_->Push(forwarded_version, get_message, forwarded_worker_id);
-      }
-    }
+  std::vector<Message> get_messages = sparse_ssp_controller_->UnblockRequests(progress, sender, updated_min_clock, min_clock);
+  for (auto& msg : get_messages) {
+    reply_queue_->Push(storage_->Get(msg));
   }
 
   if (updated_min_clock != -1) {  // min clock updated
-    CHECK(get_buffer_->Size(updated_min_clock - 1) == 0)
-        << "[Error]SparseSSPModel: get_buffer_ of min_clock should empty";
-    CHECK(dynamic_cast<SparseConflictDetector*>(detector_.get())->TotalSize(updated_min_clock - 1) == 0)
-        << "[Error]SparseSSPModel: Recorder Size should be 0";
-    detector_->ClockRemoveRecord(updated_min_clock - 1);
     storage_->FinishIter();
   }
 }
@@ -66,8 +33,7 @@ void SparseSSPModel::Get(Message& message) {
   if (message.meta.version == 0) {
     reply_queue_->Push(storage_->Get(message));
   } else {
-  	detector_->AddRecord(message.meta.version, message.meta.sender, third_party::SArray<uint32_t>(message.data[0]));
-    get_buffer_->Push(message.meta.version, message, message.meta.sender);
+    sparse_ssp_controller_->AddRecord(message);
   }
 }
 
