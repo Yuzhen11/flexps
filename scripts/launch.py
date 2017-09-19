@@ -42,7 +42,7 @@ env_params = (
   )
 
 # TODO: May need to ls before run to make sure the related files are synced.
-clear_cmd = "ls " + hostfile_path + " > /dev/null ; ls " + prog_path + " > /dev/null; "
+clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; "
 
 with open(hostfile, "r") as f:
   hostlist = []  
@@ -53,11 +53,15 @@ with open(hostfile, "r") as f:
 
   for [node_id, host, port] in hostlist:
     print "node_id:%s, host:%s, port:%s" %(node_id, host, port)
-    cmd = ssh_cmd + host + " "
-    # cmd += clear_cmd
+    cmd = ssh_cmd + host + " "  # Start ssh command
+    cmd += "\""  # Remote command starts
+    cmd += clear_cmd
+    # Command to run program
     cmd += env_params + " " + prog_path
     cmd += " --my_id="+node_id
     cmd += "".join([" --%s=%s" % (k,v) for k,v in params.items()])
+
+    cmd += "\""  # Remote Command ends
     cmd += " &"
     print cmd
     os.system(cmd)
