@@ -628,12 +628,25 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
   EXPECT_EQ(rep_vals[0], 0);
 }
 
-// Thread 2: Get (reply) Get                Clock (reply) Get Clock (No reply due to conflict)
-// Thread 3:                Get (reply) Get
-TEST_F(TestSparseSSPModel, BlockByStaleness) {
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the same key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 (reply)      Get_3_0 (reply)
+// Get_2_1              Get_3_1
+//
+// Get_2_2
+// Clock (no reply due to Get_2_1 conflict with Get_3_0)
+//
+//                      Get_3_2
+//                      Clock (2 replies since they are now in next iter)
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Conflict) {
   const int model_id = 0;
-  const int staleness = 1;
-  const int speculation = 1;
+  const int staleness = 0;
+  const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
@@ -657,13 +670,11 @@ TEST_F(TestSparseSSPModel, BlockByStaleness) {
   auto rep_vals = third_party::SArray<int>();
 
   Message msg;
+  // Get_2_0
   msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
   model->Get(msg);
-  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
-  model->Get(msg);
+  // Get_3_0
   msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {0});
-  model->Get(msg);
-  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {0});
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
@@ -692,131 +703,52 @@ TEST_F(TestSparseSSPModel, BlockByStaleness) {
   EXPECT_EQ(rep_keys[0], 0);
   EXPECT_EQ(rep_vals[0], 0);
 
-  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
-  model->Clock(msg);
-
-  reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
-  EXPECT_EQ(check_msg.meta.sender, 0);
-  EXPECT_EQ(check_msg.meta.recver, 2);
-  EXPECT_EQ(check_msg.meta.version, 1);
-  EXPECT_EQ(check_msg.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_msg.data[0]);
-  rep_vals = third_party::SArray<int>(check_msg.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 0);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
-  model->Get(msg);
-
-  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
-  model->Clock(msg);
-
-  EXPECT_EQ(reply_queue.Size(), 0);  // No reply since it is blocked by staleness and sparse conflict.
-}
-
-// Thread 2: Get (reply) Get                Clock (reply) Get Clock (No reply due to conflict)       (Reply)
-// Thread 3:                Get (reply) Get                                                    Clock (Reply)
-TEST_F(TestSparseSSPModel, UnBlockByStaleness) {
-  const int model_id = 0;
-  const int staleness = 1;
-  const int speculation = 1;
-  ThreadsafeQueue<Message> reply_queue;
-  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
-      new SparseSSPController(staleness, speculation, 
-        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
-        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
-  std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
-
-  Message reset_msg;
-  third_party::SArray<uint32_t> tids({2, 3});
-  reset_msg.AddData(tids);
-  model->ResetWorker(reset_msg);
-  Message reset_reply_msg;
-  reply_queue.WaitAndPop(&reset_reply_msg);
-  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
-
-  // for Check use
-  Message check_msg;
-  auto rep_keys = third_party::SArray<int>();
-  auto rep_vals = third_party::SArray<int>();
-
-  Message msg;
-  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
-  model->Get(msg);
+  // Get_2_1
   msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
   model->Get(msg);
-  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {0});
-  model->Get(msg);
+  // Get_3_1
   msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {0});
   model->Get(msg);
 
-  reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
-  EXPECT_EQ(check_msg.meta.sender, 0);
-  EXPECT_EQ(check_msg.meta.recver, 2);
-  EXPECT_EQ(check_msg.meta.version, 0);
-  EXPECT_EQ(check_msg.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_msg.data[0]);
-  rep_vals = third_party::SArray<int>(check_msg.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 0);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
-  EXPECT_EQ(check_msg.meta.version, 0);
-  EXPECT_EQ(check_msg.meta.sender, 0);
-  EXPECT_EQ(check_msg.meta.recver, 3);
-  EXPECT_EQ(check_msg.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_msg.data[0]);
-  rep_vals = third_party::SArray<int>(check_msg.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 0);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
-  model->Clock(msg);
-
-  reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
-  EXPECT_EQ(check_msg.meta.sender, 0);
-  EXPECT_EQ(check_msg.meta.recver, 2);
-  EXPECT_EQ(check_msg.meta.version, 1);
-  EXPECT_EQ(check_msg.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_msg.data[0]);
-  rep_vals = third_party::SArray<int>(check_msg.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 0);
-  EXPECT_EQ(rep_vals[0], 0);
-
+  // Get_2_2 and Clock
   msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
   model->Get(msg);
-
-  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
   model->Clock(msg);
 
-  EXPECT_EQ(reply_queue.Size(), 0);  // No reply since it is blocked by staleness and sparse conflict.
+  EXPECT_EQ(reply_queue.Size(), 0);
 
-  msg = CreateMessage(Flag::kClock, 0, 3, 0, 2);
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
   model->Clock(msg);
 
-  EXPECT_EQ(reply_queue.Size(), 2);
+  EXPECT_EQ(reply_queue.Size(), 2);  // 2 replies
 }
 
-// Thread 2: Get (reply) Get                Clock (reply) Get Clock (reply) 
-// Thread 3:                Get (reply) Get
-TEST_F(TestSparseSSPModel, NotBlockByStaleness) {
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [1]
+//
+// Get_2_2 [0]
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [0]
+// Clock (reply since Get_2_2 does not conflict with Get_3_0 and Get_3_1)
+//
+// Get_2_4 [0]
+// Clock (No reply)
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
   const int model_id = 0;
-  const int staleness = 1;
-  const int speculation = 1;
+  const int staleness = 0;
+  const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
@@ -840,44 +772,53 @@ TEST_F(TestSparseSSPModel, NotBlockByStaleness) {
   auto rep_vals = third_party::SArray<int>();
 
   Message msg;
+  // Get_2_0
   msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
   model->Get(msg);
-  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
-  model->Get(msg);
+  // Get_3_0
   msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
   model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
   msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {1});
   model->Get(msg);
 
-  reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
-  EXPECT_EQ(check_msg.meta.sender, 0);
-  EXPECT_EQ(check_msg.meta.recver, 2);
-  EXPECT_EQ(check_msg.meta.version, 0);
-  EXPECT_EQ(check_msg.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_msg.data[0]);
-  rep_vals = third_party::SArray<int>(check_msg.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 0);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
-  EXPECT_EQ(check_msg.meta.version, 0);
-  EXPECT_EQ(check_msg.meta.sender, 0);
-  EXPECT_EQ(check_msg.meta.recver, 3);
-  EXPECT_EQ(check_msg.data.size(), 2);
-  rep_keys = third_party::SArray<int>(check_msg.data[0]);
-  rep_vals = third_party::SArray<int>(check_msg.data[1]);
-  EXPECT_EQ(rep_keys.size(), 1);
-  EXPECT_EQ(rep_vals.size(), 1);
-  EXPECT_EQ(rep_keys[0], 1);
-  EXPECT_EQ(rep_vals[0], 0);
-
-  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  // Get_2_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
   model->Clock(msg);
 
+  EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
   EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
   EXPECT_EQ(check_msg.meta.sender, 0);
@@ -891,13 +832,13 @@ TEST_F(TestSparseSSPModel, NotBlockByStaleness) {
   EXPECT_EQ(rep_keys[0], 0);
   EXPECT_EQ(rep_vals[0], 0);
 
-  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {0});
   model->Get(msg);
-
-  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
   model->Clock(msg);
 
-  EXPECT_EQ(reply_queue.Size(), 1);  // Has reply due to no sparse conflict.
+  EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
   EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
   EXPECT_EQ(check_msg.meta.sender, 0);
@@ -910,6 +851,731 @@ TEST_F(TestSparseSSPModel, NotBlockByStaleness) {
   EXPECT_EQ(rep_vals.size(), 1);
   EXPECT_EQ(rep_keys[0], 0);
   EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_4 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 4, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+}
+
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [1]
+//
+// Get_2_2 [0]
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [0]
+// Clock (reply since Get_2_2 does not conflict with Get_3_0 and Get_3_1)
+//
+// Get_2_4 [0]
+// Clock (No reply)
+//                        Get_3_2 [1]
+//                        Clock (Reply Get_3_1 and Get_2_3 (No conflict between Get_2_3 with Get_3_1 and Get_3_2))
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
+  const int model_id = 0;
+  const int staleness = 0;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  Message msg;
+  // Get_2_0
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
+  model->Get(msg);
+  // Get_3_0
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
+  model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {1});
+  model->Get(msg);
+
+  // Get_2_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 1);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 2);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_4 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 4, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 2);
+}
+
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [1]
+//
+// Get_2_2 [0]
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [0]
+// Clock (reply since Get_2_2 does not conflict with Get_3_0 and Get_3_1)
+//
+// Get_2_4 [0]
+// Clock (No reply)
+//                        Get_3_2 [0]
+//                        Clock (Reply Get_3_1 only. 
+//                        Do not reply Get_2_3 due to conflict between Get_2_3 with Get_3_2))
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
+  const int model_id = 0;
+  const int staleness = 0;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  Message msg;
+  // Get_2_0
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
+  model->Get(msg);
+  // Get_3_0
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
+  model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {1});
+  model->Get(msg);
+
+  // Get_2_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 1);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 2);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_4 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 4, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+}
+
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [1]
+//
+// Get_2_2 [0]
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [0]
+// Clock (reply since Get_2_2 does not conflict with Get_3_0 and Get_3_1)
+//
+// Get_2_4 [0]
+// Clock (No reply)
+//                        Get_3_2 [0]
+//                        Clock (Reply Get_3_1 only. 
+//                        Do not reply Get_2_3 due to conflict between Get_2_3 with Get_3_2))
+//
+//                        Get_3_3 [0]
+//                        Clock (Reply Get_3_2)
+//
+//                        Get_3_4 [0]
+//                        Clock (Reply Get_3_3 and Get_2_3)
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
+  const int model_id = 0;
+  const int staleness = 0;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  Message msg;
+  // Get_2_0
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
+  model->Get(msg);
+  // Get_3_0
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
+  model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {1});
+  model->Get(msg);
+
+  // Get_2_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 1);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 2);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_4 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 4, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 2);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+
+  // Get_3_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 3, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+
+  // Get_3_4 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 4, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 2);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 2);
+  reply_queue.WaitAndPop(&check_msg);
+  reply_queue.WaitAndPop(&check_msg);
+}
+
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [2]
+//
+// Get_2_2 [0]
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [1]
+// Clock (No reply due to conflict between Get_2_2 and Get_3_0)
+//
+//                         Get_3_2 [1]
+//                         Clock (Reply Get_3_1 and Get_2_2)
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Case5) {
+  const int model_id = 0;
+  const int staleness = 0;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  Message msg;
+  // Get_2_0
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
+  model->Get(msg);
+  // Get_3_0
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
+  model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {2});
+  model->Get(msg);
+
+  // Get_2_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 1);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
+  model->Clock(msg);
+  
+  EXPECT_EQ(reply_queue.Size(), 2);
+}
+
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [2]
+//
+// Get_2_2 [0]
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [2]
+// Clock (No reply due to conflict between Get_2_2 and Get_3_1)
+//
+//                         Get_3_2 [1]
+//                         Clock (Reply Get_3_1)
+//
+//                         Get_3_3 [1]
+//                         Clock (Reply Get_3_2 and Get_2_2)
+//
+TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
+  const int model_id = 0;
+  const int staleness = 0;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
+  std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
+      new SparseSSPController(staleness, speculation, 
+        std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
+        std::unique_ptr<AbstractConflictDetector>(new SparseConflictDetector())));
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, std::move(sparse_ssp_controller)));
+
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  Message msg;
+  // Get_2_0
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
+  model->Get(msg);
+  // Get_3_0
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
+  model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {2});
+  model->Get(msg);
+
+  // Get_2_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 2, {0});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 1);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {2});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
+  model->Clock(msg);
+  
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+
+  // Get_3_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 3, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 1);
+  model->Clock(msg);
+  
+  EXPECT_EQ(reply_queue.Size(), 2);
 }
 
 }  // namespace
