@@ -1,23 +1,23 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "server/storage.hpp"
+#include "server/map_storage.hpp"
 
 namespace flexps {
 namespace {
 
-class TestStorage : public testing::Test {
+class TestMapStorage : public testing::Test {
  public:
-  TestStorage() {}
-  ~TestStorage() {}
+  TestMapStorage() {}
+  ~TestMapStorage() {}
 
  protected:
   void SetUp() {}
   void TearDown() {}
 };
 
-TEST_F(TestStorage, Add_Get) {
-  Storage<int> s;
+TEST_F(TestMapStorage, Add_Get) {
+  MapStorage<int> s;
   Message m;
 
   // keys

@@ -6,7 +6,7 @@
 #include "base/threadsafe_queue.hpp"
 #include "server/abstract_storage.hpp"
 #include "server/progress_tracker.hpp"
-#include "server/storage.hpp"
+#include "server/map_storage.hpp"
 #include "server/abstract_sparse_ssp_controller.hpp"
 
 #include <map>

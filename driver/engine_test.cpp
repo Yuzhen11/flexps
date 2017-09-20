@@ -79,7 +79,8 @@ TEST_F(TestEngine, SimpleTask) {
   // start
   engine.StartEverything();
 
-  engine.CreateTable(0, {{0, 10}});  // table 0, range [0,10)
+  engine.CreateTable<float>(0, {{0, 10}}, 
+      ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10)
   engine.Barrier();
   MLTask task;
   task.SetWorkerAlloc({{0, 3}});  // 3 workers on node 0
@@ -106,7 +107,8 @@ TEST_F(TestEngine, MultipleTasks) {
       // start
       engine.StartEverything();
 
-      engine.CreateTable(0, {{0, 10}, {10, 20}, {20, 30}});  // table 0, range [0,10), [10, 20), [20, 30)
+      engine.CreateTable<float>(0, {{0, 10}, {10, 20}, {20, 30}},
+          ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10), [10, 20), [20, 30)
       engine.Barrier();
       MLTask task;
       // 3 workers on node 0, 2 workers on node 1, 3 workers on node 2
@@ -133,7 +135,8 @@ TEST_F(TestEngine, KVClientTable) {
   engine.StartEverything();
 
   const int kTableId = 0;
-  engine.CreateTable(kTableId, {{0, 10}});  // table 0, range [0,10)
+  engine.CreateTable<float>(kTableId, {{0, 10}},
+      ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10)
   engine.Barrier();
   MLTask task;
   task.SetWorkerAlloc({{0, 3}});  // 3 workers on node 0

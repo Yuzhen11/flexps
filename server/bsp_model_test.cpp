@@ -3,6 +3,7 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "server/bsp_model.hpp"
+#include "server/map_storage.hpp"
 
 namespace flexps {
 namespace {
@@ -20,14 +21,14 @@ class TestBSPModel : public testing::Test {
 TEST_F(TestBSPModel, CheckConstructor) {
   ThreadsafeQueue<Message> reply_queue;
   int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractModel> model(new BSPModel(model_id, std::move(storage), &reply_queue));
 }
 
 TEST_F(TestBSPModel, CheckGetAndAdd) {
   ThreadsafeQueue<Message> reply_queue;
   int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractModel> model(new BSPModel(model_id, std::move(storage), &reply_queue));
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});

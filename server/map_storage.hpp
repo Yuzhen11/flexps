@@ -10,11 +10,9 @@
 namespace flexps {
 
 template <typename T>
-class Storage : public AbstractStorage {
+class MapStorage : public AbstractStorage {
  public:
-  Storage() {}
-
-  // Storage(ThreadsafeQueue<Message>* const threadsafe_queue) : threadsafe_queue_(threadsafe_queue) {}
+  MapStorage() {}
 
   virtual void Add(Message& msg) override {
     CHECK(msg.data.size() == 2);

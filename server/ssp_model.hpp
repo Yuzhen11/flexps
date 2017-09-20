@@ -5,7 +5,6 @@
 #include "server/abstract_storage.hpp"
 #include "server/pending_buffer.hpp"
 #include "server/progress_tracker.hpp"
-#include "server/storage.hpp"
 
 #include <map>
 #include <vector>

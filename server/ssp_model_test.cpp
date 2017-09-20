@@ -3,6 +3,7 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "server/ssp_model.hpp"
+#include "server/map_storage.hpp"
 
 namespace flexps {
 namespace {
@@ -21,7 +22,7 @@ TEST_F(TestSSPModel, CheckConstructor) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
 }
 
@@ -29,7 +30,7 @@ TEST_F(TestSSPModel, CheckGetAndAdd) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -118,7 +119,7 @@ TEST_F(TestSSPModel, CheckClock) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 1;
   int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -160,7 +161,7 @@ TEST_F(TestSSPModel, CheckStaleness) {
   ThreadsafeQueue<Message> reply_queue;
   int staleness = 2;
   int model_id = 0;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractModel> model(new SSPModel(model_id, std::move(storage), staleness, &reply_queue));
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});

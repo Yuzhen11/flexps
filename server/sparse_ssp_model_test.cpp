@@ -4,6 +4,7 @@
 #include "base/threadsafe_queue.hpp"
 #include "server/sparse_ssp_model.hpp"
 #include "server/sparse_ssp_controller.hpp"
+#include "server/map_storage.hpp"
 
 namespace flexps {
 namespace {
@@ -69,7 +70,7 @@ TEST_F(TestSparseSSPModel, CheckConstructor) {
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
 
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
       new SparseSSPController(staleness, speculation, 
         std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
@@ -83,7 +84,7 @@ TEST_F(TestSparseSSPModel, GetAndAdd) {
   const int staleness = 2;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
       new SparseSSPController(staleness, speculation, 
         std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
@@ -183,7 +184,7 @@ TEST_F(TestSparseSSPModel, SpeculationNoConflict) {
   const int staleness = 2;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
       new SparseSSPController(staleness, speculation, 
         std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
@@ -305,7 +306,7 @@ TEST_F(TestSparseSSPModel, BlockByStaleness) {
   const int staleness = 1;
   const int speculation = 1;
   ThreadsafeQueue<Message> reply_queue;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
       new SparseSSPController(staleness, speculation, 
         std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
@@ -394,7 +395,7 @@ TEST_F(TestSparseSSPModel, UnBlockByStaleness) {
   const int staleness = 1;
   const int speculation = 1;
   ThreadsafeQueue<Message> reply_queue;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
       new SparseSSPController(staleness, speculation, 
         std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),
@@ -488,7 +489,7 @@ TEST_F(TestSparseSSPModel, NotBlockByStaleness) {
   const int staleness = 1;
   const int speculation = 1;
   ThreadsafeQueue<Message> reply_queue;
-  std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
   std::unique_ptr<AbstractSparseSSPController> sparse_ssp_controller(
       new SparseSSPController(staleness, speculation, 
         std::unique_ptr<AbstractPendingBuffer>(new SparsePendingBuffer()),

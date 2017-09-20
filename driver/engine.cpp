@@ -1,7 +1,5 @@
 #include "driver/engine.hpp"
 
-#include "server/storage.hpp"
-#include "server/ssp_model.hpp"
 
 #include <thread>
 #include <vector>
@@ -130,23 +128,16 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
 }
 
 
-void Engine::CreateTable(uint32_t table_id,
+void Engine::RegisterRangeManager(uint32_t table_id, 
     const std::vector<third_party::Range>& ranges) {
   CHECK(id_mapper_);
   auto server_thread_ids = id_mapper_->GetAllServerThreads();
   CHECK_EQ(ranges.size(), server_thread_ids.size());
   SimpleRangeManager range_manager(ranges, server_thread_ids);
-  CHECK(server_thread_group_);
   CHECK(range_manager_map_.find(table_id) == range_manager_map_.end());
   range_manager_map_.insert({table_id, range_manager});
-  const int model_staleness = 1;  // TODO
-  for (auto& server_thread : *server_thread_group_) {
-    std::unique_ptr<AbstractStorage> storage(new Storage<float>());
-    std::unique_ptr<AbstractModel> model(new SSPModel(table_id, std::move(storage), model_staleness,
-                                                      server_thread_group_->GetReplyQueue()));
-    server_thread->RegisterModel(table_id, std::move(model));
-  }
 }
+
 
 void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids) {
   CHECK(model_init_thread_);

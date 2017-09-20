@@ -10,6 +10,8 @@
 #include "worker/model_init_thread.hpp"
 #include "server/server_thread.hpp"
 #include "server/server_thread_group.hpp"
+#include "server/map_storage.hpp"
+#include "server/ssp_model.hpp"
 #include "comm/mailbox.hpp"
 #include "comm/sender.hpp"
 #include "driver/ml_task.hpp"
@@ -18,6 +20,14 @@
 #include "driver/worker_spec.hpp"
 
 namespace flexps {
+
+enum class ModelType {
+  SSPModel, BSPModel
+};
+enum class StorageType {
+  MapStorage, VectorStorage
+};
+
 
 class Engine {
  public:
@@ -54,10 +64,15 @@ class Engine {
  
   void Barrier();
   WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
-  void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges);
+  template<typename Val>
+  void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges,
+      ModelType model_type, StorageType storage_type);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
+
  private:
+  void RegisterRangeManager(uint32_t table_id, const std::vector<third_party::Range>& ranges);
+
   std::map<uint32_t, SimpleRangeManager> range_manager_map_;
   // nodes
   Node node_;
@@ -73,5 +88,32 @@ class Engine {
   // server elements
   std::unique_ptr<ServerThreadGroup> server_thread_group_;
 };
+
+template<typename Val>
+void Engine::CreateTable(uint32_t table_id,
+    const std::vector<third_party::Range>& ranges,
+    ModelType model_type, StorageType storage_type) {
+  RegisterRangeManager(table_id, ranges);
+  CHECK(server_thread_group_);
+  const int model_staleness = 1;  // TODO
+  for (auto& server_thread : *server_thread_group_) {
+    std::unique_ptr<AbstractStorage> storage;
+    std::unique_ptr<AbstractModel> model;
+    // Set up storage
+    if (storage_type == StorageType::MapStorage) {
+      storage.reset(new MapStorage<Val>());
+    } else {
+      CHECK(false) << "Unknown storage_type";
+    }
+    // Set up model
+    if (model_type == ModelType::SSPModel) {
+      model.reset(new SSPModel(table_id, std::move(storage), model_staleness,
+                                                        server_thread_group_->GetReplyQueue()));
+    } else {
+      CHECK(false) << "Unknown model_type";
+    }
+    server_thread->RegisterModel(table_id, std::move(model));
+  }
+}
 
 }  // namespace flexps

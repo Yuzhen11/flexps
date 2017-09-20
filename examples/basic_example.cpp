@@ -37,7 +37,8 @@ void Run() {
     range.push_back({kMaxKey / nodes.size() * i, kMaxKey / nodes.size() * (i + 1)});
   }
   range.push_back({kMaxKey / nodes.size() * (nodes.size() - 1), kMaxKey});
-  engine.CreateTable(kTableId, range);  // table 0, range [0,10)
+  engine.CreateTable<float>(0, range, 
+      ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10)
   engine.Barrier();
 
   // 3. Construct tasks

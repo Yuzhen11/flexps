@@ -4,7 +4,7 @@
 #include "server/server_thread.hpp"
 #include "server/server_thread_group.hpp"
 #include "server/ssp_model.hpp"
-#include "server/storage.hpp"
+#include "server/map_storage.hpp"
 
 #include <iostream>
 
@@ -24,7 +24,7 @@ void TestServer() {
   for (int i = 0; i < num_models; ++i) {
     for (auto& server_thread : server_thread_group) {
       // TODO(Ruoyu Wu): Each server thread should have its own model?
-      std::unique_ptr<AbstractStorage> storage(new Storage<int>());
+      std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
       std::unique_ptr<AbstractModel> model(
           new SSPModel(i, std::move(storage), model_staleness, server_thread_group.GetReplyQueue()));
       server_thread->RegisterModel(i, std::move(model));
