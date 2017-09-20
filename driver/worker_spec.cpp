@@ -28,7 +28,7 @@ namespace flexps {
     return node_to_workers_;
   }
 
-  std::vector<uint32_t> WorkerSpec::GetThreadIds() {
+  std::vector<uint32_t> WorkerSpec::GetAllThreadIds() {
     return {thread_ids_.begin(), thread_ids_.end()};
   }
 

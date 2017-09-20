@@ -118,6 +118,7 @@ void Engine::StopMailbox() {
 WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc) {
   CHECK(id_mapper_);
   WorkerSpec worker_spec(worker_alloc);
+  // Need to make sure that all the engines allocate the same set of workers
   for (auto& kv : worker_spec.GetNodeToWorkers()) {
     for (int i = 0; i < kv.second.size(); ++ i) {
       uint32_t tid = id_mapper_->AllocateWorkerThread(kv.first);
@@ -152,7 +153,7 @@ void Engine::Run(const MLTask& task) {
   WorkerSpec worker_spec = AllocateWorkers(task.GetWorkerAlloc());
   // Init tables
   for (auto table : tables) {
-    InitTable(table, worker_spec.GetThreadIds());
+    InitTable(table, worker_spec.GetAllThreadIds());
   }
   if (worker_spec.HasLocalWorkers(node_.id)) {
     const auto& local_threads = worker_spec.GetLocalThreads(node_.id);

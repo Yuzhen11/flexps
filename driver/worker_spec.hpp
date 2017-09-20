@@ -22,7 +22,7 @@ class WorkerSpec {
   const std::vector<uint32_t>& GetLocalThreads(uint32_t node_id) const;
 
   std::map<uint32_t, std::vector<uint32_t>> GetNodeToWorkers();
-  std::vector<uint32_t> GetThreadIds();
+  std::vector<uint32_t> GetAllThreadIds();
 
   void InsertWorkerIdThreadId(uint32_t worker_id, uint32_t thread_id);
 
