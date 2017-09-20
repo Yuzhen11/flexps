@@ -4,6 +4,7 @@ file(GLOB driver-src-files
   node_parser.cpp
   simple_id_mapper.cpp
   engine.cpp
+  worker_spec.cpp
   )
 
 add_library(driver-objs OBJECT ${driver-src-files})

@@ -12,7 +12,7 @@
 namespace flexps {
 
 /*
- * node_id = tid % 1000
+ * node_id = tid / 1000
  */
 class SimpleIdMapper : public AbstractIdMapper {
  public:
@@ -34,14 +34,16 @@ class SimpleIdMapper : public AbstractIdMapper {
 
   static const uint32_t kMaxNodeId = 1000;
   static const uint32_t kMaxThreadsPerNode = 1000;
-  // BgThreads include server threads and worker helper threads.
+  // BgThreads include server threads, worker helper threads and model init threads.
   // Their ids are [0, 100) for node id 0.
   static const uint32_t kMaxBgThreadsPerNode = 100;
-
+  // The worker helper thread's id for node id 0 is in [10, 20)
   static const uint32_t kWorkerHelperThreadId = 10;
+  // The model init thread's id for node id 0 is in [20, 100)
   static const uint32_t kModelInitThreadId = 20;
 
  private:
+  // The server thread's id in each node
   std::map<uint32_t, std::vector<uint32_t>> node2server_;
   std::map<uint32_t, std::vector<uint32_t>> node2worker_helper_;
   std::map<uint32_t, uint32_t> node2model_init_;
