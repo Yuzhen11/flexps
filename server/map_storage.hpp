@@ -9,55 +9,32 @@
 
 namespace flexps {
 
-template <typename T>
+template <typename Val>
 class MapStorage : public AbstractStorage {
  public:
-  MapStorage() {}
+  MapStorage() = default;
 
-  virtual void Add(Message& msg) override {
-    CHECK(msg.data.size() == 2);
-    CHECK(msg.data[0].size() == msg.data[1].size());
-    // Todo(Ruoyu Wu): Type Check
-    auto keys = third_party::SArray<Key>(msg.data[0]);
-    auto vals = third_party::SArray<T>(msg.data[1]);
-    for (size_t index = 0; index < keys.size(); index++) {
-      FindAndCreate(keys[index]);
-      storage_[keys[index]] += vals[index];
+  virtual void SubAdd(const third_party::SArray<Key>& typed_keys, 
+      const third_party::SArray<char>& vals) override {
+    auto typed_vals = third_party::SArray<Val>(vals);
+    CHECK_EQ(typed_keys.size(), typed_vals.size());
+    for (size_t index = 0; index < typed_keys.size(); index++) {
+      storage_[typed_keys[index]] += typed_vals[index];
     }
   }
 
-  virtual Message Get(Message& msg) override {
-    CHECK(msg.data.size() == 1);
-    // Todo(Ruoyu Wu): Type Check
-    auto keys = third_party::SArray<Key>(msg.data[0]);
-    Message reply;
-    reply.meta.recver = msg.meta.sender;
-    reply.meta.sender = msg.meta.recver;
-    reply.meta.flag = msg.meta.flag;
-    reply.meta.model_id = msg.meta.model_id;
-    reply.meta.version = msg.meta.version;
-    std::vector<T> reply_vec;
-    for (auto& key : keys) {
-      FindAndCreate(key);
-      reply_vec.push_back(storage_[key]);
+  virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
+    third_party::SArray<Val> reply_vals(typed_keys.size());
+    for (int i = 0; i < typed_keys.size(); ++ i) {
+      reply_vals[i] = storage_[typed_keys[i]];
     }
-    third_party::SArray<Key> reply_keys(keys);
-    third_party::SArray<T> reply_vals(reply_vec);
-    reply.AddData<Key>(reply_keys);
-    reply.AddData<T>(reply_vals);
-    return reply;
+    return third_party::SArray<char>(reply_vals);
   }
 
   virtual void FinishIter() override {}
 
  private:
-  virtual void FindAndCreate(Key key) override {
-    if (storage_.find(key) == storage_.end()) {
-      storage_[key] = T();
-    }
-  }
-
-  std::map<Key, T> storage_;
+  std::map<Key, Val> storage_;
 };
 
 }  // namespace flexps

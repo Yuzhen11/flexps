@@ -1,23 +1,38 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "server/map_storage.hpp"
+#include "server/vector_storage.hpp"
 
 namespace flexps {
 namespace {
 
-class TestMapStorage : public testing::Test {
+class TestVectorStorage : public testing::Test {
  public:
-  TestMapStorage() {}
-  ~TestMapStorage() {}
+  TestVectorStorage() {}
+  ~TestVectorStorage() {}
 
  protected:
   void SetUp() {}
   void TearDown() {}
 };
 
-TEST_F(TestMapStorage, AddGetInt) {
-  MapStorage<int> s;
+TEST_F(TestVectorStorage, Create) {
+  VectorStorage<int> s({10, 20});
+  VectorStorage<float> s1({10, 20});
+  VectorStorage<double> s2({10, 20});
+}
+
+TEST_F(TestVectorStorage, Size) {
+  VectorStorage<int> s({10, 20});
+  EXPECT_EQ(s.Size(), 10);
+  VectorStorage<float> s1({10, 21});
+  EXPECT_EQ(s1.Size(), 11);
+  VectorStorage<double> s2({10, 22});
+  EXPECT_EQ(s2.Size(), 12);
+}
+
+TEST_F(TestVectorStorage, AddGetInt) {
+  VectorStorage<int> s({10, 20});
 
   Message m;
   third_party::SArray<Key> s_keys({13, 14, 15});
@@ -39,8 +54,8 @@ TEST_F(TestMapStorage, AddGetInt) {
   }
 }
 
-TEST_F(TestMapStorage, AddGetFloat) {
-  MapStorage<float> s;
+TEST_F(TestVectorStorage, AddGetFloat) {
+  VectorStorage<float> s({10, 20});
 
   Message m;
   third_party::SArray<Key> s_keys({13, 14, 15});
@@ -62,8 +77,8 @@ TEST_F(TestMapStorage, AddGetFloat) {
   }
 }
 
-TEST_F(TestMapStorage, SubAddSubGet) {
-  MapStorage<float> s;
+TEST_F(TestVectorStorage, SubAddSubGet) {
+  VectorStorage<float> s({10, 20});
 
   third_party::SArray<Key> s_keys({13, 14, 15});
   third_party::SArray<float> s_vals({0.1, 0.2, 0.3});
@@ -76,3 +91,4 @@ TEST_F(TestMapStorage, SubAddSubGet) {
 
 }  // namespace
 }  // namespace flexps
+
