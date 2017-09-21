@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <vector>
+#include <algorithm>
 
 #include "base/node.hpp"
 #include "worker/worker_helper_thread.hpp"
@@ -11,6 +12,7 @@
 #include "server/server_thread.hpp"
 #include "server/server_thread_group.hpp"
 #include "server/map_storage.hpp"
+#include "server/vector_storage.hpp"
 #include "server/ssp_model.hpp"
 #include "comm/mailbox.hpp"
 #include "comm/sender.hpp"
@@ -96,13 +98,23 @@ void Engine::CreateTable(uint32_t table_id,
   RegisterRangeManager(table_id, ranges);
   CHECK(server_thread_group_);
   const int model_staleness = 1;  // TODO
+
+  CHECK(id_mapper_);
+  auto server_thread_ids = id_mapper_->GetAllServerThreads();
+  CHECK_EQ(ranges.size(), server_thread_ids.size());
+
   for (auto& server_thread : *server_thread_group_) {
     std::unique_ptr<AbstractStorage> storage;
     std::unique_ptr<AbstractModel> model;
     // Set up storage
     if (storage_type == StorageType::MapStorage) {
       storage.reset(new MapStorage<Val>());
-    } else {
+    }
+    else if (storage_type == StorageType::VectorStorage){
+      auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
+      storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()]));
+    } 
+    else {
       CHECK(false) << "Unknown storage_type";
     }
     // Set up model
