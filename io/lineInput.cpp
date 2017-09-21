@@ -1,7 +1,9 @@
 #pragma once
 
-#include "line_inputformat.hpp"
-#include "boost/string_ref.hpp"
+#include <string>  
+#include "boost/utility/string_ref.hpp"  
+#include "glog/logging.h"
+#include "file_splitter.cpp"
 
 namespace flexps {
 
@@ -109,7 +111,7 @@ class LineInputFormatML{
     }
 
 
-    bool LineInputFormat::is_setup() const { return !(is_setup_ ^ LineInputFormatSetUp::AllSetUp); }
+    bool is_setup() const { return !(is_setup_ ^ LineInputFormatSetUp::AllSetUp); }
 
 
    private:

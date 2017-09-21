@@ -1,17 +1,30 @@
 #pragma once
 
 #include <string>
-#include "glog/glog.hpp"
+#include "boost/utility/string_ref.hpp"
+#include "glog/logging.h"
 #include "coordinator.cpp"
+#include "hdfs/hdfs.h"
 
 namespace flexps {
     
 class HDFSFileSplitterML{
    public:
-    HDFSFileSplitterML(int num_threads, int id, Coordinator)
-    {}
+    HDFSFileSplitterML(int num_threads, int id, Coordinator* coordinator, std::string hostname, std::string hdfs_namenode, std::string hdfs_namenode_port)
+    {
+        data_= nullptr;
+        num_threads_ = num_threads;
+        id_ = id;
+        coordinator_ = coordinator;
+        hostname_ = hostname;
+        hdfs_namenode_ = hdfs_namenode;
+        hdfs_namenode_port_ = hdfs_namenode_port;
+    }
 
-    virtual ~HDFSFileSplitterML() {}
+    virtual ~HDFSFileSplitterML() {
+        if (data_)
+            delete[] data_;
+    }
         
     boost::string_ref fetch_block(bool is_next = false) {
         int nbytes = 0;
@@ -28,7 +41,8 @@ class HDFSFileSplitterML{
             BinStream question;
             question << url_ << hostname_
                 << num_threads_ << id_ << kLoadHdfsType_;
-            BinStream answer = coordinator_->ask_master(question, kIOHDFSSubsetLoad);
+            // 301 is constant for kIOHDFSSubsetLoad
+            BinStream answer = coordinator_->ask_master(question, 301);
             std::string fn;
             answer >> fn;
             answer >> offset_;
@@ -55,7 +69,7 @@ class HDFSFileSplitterML{
     static void init_blocksize(hdfsFS fs, const std::string& url)
     {
         int num_files;
-        auto file_info = hdfsListDirectory(fs_, url.c_str(), &num_files);
+        auto file_info = hdfsListDirectory(fs, url.c_str(), &num_files);
         for (int i = 0; i < num_files; ++i) {
             if (file_info[i].mKind == kObjectKindFile) {
                 hdfs_block_size = file_info[i].mBlockSize;
@@ -73,10 +87,14 @@ class HDFSFileSplitterML{
         // init fs_
         struct hdfsBuilder* builder = hdfsNewBuilder();
         hdfsBuilderSetNameNode(builder, hdfs_namenode_.c_str());
-        hdfsBuilderSetNameNodePort(builder, std::stoi(hdfs_namenode_port));
+        hdfsBuilderSetNameNodePort(builder, std::stoi(hdfs_namenode_port_));
         fs_ = hdfsBuilderConnect(builder);
         hdfsFreeBuilder(builder);
-        base::call_once_each_time(init_blocksize, fs_, url_);
+		{
+			std::mutex gCallOnceMutex;
+			std::lock_guard<std::mutex> guard(gCallOnceMutex);
+        	init_blocksize(fs_, url_);
+		}
         data_ = new char[hdfs_block_size];
     }
 
@@ -100,7 +118,6 @@ class HDFSFileSplitterML{
             }
             return start;
         }
-
         Coordinator* coordinator_;
         int kLoadHdfsType_;
         int num_threads_;

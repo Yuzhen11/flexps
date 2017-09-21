@@ -47,5 +47,6 @@ add_subdirectory(worker)
 add_subdirectory(comm)
 add_subdirectory(driver)
 add_subdirectory(examples)
+add_subdirectory(io)
 
 add_subdirectory(test)
