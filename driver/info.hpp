@@ -31,7 +31,8 @@ struct Info {
   KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const;
 
   template <typename Val>
-  SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id) const;
+  SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, 
+      uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const;
 };
 
 template <typename Val>
@@ -41,8 +42,10 @@ KVClientTable<Val> Info::CreateKVClientTable(uint32_t table_id) const {
   return table;
 }
 template <typename Val>
-SparseKVClientTable<Val> Info::CreateSparseKVClientTable(uint32_t table_id) const {
-  // TODO
+SparseKVClientTable<Val> Info::CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const {
+  CHECK(range_manager_map.find(table_id) != range_manager_map.end());
+  SparseKVClientTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, callback_runner, speculation, keys);
+  return table;
 }
 
 }  // namespace flexps

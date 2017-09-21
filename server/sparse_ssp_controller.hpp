@@ -1,36 +1,36 @@
 #pragma once
 
-#include "server/abstract_sparse_ssp_controller.hpp"
-#include "server/sparse_conflict_detector.hpp"
-#include "server/sparse_pending_buffer.hpp"
+#include "base/message.hpp"
 
+#include <list>
+#include <vector>
+#include <unordered_map>
 
 namespace flexps {
 
-class SparseSSPController : public AbstractSparseSSPController {
+class SparseSSPController {
  public:
-  SparseSSPController(uint32_t staleness, uint32_t speculation, 
-                      std::unique_ptr<AbstractPendingBuffer>&& get_buffer,
-                      std::unique_ptr<AbstractConflictDetector>&& detector)
+  SparseSSPController() = delete;
+  SparseSSPController(uint32_t staleness, uint32_t speculation)
     : staleness_(staleness), speculation_(speculation) {}
 
-  virtual std::list<Message> UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock) override;
-  virtual void AddRecord(Message& msg) override;
+  std::list<Message> UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock);
+  void AddRecord(Message& msg);
 
   // get_buffer's func
-  virtual std::list<Message> Pop(const int version, const int tid = -1) override;
-  virtual std::list<Message>& Get(const int version, const int tid = -1) override;
-  virtual void Push(const int version, Message& message, const int tid = -1) override;
-  virtual int Size(const int version) override;
+  std::list<Message> Pop(const int version, const int tid = -1);
+  std::list<Message>& Get(const int version, const int tid = -1);
+  void Push(const int version, Message& message, const int tid = -1);
+  int Size(const int version);
 
 
   // recorder's func
-  virtual bool ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
-                            const int end_version, int& forwarded_thread_id, int& forwarded_version) override;
-  virtual void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs) override;
-  virtual void RemoveRecord(const int version, const uint32_t tid,
-                            const third_party::SArray<uint32_t>& paramIDs) override;
-  virtual void ClockRemoveRecord(const int version) override;
+  bool ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+                            const int end_version, int& forwarded_thread_id, int& forwarded_version);
+  void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs);
+  void RemoveRecord(const int version, const uint32_t tid,
+                            const third_party::SArray<uint32_t>& paramIDs);
+  void ClockRemoveRecord(const int version);
 
   int ParamSize(const int version);
   int WorkerSize(const int version);
@@ -45,8 +45,6 @@ class SparseSSPController : public AbstractSparseSSPController {
 
   std::vector<Message> too_fast_buffer_;
 };
-
-
 
 }  // namespace flexps
 

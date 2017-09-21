@@ -23,42 +23,37 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
     too_fast_buffer_.clear();
   }
 
-  std::cout << "progress: " << progress << " sender: " << sender << std::endl;
-  std::cout << "get_messages size " << get_messages.size() << std::endl;
-  VLOG(1) << "progress: " << progress << " sender: " << sender;
+  VLOG(1) << "progress: " << progress << " sender: " << sender
+    << " get_messages size " << get_messages.size();
   auto get_msg_iter = get_messages.begin();
   while(get_msg_iter != get_messages.end()) {
-    std::cout << "message version: " << (*get_msg_iter).meta.version << " message sender: " << (*get_msg_iter).meta.sender << std::endl;
+    VLOG(1) << "message version: " << (*get_msg_iter).meta.version << " message sender: " << (*get_msg_iter).meta.sender;
     CHECK(((*get_msg_iter).meta.version > min_clock) || ((*get_msg_iter).meta.version < min_clock + staleness_ + speculation_))
         << "[Error]SparseSSPModel: progress invalid";
     CHECK((*get_msg_iter).data.size() == 1);
     if ((*get_msg_iter).meta.version <= staleness_ + min_clock) {
-      std::cout << "Not in speculation zone!" << std::endl;
       // TODO(Ruoyu Wu): have copy, and careful about SARRAY
       rets.push_back((*get_msg_iter));
       get_msg_iter ++;
-      VLOG(1) << "Satisfied by stalenss";
+      VLOG(1) << "Not in speculation zone! Satisfied by stalenss";
     } 
     else if ((*get_msg_iter).meta.version <= staleness_ + speculation_ + min_clock) {
-      std::cout << "In speculation zone!" << std::endl;
+      VLOG(1) << "In speculation zone! "
+        << "min_clock " << min_clock << " check_biggest_version " << (*get_msg_iter).meta.version - staleness_ - 1;
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
-      std::cout << "min_clock " << min_clock << " check_biggest_version " << (*get_msg_iter).meta.version - staleness_ - 1 << std::endl;
       if (!ConflictInfo(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
                                    (*get_msg_iter).meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
         // TODO(Ruoyu Wu): have copy, and careful about SARRAY
         rets.push_back((*get_msg_iter));
         get_msg_iter ++;
-        std::cout << "No Conflict" << std::endl;
-        VLOG(1) << "Satisfied by sparsity";
+        VLOG(1) << "No Conflict, Satisfied by sparsity";
       } 
       else {
         CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         Push(forwarded_version, (*get_msg_iter), forwarded_worker_id);
         get_msg_iter = get_messages.erase(get_msg_iter);
-        std::cout << "Conflict" << std::endl;
-        std::cout << "forwarded to version: " << forwarded_version << " worker_id: " << forwarded_worker_id << std::endl;
-        VLOG(1) << "forwarded to version: " << forwarded_version << " worker_id: " << forwarded_worker_id;
+        VLOG(1) << "Conflict, forwarded to version: " << forwarded_version << " worker_id: " << forwarded_worker_id;
       }
     }
     else if ((*get_msg_iter).meta.version == staleness_ + speculation_ + min_clock + 1) {
@@ -69,8 +64,6 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
       CHECK(false);
     }
   }
-
-  std::cout << std::endl;
 
   if (updated_min_clock != -1) {  // min clock updated
     CHECK(Size(updated_min_clock - 1) == 0)
@@ -102,13 +95,16 @@ std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
 }
 
 std::list<Message>& SparseSSPController::Get(const int version, const int tid) {
+  return buffer_[version][tid];
+  /*
   std::list<Message> get_messages;
   if (buffer_.find(version) != buffer_.end()) {
     if (buffer_[version].find(tid) != buffer_[version].end()) {
       return buffer_[version][tid];
     }
   }
-  CHECK(false);
+  CHECK(false) << "version: " << version << " tid: " << tid;
+  */
 }
 
 void SparseSSPController::Push(const int version, Message& message, const int tid) {

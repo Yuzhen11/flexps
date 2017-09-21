@@ -1,7 +1,7 @@
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "base/create_message.hpp"
+#include "base/message.hpp"
 #include "base/threadsafe_queue.hpp"
 #include "server/asp_model.hpp"
 #include "server/map_storage.hpp"

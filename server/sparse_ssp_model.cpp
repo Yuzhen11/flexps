@@ -6,9 +6,10 @@
 namespace flexps {
 
 SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage,
-                               ThreadsafeQueue<Message>* reply_queue, std::unique_ptr<AbstractSparseSSPController>&& sparse_ssp_controller)
+                               ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation)
     : model_id_(model_id), reply_queue_(reply_queue),
-    storage_(std::move(storage)), sparse_ssp_controller_(std::move(sparse_ssp_controller)) {
+    storage_(std::move(storage)),
+    sparse_ssp_controller_(staleness, speculation) {
 }
 
 void SparseSSPModel::Clock(Message& message) {
@@ -17,7 +18,7 @@ void SparseSSPModel::Clock(Message& message) {
   int min_clock = progress_tracker_.GetMinClock();
   int progress = progress_tracker_.GetProgress(message.meta.sender);
   // Although we assume only one get message in a version, multiple messages can still be poped out
-  std::list<Message> get_messages = sparse_ssp_controller_->UnblockRequests(progress, sender, updated_min_clock, min_clock);
+  std::list<Message> get_messages = sparse_ssp_controller_.UnblockRequests(progress, sender, updated_min_clock, min_clock);
   for (auto& msg : get_messages) {
     CHECK(msg.data.size() == 1);
     reply_queue_->Push(storage_->Get(msg));
@@ -35,7 +36,7 @@ void SparseSSPModel::Get(Message& message) {
     Message msg_replica = message;
     reply_queue_->Push(storage_->Get(msg_replica));
   }
-  sparse_ssp_controller_->AddRecord(message);
+  sparse_ssp_controller_.AddRecord(message);
 }
 
 void SparseSSPModel::Add(Message& message) {

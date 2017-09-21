@@ -233,10 +233,7 @@ int Mailbox::Recv(Message* msg) {
     } else if (i == 1) {
       // Unpack the meta
       Meta* meta = CHECK_NOTNULL((Meta*) zmq_msg_data(zmsg));
-      msg->meta.sender = meta->sender;
-      msg->meta.recver = meta->recver;
-      msg->meta.model_id = meta->model_id;
-      msg->meta.flag = meta->flag;
+      msg->meta = *meta;
       zmq_msg_close(zmsg);
       bool more = zmq_msg_more(zmsg);
       delete zmsg;

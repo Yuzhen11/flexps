@@ -196,6 +196,7 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
     // For the first Get(), Send out [0, speculation_ + 1) Get requests.
     for (int i = 0; i < speculation_ + 1; ++ i) {
       KVPairs<Val> kvs;
+      CHECK_LT(i, keys_.size());
       kvs.keys = keys_[i];
       SlicedKVs sliced;
       int num_reqs = Slice_(kvs, &sliced);
@@ -212,6 +213,7 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
     // Call Clock after NewRequest
     Clock_();  // Clock_() is called here. When the clock is called. The response message may be sent back.
     KVPairs<Val> kvs;
+    CHECK_LT(get_count_ - 1 + speculation_, keys_.size());
     kvs.keys = keys_[get_count_ - 1 + speculation_];
     SlicedKVs sliced;
     int num_reqs = Slice_(kvs, &sliced);

@@ -34,13 +34,14 @@ void Run() {
   // 2. Create tables
   const int kTableId = 0;
   const int kMaxKey = 1000;
+  const int kStaleness = 1;
   std::vector<third_party::Range> range;
   for (int i = 0; i < nodes.size() - 1; ++ i) {
     range.push_back({kMaxKey / nodes.size() * i, kMaxKey / nodes.size() * (i + 1)});
   }
   range.push_back({kMaxKey / nodes.size() * (nodes.size() - 1), kMaxKey});
-  engine.CreateTable<float>(0, range, 
-      ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10)
+  engine.CreateTable<float>(kTableId, range, 
+      ModelType::SSPModel, StorageType::MapStorage, kStaleness);
   engine.Barrier();
 
   // 3. Construct tasks
@@ -58,10 +59,10 @@ void Run() {
     std::vector<Key> keys(kMaxKey);
     std::iota(keys.begin(), keys.end(), 0);
     std::vector<float> vals(keys.size(), 0.5);
+    std::vector<float> ret;
     for (int i = 0; i < 100; ++ i) {
-      table.Add(keys, vals);
-      std::vector<float> ret;
       table.Get(keys, &ret);
+      table.Add(keys, vals);
       table.Clock();
       CHECK_EQ(ret.size(), keys.size());
       // LOG(INFO) << ret[0];

@@ -44,7 +44,7 @@ env_params = (
 # TODO: May need to ls before run to make sure the related files are synced.
 clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; "
 
-with open(hostfile, "r") as f:
+with open(hostfile_path, "r") as f:
   hostlist = []  
   hostlines = f.read().splitlines()
   for line in hostlines:
