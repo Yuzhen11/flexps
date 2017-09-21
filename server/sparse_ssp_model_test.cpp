@@ -6,8 +6,6 @@
 #include "server/sparse_ssp_controller.hpp"
 #include "server/map_storage.hpp"
 
-#include <iostream>
-
 namespace flexps {
 namespace {
 

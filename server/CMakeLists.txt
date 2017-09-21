@@ -2,6 +2,7 @@ include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
 file(GLOB server-src-files
   ssp_model.cpp
+  asp_model.cpp
   sparse_ssp_model.cpp
   progress_tracker.cpp
   server_thread.cpp
