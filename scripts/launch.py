@@ -37,7 +37,7 @@ ssh_cmd = (
 
 env_params = (
   "GLOG_logtostderr=true "
-  "GLOG_v=1 "
+  "GLOG_v=-1 "
   "GLOG_minloglevel=0 "
   )
 

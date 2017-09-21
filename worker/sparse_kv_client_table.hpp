@@ -8,6 +8,7 @@
 
 #include "worker/abstract_callback_runner.hpp"
 #include "worker/simple_range_manager.hpp"
+#include "worker/kvpairs.hpp"
 
 #include "glog/logging.h"
 
@@ -15,12 +16,6 @@
 #include <vector>
 
 namespace flexps {
-
-template <typename Val>
-struct KVPairs {
-  third_party::SArray<Key> keys;
-  third_party::SArray<Val> vals;
-};
 
 /*
  * Get -> Add -> 

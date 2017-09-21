@@ -125,7 +125,7 @@ void Mailbox::Receiving() {
     Message msg;
     int recv_bytes = Recv(&msg);
     // For debugging, show received message
-    VLOG(1) << "Received message " << msg.DebugString();
+    VLOG(1) << "Node " << node_.id << " received message " << msg.DebugString();
 
     if (msg.meta.flag == Flag::kExit) {
       break;
@@ -184,7 +184,7 @@ int Mailbox::Send(const Message& msg) {
   int send_bytes = meta_size;
 
   // send data
-  VLOG(1) << "Start sending data";
+  VLOG(1) << "Node " << node_.id << " starts sending data";
   for (int i = 0; i < num_data; ++i) {
     zmq_msg_t data_msg;
     third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);
