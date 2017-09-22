@@ -2,7 +2,6 @@
 
 #include "hdfs/hdfs.h"
 
-#include "hdfs_assigner.hpp"
 
 namespace flexps {
 

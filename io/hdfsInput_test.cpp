@@ -22,6 +22,11 @@ class TestLineInput : public testing::Test {
 };
 
 TEST_F(TestLineInput, Read) {
+
+
+    auto& master = Master::get_instance();
+    master.setup();
+    master.serve();
     std::string master_host = "proj10";
     std::string input = "hdfs:///dataset/ml/netflix_small.txt";
     int master_port = 01817; 
