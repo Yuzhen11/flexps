@@ -8,6 +8,7 @@
 
 #include "worker/abstract_callback_runner.hpp"
 #include "worker/simple_range_manager.hpp"
+#include "worker/kvpairs.hpp"
 
 #include "glog/logging.h"
 
@@ -16,28 +17,33 @@
 
 namespace flexps {
 
-template <typename Val>
-struct KVPairs {
-  third_party::SArray<Key> keys;
-  third_party::SArray<Val> vals;
-};
-
+/*
+ * Get (optional) -> Add (optional) -> Clock ->
+ */
 template <typename Val>
 class KVClientTable {
  public:
   KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
                 const SimpleRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner);
 
+  // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);
   void Get(const std::vector<Key>& keys, std::vector<Val>* vals);
+  // The SArray version
+  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
+  void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals);
+
   void Clock();
 
   using SlicedKVs = std::vector<std::pair<bool, KVPairs<Val>>>;
 
  private:
-  void Slice(const KVPairs<Val>& send, SlicedKVs* sliced);
-  void Send(const SlicedKVs& sliced, bool is_add);
-  void AddRequest(const SlicedKVs& sliced);
+  template <typename C>
+  void Get_(const third_party::SArray<Key>& keys, C* vals);
+
+  void Slice_(const KVPairs<Val>& send, SlicedKVs* sliced);
+  void Send_(const SlicedKVs& sliced, bool is_add);
+  void AddRequest_(const SlicedKVs& sliced);
 
   uint32_t app_thread_id_;
   uint32_t model_id_;
@@ -75,27 +81,47 @@ KVClientTable<Val>::KVClientTable(uint32_t app_thread_id, uint32_t model_id, Thr
   });
 }
 
+// vector version Add
 template <typename Val>
 void KVClientTable<Val>::Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {
-  // third_party::SArray<Key> s_keys(keys);
-  // third_party::SArray<Val> s_vals(vals);
+  Add(third_party::SArray<Key>(keys), third_party::SArray<Val>(vals));
+}
+
+// SArray version Add
+template <typename Val>
+void KVClientTable<Val>::Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {
   KVPairs<Val> kvs;
   kvs.keys = keys;
   kvs.vals = vals;
   SlicedKVs sliced;
   // 1. slice
-  Slice(kvs, &sliced);
+  Slice_(kvs, &sliced);
   // 2. send
-  Send(sliced, true);
+  Send_(sliced, true);
 }
 
+
+// vector version Get 
 template <typename Val>
 void KVClientTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
+  Get_(third_party::SArray<Key>(keys), vals);
+}
+
+// SArray version Get
+template <typename Val>
+void KVClientTable<Val>::Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {
+  Get_(keys, vals);
+}
+
+// Internal version
+template <typename Val>
+template <typename C>
+void KVClientTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
   KVPairs<Val> kvs;
   kvs.keys = keys;
   SlicedKVs sliced;
   // 1. slice
-  Slice(kvs, &sliced);
+  Slice_(kvs, &sliced);
   // 2. register handle
   callback_runner_->RegisterRecvFinishHandle(app_thread_id_, model_id_, [&]() {
     size_t total_key = 0, total_val = 0;
@@ -122,15 +148,15 @@ void KVClientTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* val
     recv_kvs_.clear();
   });
   // 3. add request
-  AddRequest(sliced);
+  AddRequest_(sliced);
   // 4. send
-  Send(sliced, false);
+  Send_(sliced, false);
   // 5. wait request
   callback_runner_->WaitRequest(app_thread_id_, model_id_);
 }
 
 template <typename Val>
-void KVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
+void KVClientTable<Val>::Slice_(const KVPairs<Val>& send, SlicedKVs* sliced) {
   CHECK_NOTNULL(range_manager_);
   sliced->resize(range_manager_->GetNumServers());
   const auto& ranges = range_manager_->GetRanges();
@@ -176,7 +202,7 @@ void KVClientTable<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
 }
 
 template <typename Val>
-void KVClientTable<Val>::Send(const SlicedKVs& sliced, bool is_add) {
+void KVClientTable<Val>::Send_(const SlicedKVs& sliced, bool is_add) {
   CHECK_NOTNULL(range_manager_);
   const auto& server_thread_ids = range_manager_->GetServerThreadIds();
   CHECK_EQ(server_thread_ids.size(), sliced.size());
@@ -215,7 +241,7 @@ void KVClientTable<Val>::Clock() {
 }
 
 template <typename Val>
-void KVClientTable<Val>::AddRequest(const SlicedKVs& sliced) {
+void KVClientTable<Val>::AddRequest_(const SlicedKVs& sliced) {
   int num_reqs = 0;
   for (size_t i = 0; i < sliced.size(); ++i) {
     if (sliced[i].first)

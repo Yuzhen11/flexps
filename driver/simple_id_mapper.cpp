@@ -37,6 +37,8 @@ uint32_t SimpleIdMapper::AllocateWorkerThread(uint32_t node_id) {
       return tid;
     }
   }
+  CHECK(false);
+  return -1;
 }
 
 void SimpleIdMapper::DeallocateWorkerThread(uint32_t node_id, uint32_t tid) {

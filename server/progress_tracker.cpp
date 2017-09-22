@@ -5,6 +5,7 @@
 namespace flexps {
 
 void ProgressTracker::Init(const std::vector<uint32_t>& tids) {
+  progresses_.clear();
   for (auto tid : tids) {
     progresses_.insert({tid, 0});
   }

@@ -14,9 +14,9 @@ from os.path import dirname, join
 # 3:worker4:37542
 # 4:worker5:37542
 # 
-# hostfile = "machinefiles/local"
-hostfile = "machinefiles/5node"
-progfile = "debug/BasicExample"
+hostfile = "machinefiles/local"
+# hostfile = "machinefiles/2node"
+progfile = "debug/SparseSSPExample"
 
 script_path = os.path.realpath(__file__)
 proj_dir = dirname(dirname(script_path))
@@ -26,7 +26,12 @@ prog_path = join(proj_dir, progfile)
 print "hostfile_path:%s, prog_path:%s" % (hostfile_path, prog_path)
 
 params = {
-    "config_file":hostfile_path,
+    "config_file" : hostfile_path,
+    "kModelType" : "SparseSSP",
+    # "kModelType" : "SSP",
+    "num_dims" : 3,
+    "num_nonzeros" : 1,
+    "num_iters" : 100,
 }
 
 ssh_cmd = (
@@ -36,13 +41,14 @@ ssh_cmd = (
     )
 
 env_params = (
-  "GLOG_logtostderr=true "
-  "GLOG_v=-1 "
+  # "GLOG_logtostderr=true "
+  "GLOG_v=1 "
   "GLOG_minloglevel=0 "
   )
 
 # TODO: May need to ls before run to make sure the related files are synced.
-clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; "
+# clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; ulimit -c unlimited; "
+clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null;  "
 
 with open(hostfile_path, "r") as f:
   hostlist = []  

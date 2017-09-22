@@ -15,6 +15,7 @@ void Engine::StartEverything() {
   StartWorkerHelperThreads();
   StartModelInitThread();
   StartMailbox();
+  LOG(INFO) << "StartEverything in Node: " << node_.id;
 }
 
 void Engine::CreateMailbox() {
@@ -70,17 +71,18 @@ void Engine::StartModelInitThread() {
 
 void Engine::StartMailbox() {
   CHECK(mailbox_);
-  LOG(INFO) << mailbox_->GetQueueMapSize() << " threads are registered to node:" << node_.id;
+  VLOG(1) << mailbox_->GetQueueMapSize() << " threads are registered to node:" << node_.id;
   mailbox_->Start();
   VLOG(1) << "mailbox starts on node" << node_.id;
 }
 
 void Engine::StopEverything() {
-  StopSender();
   StopMailbox();
+  StopSender();
   StopServerThreads();
   StopWorkerHelperThreads();
   StopModelInitThread();
+  LOG(INFO) << "StopEverything in Node: " << node_.id;
 }
 
 void Engine::StopWorkerHelperThreads() {
@@ -118,6 +120,7 @@ void Engine::StopMailbox() {
 WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc) {
   CHECK(id_mapper_);
   WorkerSpec worker_spec(worker_alloc);
+  // Need to make sure that all the engines allocate the same set of workers
   for (auto& kv : worker_spec.GetNodeToWorkers()) {
     for (int i = 0; i < kv.second.size(); ++ i) {
       uint32_t tid = id_mapper_->AllocateWorkerThread(kv.first);
@@ -152,17 +155,17 @@ void Engine::Run(const MLTask& task) {
   WorkerSpec worker_spec = AllocateWorkers(task.GetWorkerAlloc());
   // Init tables
   for (auto table : tables) {
-    InitTable(table, worker_spec.GetThreadIds());
+    InitTable(table, worker_spec.GetAllThreadIds());
   }
   if (worker_spec.HasLocalWorkers(node_.id)) {
     const auto& local_threads = worker_spec.GetLocalThreads(node_.id);
     const auto& local_workers = worker_spec.GetLocalWorkers(node_.id);
     CHECK_EQ(local_threads.size(), local_workers.size());
     std::vector<std::thread> thread_group(local_threads.size());
+    LOG(INFO) << thread_group.size() << " workers run on proc: " << node_.id;
     for (int i = 0; i < thread_group.size(); ++ i) {
       // TODO:
       mailbox_->RegisterQueue(local_threads[i], worker_helper_thread_->GetWorkQueue());
-      LOG(INFO) << thread_group.size() << " workers run on proc: " << node_.id;
       Info info;
       info.thread_id = local_threads[i];
       info.worker_id = local_workers[i];

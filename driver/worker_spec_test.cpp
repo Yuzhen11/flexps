@@ -67,7 +67,7 @@ TEST_F(TestWorkerSpec, InsertWorkerIdThreadId) {
   EXPECT_EQ(worker_spec.GetLocalThreads(1)[0], WorkerSpec::kMaxThreadsPerNode + WorkerSpec::kMaxBgThreadsPerNode);
   EXPECT_EQ(worker_spec.GetLocalThreads(1)[1], WorkerSpec::kMaxThreadsPerNode + WorkerSpec::kMaxBgThreadsPerNode + 1);
 
-  std::vector<uint32_t> thread_ids_ = worker_spec.GetThreadIds();
+  std::vector<uint32_t> thread_ids_ = worker_spec.GetAllThreadIds();
   EXPECT_EQ(thread_ids_[0], WorkerSpec::kMaxBgThreadsPerNode);
   EXPECT_EQ(thread_ids_[1], WorkerSpec::kMaxBgThreadsPerNode + 1);
   EXPECT_EQ(thread_ids_[2], WorkerSpec::kMaxBgThreadsPerNode + 2);

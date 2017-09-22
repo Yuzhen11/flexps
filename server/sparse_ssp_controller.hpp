@@ -1,31 +1,53 @@
 #pragma once
 
-#include "server/abstract_sparse_ssp_controller.hpp"
-#include "server/sparse_conflict_detector.hpp"
-#include "server/sparse_pending_buffer.hpp"
+#include "base/message.hpp"
 
-#include <memory>
+#include <list>
+#include <vector>
+#include <unordered_map>
 
 namespace flexps {
 
-class SparseSSPController : public AbstractSparseSSPController {
+class SparseSSPController {
  public:
-  SparseSSPController(uint32_t staleness, uint32_t speculation, 
-                      std::unique_ptr<AbstractPendingBuffer>&& get_buffer,
-                      std::unique_ptr<AbstractConflictDetector>&& detector)
-    : staleness_(staleness), speculation_(speculation), 
-    get_buffer_(std::move(get_buffer)), detector_(std::move(detector)) {}
+  SparseSSPController() = delete;
+  SparseSSPController(uint32_t staleness, uint32_t speculation)
+    : staleness_(staleness), speculation_(speculation) {}
 
-  virtual std::vector<Message> UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock) override;
-  virtual void AddRecord(Message& msg) override;
+  std::list<Message> UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock);
+  void AddRecord(Message& msg);
+
+  // get_buffer's func
+  std::list<Message> Pop(const int version, const int tid = -1);
+  std::list<Message>& Get(const int version, const int tid = -1);
+  void Push(const int version, Message& message, const int tid = -1);
+  int Size(const int version);
+
+
+  // recorder's func
+  bool ConflictInfo(int sender_tid, const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+                            const int end_version, int& forwarded_thread_id, int& forwarded_version);
+  void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs);
+  void RemoveRecord(const int version, const uint32_t tid,
+                            const third_party::SArray<uint32_t>& paramIDs);
+  void ClockRemoveRecord(const int version);
+
+  int ParamSize(const int version);
+  int WorkerSize(const int version);
+  int TotalSize(const int version);
+
  private:
-  std::unique_ptr<AbstractPendingBuffer> get_buffer_;
-  std::unique_ptr<AbstractConflictDetector> detector_;
   uint32_t staleness_;
   uint32_t speculation_;
+
+  // <version, <thread_id, [msg]>>
+  std::unordered_map<int, std::unordered_map<int, std::list<Message>>> buffer_;
+
+  // <version, <key, <thread_id>>>
+  std::unordered_map<int, std::unordered_map<uint32_t, std::set<uint32_t>>> recorder_;
+
+  std::vector<Message> too_fast_buffer_;
 };
-
-
 
 }  // namespace flexps
 
