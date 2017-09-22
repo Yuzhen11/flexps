@@ -1,12 +1,9 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
 file(GLOB io-src-files
-  coordinator.hpp
   coordinator.cpp
-  file_splitter.hpp
-  hdfs_assigner.hpp
+  hdfs_assigner.cpp
   lineInput.cpp
-  master.hpp
   master.cpp
   )
 
