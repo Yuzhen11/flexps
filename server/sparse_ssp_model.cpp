@@ -18,7 +18,7 @@ void SparseSSPModel::Clock(Message& message) {
   int min_clock = progress_tracker_.GetMinClock();
   int progress = progress_tracker_.GetProgress(message.meta.sender);
   // Although we assume only one get message in a version, multiple messages can still be poped out
-  std::list<Message> get_messages = sparse_ssp_controller_.UnblockRequests(progress, sender, updated_min_clock, min_clock);
+  std::list<Message> get_messages = sparse_ssp_controller_.Clock(progress, sender, updated_min_clock, min_clock);
   for (auto& msg : get_messages) {
     CHECK(msg.data.size() == 1);
     reply_queue_->Push(storage_->Get(msg));
@@ -33,8 +33,7 @@ void SparseSSPModel::Get(Message& message) {
   CHECK(progress_tracker_.CheckThreadValid(message.meta.sender));
   CHECK(message.data.size() == 1);
   if (message.meta.version == 0) {
-    Message msg_replica = message;
-    reply_queue_->Push(storage_->Get(msg_replica));
+    reply_queue_->Push(storage_->Get(message));
   }
   sparse_ssp_controller_.AddRecord(message);
 }

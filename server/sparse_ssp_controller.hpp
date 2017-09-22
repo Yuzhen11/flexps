@@ -14,18 +14,17 @@ class SparseSSPController {
   SparseSSPController(uint32_t staleness, uint32_t speculation)
     : staleness_(staleness), speculation_(speculation) {}
 
-  std::list<Message> UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock);
+  std::list<Message> Clock(int progress, int sender, int updated_min_clock, int min_clock);
   void AddRecord(Message& msg);
 
   // get_buffer's func
-  std::list<Message> Pop(const int version, const int tid = -1);
-  std::list<Message>& Get(const int version, const int tid = -1);
-  void Push(const int version, Message& message, const int tid = -1);
+  std::list<Message> Pop(const int version, const int tid);
+  void Push(const int version, Message& message, const int tid);
   int Size(const int version);
 
 
   // recorder's func
-  bool ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+  bool HasConflict(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                             const int end_version, int& forwarded_thread_id, int& forwarded_version);
   void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs);
   void RemoveRecord(const int version, const uint32_t tid,

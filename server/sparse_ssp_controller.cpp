@@ -6,25 +6,25 @@
 
 namespace flexps {
 
-std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock) {
+std::list<Message> SparseSSPController::Clock(int progress, int sender, int updated_min_clock, int min_clock) {
   // Remove my own keys when I am clocking.
   RemoveRecord(progress - 1, sender, keys_[sender]);
   CHECK_GT(buffer_[progress][sender].size(), 0);
   keys_[sender] = buffer_[progress][sender].begin()->data[0];
 
   std::list<Message> rets;
-  
+  // Handle too_fast_buffer_ if min_clock updated
   // Maybe it's clear to move this logic to handle updated_min_clock out.
   if (updated_min_clock != -1) {
     for (auto& msg : too_fast_buffer_) {
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
-      if (!ConflictInfo(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
+      if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
             msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
-        rets.push_back(std::move(msg));
-      } else {
         CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         Push(forwarded_version, msg, forwarded_worker_id);
+      } else {
+        rets.push_back(std::move(msg));
       }
     }
     too_fast_buffer_.clear();
@@ -40,8 +40,7 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
         << "[Error]SparseSSPModel: progress invalid";
     CHECK((*get_msg_iter).data.size() == 1);
     if ((*get_msg_iter).meta.version <= staleness_ + min_clock) {
-      // TODO(Ruoyu Wu): have copy, and careful about SARRAY
-      rets.push_back((*get_msg_iter));
+      rets.push_back(std::move(*get_msg_iter));
       get_msg_iter ++;
       VLOG(1) << "Not in speculation zone! Satisfied by stalenss";
     } 
@@ -50,18 +49,17 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
         << "min_clock " << min_clock << " check_biggest_version " << (*get_msg_iter).meta.version - staleness_ - 1;
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
-      if (!ConflictInfo(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
+      if (HasConflict(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
                                    (*get_msg_iter).meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
-        // TODO(Ruoyu Wu): have copy, and careful about SARRAY
-        rets.push_back((*get_msg_iter));
-        get_msg_iter ++;
-        VLOG(1) << "No Conflict, Satisfied by sparsity";
-      } 
-      else {
         CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         Push(forwarded_version, (*get_msg_iter), forwarded_worker_id);
         get_msg_iter = get_messages.erase(get_msg_iter);
         VLOG(1) << "Conflict, forwarded to version: " << forwarded_version << " worker_id: " << forwarded_worker_id;
+      } 
+      else {
+        rets.push_back(std::move(*get_msg_iter));
+        get_msg_iter ++;
+        VLOG(1) << "No Conflict, Satisfied by sparsity";
       }
     }
     else if ((*get_msg_iter).meta.version == staleness_ + speculation_ + min_clock + 1) {
@@ -92,7 +90,7 @@ void SparseSSPController::AddRecord(Message& msg) {
     keys_[msg.meta.sender] = third_party::SArray<Key>(msg.data[0]);
   }
   AddRecord(msg.meta.version, msg.meta.sender, third_party::SArray<uint32_t>(msg.data[0]));
-  SparseSSPController::Push(msg.meta.version, msg, msg.meta.sender);
+  Push(msg.meta.version, msg, msg.meta.sender);
 }
 
 std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
@@ -102,31 +100,6 @@ std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
     buffer_.erase(version);
   }
   return ret;
-  /*
-  std::list<Message> poped_message;
-  if (buffer_.find(version) != buffer_.end()) {
-    if (buffer_[version].find(tid) != buffer_[version].end()) {
-      poped_message = std::move(buffer_[version][tid]);
-      buffer_[version].erase(tid);
-      if (buffer_[version].size() == 0)
-        buffer_.erase(version);
-    }
-  }
-  return poped_message;
-  */
-}
-
-std::list<Message>& SparseSSPController::Get(const int version, const int tid) {
-  return buffer_[version][tid];
-  /*
-  std::list<Message> get_messages;
-  if (buffer_.find(version) != buffer_.end()) {
-    if (buffer_[version].find(tid) != buffer_[version].end()) {
-      return buffer_[version][tid];
-    }
-  }
-  CHECK(false) << "version: " << version << " tid: " << tid;
-  */
 }
 
 void SparseSSPController::Push(const int version, Message& message, const int tid) {
@@ -146,10 +119,10 @@ int SparseSSPController::Size(const int version) {
 }
 
 /* IF:
- *   NO conflict: return false
+ *   NO conflict: return 
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool SparseSSPController::ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+bool SparseSSPController::HasConflict(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                                           const int end_version, int& forwarded_thread_id, int& forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : paramIDs) {
@@ -158,15 +131,6 @@ bool SparseSSPController::ConflictInfo(const third_party::SArray<uint32_t>& para
         forwarded_thread_id = *((it->second).begin());
         forwarded_version = check_version + 1;
         return true;
-        /*
-        for (auto tid : recorder_[check_version][key]) {
-          if (tid != sender_tid && tid != my_sender) {  // skip sender_tid
-            forwarded_thread_id = tid;
-            forwarded_version = check_version + 1;
-            return true;
-          }
-        }
-        */
       }
     }
   }
@@ -175,7 +139,6 @@ bool SparseSSPController::ConflictInfo(const third_party::SArray<uint32_t>& para
 
 void SparseSSPController::AddRecord(const int version, const uint32_t tid,
                                        const third_party::SArray<uint32_t>& paramIDs) {
-  // TODO(Ruoyu Wu): should use key in the magic.h
   for (auto& key : paramIDs) {
     recorder_[version][key].insert(tid);
   }
@@ -183,7 +146,6 @@ void SparseSSPController::AddRecord(const int version, const uint32_t tid,
 
 void SparseSSPController::RemoveRecord(const int version, const uint32_t tid,
                                           const third_party::SArray<uint32_t>& paramIDs) {
-  // TODO(Ruoyu Wu): should use key in the magic.h
   CHECK(recorder_.find(version) != recorder_.end());
   for (auto& key : paramIDs) {
     CHECK(recorder_[version].find(key) != recorder_[version].end());

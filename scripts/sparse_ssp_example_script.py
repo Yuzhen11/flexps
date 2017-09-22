@@ -14,8 +14,8 @@ from os.path import dirname, join
 # 3:worker4:37542
 # 4:worker5:37542
 # 
-hostfile = "machinefiles/local"
-# hostfile = "machinefiles/2node"
+# hostfile = "machinefiles/local"
+hostfile = "machinefiles/2node"
 progfile = "debug/SparseSSPExample"
 
 script_path = os.path.realpath(__file__)
