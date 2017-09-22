@@ -23,17 +23,16 @@
 
 #include "zmq.hpp"
 
-#include "glog/logging.hpp"
+#include "glog/logging.h"
 #include "base/serialization.hpp"
 
 namespace flexps {
 
 Master::Master() {}
 
-void Master::setup(std::string serve) {
+void Master::setup(int master_port) {
     running = true;
-
-    init_socket();
+    init_socket(master_port);
 
     for (auto setup_handler : external_setup_handlers) {
         setup_handler();
@@ -43,21 +42,21 @@ void Master::setup(std::string serve) {
 void Master::init_socket(int master_port) {
     master_socket.reset(new zmq::socket_t(zmq_context, ZMQ_ROUTER));
     master_socket->bind("tcp://*:" + std::to_string(master_port));
-    LOG_I << "Binded to tcp://*:" << std::to_string(master_port);
+    LOG(INFO) << "Binded to tcp://*:" << std::to_string(master_port);
 }
 
 void Master::serve() {
-    LOG << "MASTER READY";
+    LOG(INFO) << "MASTER READY";
     while (running) {
         zmq::message_t msg1,msg2,msg3;
-        zmq_recv_common(master_socket.get(), &msg);
+        zmq_recv_common(master_socket.get(), &msg1);
         cur_client = std::string(reinterpret_cast<char*>(msg1.data()), msg1.size());
         zmq_recv_common(master_socket.get(), &msg2);
         zmq_recv_common(master_socket.get(), &msg3);
         int msg_int = *reinterpret_cast<int32_t*>(msg3.data());
         handle_message(msg_int, cur_client);
     }
-    LOG << "MASTER FINISHED";
+    LOG(INFO) << "MASTER FINISHED";
 }
 
 void Master::handle_message(uint32_t message, const std::string& id) {

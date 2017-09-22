@@ -15,11 +15,12 @@
 #pragma once
 
 #include <string>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-
+#include <glog/logging.h>
 #include "zmq.hpp"
 
 namespace flexps {
@@ -33,8 +34,8 @@ class Master {
 
     virtual ~Master() = default;
 
-    void setup();
-    void init_socket();
+    void setup(int master_port);
+    void init_socket(int master_port);
     void serve();
     void handle_message(uint32_t message, const std::string& id);
 

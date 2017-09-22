@@ -3,7 +3,7 @@
 #include <string>  
 #include "boost/utility/string_ref.hpp"  
 #include "glog/logging.h"
-#include "file_splitter.cpp"
+#include "file_splitter.hpp"
 
 namespace flexps {
 

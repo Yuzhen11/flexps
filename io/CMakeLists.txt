@@ -3,8 +3,10 @@ include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 file(GLOB io-src-files
   coordinator.hpp
   coordinator.cpp
-  file_splitter.cpp
+  file_splitter.hpp
   lineInput.cpp
+  master.hpp
+  master.cpp
   )
 
 add_library(io-objs OBJECT ${io-src-files})
