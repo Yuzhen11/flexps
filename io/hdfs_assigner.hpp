@@ -1,7 +1,8 @@
 #pragma once
 
 #include "hdfs/hdfs.h"
-
+#include "master.h"
+#include "glog/logging.h"
 
 namespace flexps {
 
@@ -15,10 +16,11 @@ struct BlkDesc {
 bool operator==(const BlkDesc& lhs, const BlkDesc& rhs);
 
 
-class HDFSBlockAssignerML : public HDFSBlockAssigner {
+class HDFSBlockAssignerML{
    public: 
     HDFSBlockAssignerML() {
-        Master::get_instance().register_main_handler(constants::kIOHDFSSubsetLoad, std::bind(&HDFSBlockAssignerML::master_main_handler_ml, this));
+        // 301 is a constant for IO load
+        Master::get_instance().register_main_handler(301, std::bind(&HDFSBlockAssignerML::master_main_handler_ml, this));
     }
 
     void master_main_handler_ml() {
@@ -26,7 +28,11 @@ class HDFSBlockAssignerML : public HDFSBlockAssigner {
         auto master_socket = master.get_socket();
         std::string url, host, load_type;
         int num_threads, id; 
-        BinStream stream = zmq_recv_binstream(master_socket.get());
+
+        message_t msg1;
+        zmq_recv_common(master_socket.get(), &msg1);
+        BinStream stream;
+        stream.push_back_bytes(reinterpret_cast<char*>(msg.data()), msg.size());
         stream >> url >> host >> num_threads >> id >> load_type;
         
         // reset num_worker_alive
@@ -36,9 +42,10 @@ class HDFSBlockAssignerML : public HDFSBlockAssigner {
         stream.clear();
         stream << ret.first << ret.second;
 
-        zmq_sendmore_string(master_socket.get(), master.get_cur_client());
-        zmq_sendmore_dummy(master_socket.get());
-        zmq_send_binstream(master_socket.get(), stream);
+
+        zmq_send_common(master_socket.get(), master.get_cur_client().data(),master.get_cur_client().length(), ZMQ_SNDMORE);
+        zmq_send_common(master_socket.get(), nullptr, 0, ZMQ_SNDMORE);
+        zmq_send_common(master_socket.get(), stream.get_remained_buffer(), stream.size(), flag);
     }
 
     void browse_hdfs(int id, const std::string& url) {
@@ -142,7 +149,7 @@ class HDFSBlockAssignerML : public HDFSBlockAssigner {
             // local host has data, so set host to seletced_host 
             selected_host = host;   
         } else {
-            throw base::HuskyException("[hdfs_binary_assigner_ml] kLoadHdfsType error.");
+            LOG(ERROR)<<"[hdfs_binary_assigner_ml] kLoadHdfsType error.";
         }
 
         // according selected_host to get the select file
@@ -164,6 +171,39 @@ class HDFSBlockAssignerML : public HDFSBlockAssigner {
     }
 
    private:
+    inline void zmq_send_common(zmq::socket_t* socket, const void* data, const size_t& len, int flag = !ZMQ_NOBLOCK) {
+        CHECK(socket != nullptr) << "zmq::socket_t cannot be nullptr!";
+        CHECK(data != nullptr || len == 0) << "data and len are not matched!";
+        while (true)
+            try {
+                size_t bytes = socket->send(data, len, flag);
+                CHECK(bytes == len) << "zmq::send error!";
+                break;
+            } catch (zmq::error_t e) {
+            switch (e.num()) {
+                case EHOSTUNREACH:
+                case EINTR:
+                continue;
+            default:
+                LOG(ERROR) << "Invalid type of zmq::error!";
+            }
+        }
+    }
+
+    inline void zmq_recv_common(zmq::socket_t* socket, zmq::message_t* msg, int flag = !ZMQ_NOBLOCK) {
+        CHECK(socket != nullptr) << "zmq::socket_t cannot be nullptr!";
+        CHECK(msg != nullptr) << "data and len are not matched!";
+        while (true)
+            try {
+                bool successful = socket->recv(msg, flag);
+                CHECK(successful) << "zmq::receive error!";
+                break;
+            } catch (zmq::error_t e) {
+            if (e.num() == EINTR)
+                continue;
+            LOG(ERROR) << "Invalid type of zmq::error!";
+        }
+    }
     /*
      * files_locality_multi_dict is a map about hdfs info
      * {
