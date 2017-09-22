@@ -4,6 +4,7 @@ file(GLOB io-src-files
   coordinator.hpp
   coordinator.cpp
   file_splitter.hpp
+  hdfs_assigner.hpp
   lineInput.cpp
   master.hpp
   master.cpp
