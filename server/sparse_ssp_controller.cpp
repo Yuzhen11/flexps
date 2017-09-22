@@ -11,7 +11,6 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
   for (auto& poped_message : poped_messages) {
     RemoveRecord(poped_message.meta.version, poped_message.meta.sender,
                                 third_party::SArray<uint32_t>(poped_message.data[0]));
-    LOG(INFO) << "Removing: version: " << poped_message.meta.version << " sender: " << poped_message.meta.sender;
   }
 
   std::list<Message> rets;
@@ -43,7 +42,7 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
         << "min_clock " << min_clock << " check_biggest_version " << (*get_msg_iter).meta.version - staleness_ - 1;
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
-      if (!ConflictInfo(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
+      if (!ConflictInfo(sender, third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
                                    (*get_msg_iter).meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
         // TODO(Ruoyu Wu): have copy, and careful about SARRAY
         rets.push_back((*get_msg_iter));
@@ -128,15 +127,24 @@ int SparseSSPController::Size(const int version) {
  *   NO conflict: return false
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool SparseSSPController::ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+bool SparseSSPController::ConflictInfo(int sender_tid, const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                                           const int end_version, int& forwarded_thread_id, int& forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : paramIDs) {
       auto it = recorder_[check_version].find(key);
       if (it != recorder_[check_version].end()) {
+        /*
         forwarded_thread_id = *((it->second).begin());
         forwarded_version = check_version + 1;
         return true;
+        */
+        for (auto tid : recorder_[check_version][key]) {
+          if (tid != sender_tid) {  // skip sender_tid
+            forwarded_thread_id = tid;
+            forwarded_version = check_version + 1;
+            return true;
+          }
+        }
       }
     }
   }

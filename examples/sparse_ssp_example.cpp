@@ -117,7 +117,7 @@ void Run() {
   MLTask task;
   std::vector<WorkerAlloc> worker_alloc;
   for (auto& node : nodes) {
-    worker_alloc.push_back({node.id, 1});  // each node has 10 workers
+    worker_alloc.push_back({node.id, 3});  // each node has 10 workers
   }
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});  // Use table 0

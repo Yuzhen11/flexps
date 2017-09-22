@@ -14,8 +14,8 @@ from os.path import dirname, join
 # 3:worker4:37542
 # 4:worker5:37542
 # 
-# hostfile = "machinefiles/local"
-hostfile = "machinefiles/2node"
+hostfile = "machinefiles/local"
+# hostfile = "machinefiles/2node"
 progfile = "debug/SparseSSPExample"
 
 script_path = os.path.realpath(__file__)
@@ -29,7 +29,7 @@ params = {
     "config_file" : hostfile_path,
     "kModelType" : "SparseSSP",
     # "kModelType" : "SSP",
-    "num_dims" : 2,
+    "num_dims" : 3,
     "num_nonzeros" : 1,
     "num_iters" : 100,
 }
