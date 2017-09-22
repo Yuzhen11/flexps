@@ -7,22 +7,30 @@
 namespace flexps {
 
 std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender, int updated_min_clock, int min_clock) {
-  std::list<Message> poped_messages = Pop(progress - 1, sender);
-  for (auto& poped_message : poped_messages) {
-    RemoveRecord(poped_message.meta.version, poped_message.meta.sender,
-                                third_party::SArray<uint32_t>(poped_message.data[0]));
-  }
+  // Remove my own keys when I am clocking.
+  RemoveRecord(progress - 1, sender, keys_[sender]);
+  CHECK_GT(buffer_[progress][sender].size(), 0);
+  keys_[sender] = buffer_[progress][sender].begin()->data[0];
 
   std::list<Message> rets;
-  std::list<Message>& get_messages = Get(progress, sender);
   
+  // Maybe it's clear to move this logic to handle updated_min_clock out.
   if (updated_min_clock != -1) {
     for (auto& msg : too_fast_buffer_) {
-      get_messages.push_back(std::move(msg));
+      int forwarded_worker_id = -1;
+      int forwarded_version = -1;
+      if (!ConflictInfo(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
+            msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
+        rets.push_back(std::move(msg));
+      } else {
+        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
+        Push(forwarded_version, msg, forwarded_worker_id);
+      }
     }
     too_fast_buffer_.clear();
   }
 
+  std::list<Message> get_messages = Pop(progress, sender);
   VLOG(1) << "progress: " << progress << " sender: " << sender
     << " get_messages size " << get_messages.size();
   auto get_msg_iter = get_messages.begin();
@@ -42,7 +50,7 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
         << "min_clock " << min_clock << " check_biggest_version " << (*get_msg_iter).meta.version - staleness_ - 1;
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
-      if (!ConflictInfo(sender, third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
+      if (!ConflictInfo(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
                                    (*get_msg_iter).meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
         // TODO(Ruoyu Wu): have copy, and careful about SARRAY
         rets.push_back((*get_msg_iter));
@@ -66,6 +74,9 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
   }
 
   if (updated_min_clock != -1) {  // min clock updated
+    if (updated_min_clock == 1) {  // for the first version, no one is clearing the buffer
+      buffer_.erase(0);
+    }
     CHECK(Size(updated_min_clock - 1) == 0)
         << "[Error]SparseSSPModel: get_buffer_ of min_clock should empty";
     CHECK(TotalSize(updated_min_clock - 1) == 0)
@@ -77,11 +88,21 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
 
 
 void SparseSSPController::AddRecord(Message& msg) {
+  if (msg.meta.version == 0) {  // Initialzie the keys_ for the first Get()
+    keys_[msg.meta.sender] = third_party::SArray<Key>(msg.data[0]);
+  }
   AddRecord(msg.meta.version, msg.meta.sender, third_party::SArray<uint32_t>(msg.data[0]));
   SparseSSPController::Push(msg.meta.version, msg, msg.meta.sender);
 }
 
 std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
+  std::list<Message> ret = std::move(buffer_[version][tid]);
+  buffer_[version].erase(tid);
+  if (buffer_[version].empty()) {
+    buffer_.erase(version);
+  }
+  return ret;
+  /*
   std::list<Message> poped_message;
   if (buffer_.find(version) != buffer_.end()) {
     if (buffer_[version].find(tid) != buffer_[version].end()) {
@@ -92,6 +113,7 @@ std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
     }
   }
   return poped_message;
+  */
 }
 
 std::list<Message>& SparseSSPController::Get(const int version, const int tid) {
@@ -127,24 +149,24 @@ int SparseSSPController::Size(const int version) {
  *   NO conflict: return false
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool SparseSSPController::ConflictInfo(int sender_tid, const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+bool SparseSSPController::ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                                           const int end_version, int& forwarded_thread_id, int& forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : paramIDs) {
       auto it = recorder_[check_version].find(key);
       if (it != recorder_[check_version].end()) {
-        /*
         forwarded_thread_id = *((it->second).begin());
         forwarded_version = check_version + 1;
         return true;
-        */
+        /*
         for (auto tid : recorder_[check_version][key]) {
-          if (tid != sender_tid) {  // skip sender_tid
+          if (tid != sender_tid && tid != my_sender) {  // skip sender_tid
             forwarded_thread_id = tid;
             forwarded_version = check_version + 1;
             return true;
           }
         }
+        */
       }
     }
   }

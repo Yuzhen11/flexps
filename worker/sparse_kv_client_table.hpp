@@ -191,6 +191,18 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
     recv_kvs_.clear();
   });
 
+  // Actually the communication pattern required by the server side is to send
+  // the speculation_ number of Get requests. And before each Clock, a new Get
+  // request should be sent. 
+  // For here, we send out speculation_ + 1 Get requesets in the first iteration
+  // and send out each Clock before the next Get.
+  //
+  // For example, for speculation_ = 1
+  // Required:
+  // Get_0    Get_1 Clock_0     Get_2 Clock_1
+  // Ours:
+  // Get_0 Get_1      Clock_0 Get_2      Clock_1 Get_3
+  //
   // 2. send out get request for get_count_ - 1 + speculation_.
   if (get_count_ == 1) {
     // For the first Get(), Send out [0, speculation_ + 1) Get requests.
@@ -310,6 +322,7 @@ void SparseKVClientTable<Val>::Clock_() {
     msg.meta.recver = server_id;
     msg.meta.model_id = model_id_;
     msg.meta.flag = Flag::kClock;
+    msg.meta.version = get_count_ - 2;
     downstream_->Push(std::move(msg));
   }
 }

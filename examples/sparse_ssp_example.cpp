@@ -143,7 +143,7 @@ void Run() {
         table.Add(keys, vals);
         table.Clock();
         CHECK_EQ(rets.size(), keys.size());
-        LOG(INFO) << "Iter: " << i << " finished on Node " << info.worker_id;
+        LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
       }
     } else if (FLAGS_kModelType == "SparseSSP") {  // Sparse SSP mode
       auto table = info.CreateSparseKVClientTable<float>(kTableId, kSpeculation, future_keys);
@@ -157,7 +157,7 @@ void Run() {
         vals.resize(keys.size());
         for (int i = 0; i < vals.size(); ++ i) vals[i] = 0.5;
         table.Add(keys, vals);
-        LOG(INFO) << "Iter: " << i << " finished on Node " << info.worker_id;
+        LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
       }
     } else {
       CHECK(false);

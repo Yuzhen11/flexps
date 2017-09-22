@@ -29,7 +29,7 @@ params = {
     "config_file" : hostfile_path,
     "kModelType" : "SparseSSP",
     # "kModelType" : "SSP",
-    "num_dims" : 3,
+    "num_dims" : 10,
     "num_nonzeros" : 1,
     "num_iters" : 100,
 }
@@ -41,8 +41,8 @@ ssh_cmd = (
     )
 
 env_params = (
-  # "GLOG_logtostderr=true "
-  "GLOG_v=1 "
+  "GLOG_logtostderr=true "
+  "GLOG_v=-1 "
   "GLOG_minloglevel=0 "
   )
 

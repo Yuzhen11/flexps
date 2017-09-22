@@ -25,7 +25,7 @@ class SparseSSPController {
 
 
   // recorder's func
-  bool ConflictInfo(int sender_tid, const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
+  bool ConflictInfo(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                             const int end_version, int& forwarded_thread_id, int& forwarded_version);
   void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs);
   void RemoveRecord(const int version, const uint32_t tid,
@@ -45,6 +45,9 @@ class SparseSSPController {
 
   // <version, <key, <thread_id>>>
   std::unordered_map<int, std::unordered_map<uint32_t, std::set<uint32_t>>> recorder_;
+
+  // <thread_id, key>
+  std::unordered_map<int, third_party::SArray<Key>> keys_;
 
   std::vector<Message> too_fast_buffer_;
 };
