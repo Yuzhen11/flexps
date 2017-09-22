@@ -11,6 +11,7 @@ std::list<Message> SparseSSPController::UnblockRequests(int progress, int sender
   for (auto& poped_message : poped_messages) {
     RemoveRecord(poped_message.meta.version, poped_message.meta.sender,
                                 third_party::SArray<uint32_t>(poped_message.data[0]));
+    LOG(INFO) << "Removing: version: " << poped_message.meta.version << " sender: " << poped_message.meta.sender;
   }
 
   std::list<Message> rets;

@@ -40,7 +40,10 @@ class SparseSSPController {
   uint32_t staleness_;
   uint32_t speculation_;
 
+  // <version, <thread_id, [msg]>>
   std::unordered_map<int, std::unordered_map<int, std::list<Message>>> buffer_;
+
+  // <version, <key, <thread_id>>>
   std::unordered_map<int, std::unordered_map<uint32_t, std::set<uint32_t>>> recorder_;
 
   std::vector<Message> too_fast_buffer_;
