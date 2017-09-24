@@ -1,7 +1,10 @@
 #pragma once
-
+#include <map>
+#include <string>
+#include <unordered_set>
+#include <utility>
 #include "hdfs/hdfs.h"
-#include "master.h"
+#include "master.hpp"
 #include "glog/logging.h"
 
 namespace flexps {
@@ -23,8 +26,8 @@ class HDFSBlockAssigner{
     void master_main_handler_ml();
     inline bool is_valid() const { return is_valid_; }
     void init_hdfs(const std::string& node, const std::string& port);
-    void browse_hdfs(const std::string& url);
-    std::pair<std::string, size_t> answer(const std::string& host, const std::string& url);
+    void browse_hdfs(int id, const std::string& url);
+    std::pair<std::string, size_t> answer(const std::string& host, const std::string& url, int id, const std::string& load_type);
 
     int num_workers_alive;
    
@@ -88,8 +91,8 @@ class HDFSBlockAssigner{
 
 namespace std {
 template <>
-struct hash<husky::BlkDesc> {
-    size_t operator()(const husky::BlkDesc& t) const { return hash<string>()(t.filename); }
+struct hash<flexps::BlkDesc> {
+    size_t operator()(const flexps::BlkDesc& t) const { return hash<string>()(t.filename); }
 };
 }  // namespace std
 

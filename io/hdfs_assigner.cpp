@@ -1,8 +1,10 @@
 #pragma once
 
 #include "hdfs/hdfs.h"
-#include "master.h"
+#include "master.hpp"
 #include "glog/logging.h"
+#include "hdfs_assigner.hpp"
+#include "base/serialization.hpp"
 
 namespace flexps {
 
@@ -14,7 +16,7 @@ namespace flexps {
 
     HDFSBlockAssigner::HDFSBlockAssigner() {
         // 301 is a constant for IO load
-        Master::get_instance().register_main_handler(301, std::bind(&HDFSBlockAssignerML::master_main_handler_ml, this));
+        Master::get_instance().register_main_handler(301, std::bind(&HDFSBlockAssigner::master_main_handler_ml, this));
     }
 
     void HDFSBlockAssigner::master_main_handler_ml() {
@@ -23,7 +25,7 @@ namespace flexps {
         std::string url, host, load_type;
         int num_threads, id; 
 
-        message_t msg1;
+        zmq::message_t msg1;
         zmq_recv_common(master_socket.get(), &msg1);
         BinStream stream;
         stream.push_back_bytes(reinterpret_cast<char*>(msg1.data()), msg1.size());
@@ -39,7 +41,7 @@ namespace flexps {
 
         zmq_send_common(master_socket.get(), master.get_cur_client().data(),master.get_cur_client().length(), ZMQ_SNDMORE);
         zmq_send_common(master_socket.get(), nullptr, 0, ZMQ_SNDMORE);
-        zmq_send_common(master_socket.get(), stream.get_remained_buffer(), stream.size(), flag);
+        zmq_send_common(master_socket.get(), stream.get_remained_buffer(), stream.size(), ZMQ_SNDMORE);
     }
 
     void HDFSBlockAssigner::init_hdfs(const std::string& node, const std::string& port) {
@@ -57,7 +59,7 @@ namespace flexps {
             is_valid_ = true;
             return;
         }
-        LOG_I << "Failed to connect to HDFS " << node << ":" << port;
+        LOG(INFO)<< "Failed to connect to HDFS " << node << ":" << port;
     }
 
     void HDFSBlockAssigner::browse_hdfs(int id, const std::string& url) {
@@ -118,7 +120,7 @@ namespace flexps {
          *     when loading gloabl host, selected_host equals an unfinished host 
          */
         std::string selected_host;
-        if (load_type.empty() || load_type == husky::constants::kLoadHdfsGlobally) { // default is load data globally
+        if (load_type.empty() || load_type == "load_hdfs_globally") { // default is load data globally
             // selected_file
             // if there is local file, allocate local file
             if (all_files_locality[host].size()) {  
@@ -147,7 +149,7 @@ namespace flexps {
                     return {"", 0};
                 } 
             }
-        } else if (load_type == husky::constants::kLoadHdfsLocally) {    // load data globally
+        } else if (load_type == "load_hdfs_globally") {    // load data globally
             auto& local_files_locality = all_files_locality[host];
 
             if (local_files_locality.size() == 0) {     // local data is empty

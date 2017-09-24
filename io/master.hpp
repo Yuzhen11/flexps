@@ -34,11 +34,8 @@ class Master {
 
     virtual ~Master() = default;
 
-<<<<<<< Updated upstream
     void setup(int master_port);
-=======
     void setup();
->>>>>>> Stashed changes
     void init_socket(int master_port);
     void serve();
     void handle_message(uint32_t message, const std::string& id);
