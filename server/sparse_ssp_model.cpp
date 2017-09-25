@@ -9,14 +9,24 @@ SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<Abstract
                                ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation)
     : model_id_(model_id), reply_queue_(reply_queue),
     storage_(std::move(storage)),
-    sparse_ssp_controller_(staleness, speculation) {
+    sparse_ssp_controller_(staleness, speculation),
+    staleness_(staleness), speculation_(speculation) {
 }
 
 void SparseSSPModel::Clock(Message& message) {
+  int min_clock = progress_tracker_.GetMinClock();
+  
+  // If the Clock is too fast, store it in buffer_ first. Handle this Clock when min_clock is updated.
+  if (message.meta.version >= staleness_ + speculation_ + min_clock + 1) {
+    CHECK_EQ(message.meta.version, staleness_ + speculation_ + min_clock + 1);
+    buffer_.push_back(std::move(message));
+    return;
+  }
+
   int sender = message.meta.sender;
   int updated_min_clock = progress_tracker_.AdvanceAndGetChangedMinClock(sender);
-  int min_clock = progress_tracker_.GetMinClock();
   int progress = progress_tracker_.GetProgress(message.meta.sender);
+
   // Although we assume only one get message in a version, multiple messages can still be poped out
   std::list<Message> get_messages = sparse_ssp_controller_.Clock(progress, sender, updated_min_clock, min_clock);
   for (auto& msg : get_messages) {
@@ -26,6 +36,10 @@ void SparseSSPModel::Clock(Message& message) {
 
   if (updated_min_clock != -1) {  // min clock updated
     storage_->FinishIter();
+    for (auto& msg : buffer_) {
+      Clock(msg);
+    }
+    buffer_.clear();
   }
 }
 

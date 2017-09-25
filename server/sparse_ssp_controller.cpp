@@ -3,19 +3,14 @@
 #include "glog/logging.h"
 
 #include <iostream>
+#include <sstream>
 
 namespace flexps {
 
 std::list<Message> SparseSSPController::Clock(int progress, int sender, int updated_min_clock, int min_clock) {
-  // Remove my own keys when I am clocking.
-  RemoveRecord(progress - 1, sender, keys_[sender]);
-  // keys_[sender] = buffer_[progress][sender].begin()->data[0];
-  if (buffer_[progress][sender].size() != 0) {
-    // TODO(Ruoyu Wu): Should be carefully considered
-    keys_[sender] = buffer_[progress][sender].begin()->data[0];
-  } 
-  else {
-    keys_[sender] = {};
+  if (future_keys_[sender].size() > 0 && future_keys_[sender].front().first == progress - 1) {
+    RemoveRecord(progress - 1, sender, future_keys_[sender].front().second);
+    future_keys_[sender].pop();
   }
 
   std::list<Message> rets;
@@ -73,7 +68,7 @@ std::list<Message> SparseSSPController::Clock(int progress, int sender, int upda
       get_msg_iter = get_messages.erase(get_msg_iter);
     }
     else {
-      CHECK(false);
+      CHECK(false) << " version: " << (*get_msg_iter).meta.version << " tid: " << (*get_msg_iter).meta.sender << " current clock tid: " << sender << " version: " << progress;
     }
   }
 
@@ -86,21 +81,22 @@ std::list<Message> SparseSSPController::Clock(int progress, int sender, int upda
     CHECK(TotalSize(updated_min_clock - 1) == 0)
         << "[Error]SparseSSPModel: Recorder Size should be 0";
     ClockRemoveRecord(updated_min_clock - 1);
+    VLOG(1) << "Min clock updated to progress: " << progress;
   }
   return rets;
 }
 
 
 void SparseSSPController::AddRecord(Message& msg) {
-  if (msg.meta.version == 0) {  // Initialze the keys_ for the first Get()
-    keys_[msg.meta.sender] = third_party::SArray<Key>(msg.data[0]);
-  }
+  CHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
+  future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
   for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
     recorder_[msg.meta.version][key].insert(msg.meta.sender);
   }
 
   Push(msg.meta.version, msg, msg.meta.sender);
+
 }
 
 std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
@@ -113,6 +109,7 @@ std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
 }
 
 void SparseSSPController::Push(const int version, Message& message, const int tid) {
+  // CHECK_EQ(buffer_[version][tid].size(), 0);
   buffer_[version][tid].push_back(std::move(message));
 }
 

@@ -5,6 +5,7 @@
 #include <list>
 #include <vector>
 #include <unordered_map>
+#include <queue>
 
 namespace flexps {
 
@@ -44,8 +45,8 @@ class SparseSSPController {
   // <version, <key, <thread_id>>>
   std::unordered_map<int, std::unordered_map<uint32_t, std::set<uint32_t>>> recorder_;
 
-  // <thread_id, key>
-  std::unordered_map<int, third_party::SArray<Key>> keys_;
+  // <thread_id, [<version, key>]>, has at most speculation_ + 1 queue size for each thread_id
+  std::unordered_map<int, std::queue<std::pair<int, third_party::SArray<Key>>>> future_keys_;
 
   std::vector<Message> too_fast_buffer_;
 };

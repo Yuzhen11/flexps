@@ -33,6 +33,10 @@ class SparseSSPModel : public AbstractModel {
   ProgressTracker progress_tracker_;
 
   SparseSSPController sparse_ssp_controller_;
+
+  std::vector<Message> buffer_;
+  int staleness_;
+  int speculation_;
 };
 
 }  // namespace flexps

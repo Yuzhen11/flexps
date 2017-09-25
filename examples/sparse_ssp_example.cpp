@@ -25,7 +25,6 @@ std::vector<third_party::SArray<Key>> GenerateRandomKeys(int num_nz, int num_dim
   std::vector<third_party::SArray<Key>> keys(num_iters);
   CHECK_LE(num_nz, num_dims);
   CHECK_GT(num_nz, 0);
-  // The num_nz is estimated.
   for (int i = 0; i < num_iters; ++ i) {
     std::set<Key> s;
     int j = 0;
@@ -125,9 +124,9 @@ void Run() {
     LOG(INFO) << "Hi";
     LOG(INFO) << info.DebugString();
     // 1. Prepare the future keys
-    // std::vector<third_party::SArray<Key>> future_keys = GenerateRandomKeys(FLAGS_num_nonzeros, FLAGS_num_dims, FLAGS_num_iters+kSpeculation);
+    std::vector<third_party::SArray<Key>> future_keys = GenerateRandomKeys(FLAGS_num_nonzeros, FLAGS_num_dims, FLAGS_num_iters+kSpeculation);
     // std::vector<third_party::SArray<Key>> future_keys = GenerateFixedKeys(FLAGS_num_iters+kSpeculation, info.worker_id);
-    std::vector<third_party::SArray<Key>> future_keys = GenerateAllKeys(FLAGS_num_dims, FLAGS_num_iters+kSpeculation);
+    // std::vector<third_party::SArray<Key>> future_keys = GenerateAllKeys(FLAGS_num_dims, FLAGS_num_iters+kSpeculation);
 
     if (FLAGS_kModelType == "SSP") {  // SSP mode
       auto table = info.CreateKVClientTable<float>(kTableId);
