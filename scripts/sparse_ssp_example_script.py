@@ -16,7 +16,7 @@ from os.path import dirname, join
 # 
 # hostfile = "machinefiles/local"
 hostfile = "machinefiles/5node"
-progfile = "debug/SparseSSPExample"
+progfile = "release/SparseSSPExample"
 
 script_path = os.path.realpath(__file__)
 proj_dir = dirname(dirname(script_path))
@@ -31,8 +31,8 @@ params = {
     "kSpeculation" : 5,
     "kModelType" : "SparseSSP",
     # "kModelType" : "SSP",
-    "num_dims" : 10000,
-    "num_nonzeros" : 10,
+    "num_dims" : 100000000,
+    "num_nonzeros" : 10000,
     "num_iters" : 100,
 }
 

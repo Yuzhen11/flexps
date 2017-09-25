@@ -3,6 +3,8 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
+#include <gperftools/profiler.h>
+
 #include "driver/node_parser.hpp"
 #include "driver/engine.hpp"
 #include "worker/kv_client_table.hpp"
@@ -168,8 +170,15 @@ void Run() {
     }
   });
 
+  if (my_node.id == 0) {
+    ProfilerStart("/data/opt/tmp/a.prof");
+  }
   // 4. Run tasks
   engine.Run(task);
+
+  if (my_node.id == 0) {
+    ProfilerStop();
+  }
 
   // 5. Stop engine
   engine.StopEverything();
