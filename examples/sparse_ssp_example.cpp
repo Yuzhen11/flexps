@@ -11,6 +11,7 @@
 
 #include <algorithm>
 #include <cstdlib>
+#include <chrono>
 
 DEFINE_int32(my_id, -1, "The process id of this program");
 DEFINE_string(config_file, "", "The config file path");
@@ -110,10 +111,10 @@ void Run() {
   range.push_back({FLAGS_num_dims / nodes.size() * (nodes.size() - 1), (uint64_t)FLAGS_num_dims});
   if (FLAGS_kModelType == "SSP") {
     engine.CreateTable<float>(kTableId, range, 
-        ModelType::SSPModel, StorageType::MapStorage, FLAGS_kStaleness);
+        ModelType::SSPModel, StorageType::VectorStorage, FLAGS_kStaleness);
   } else if (FLAGS_kModelType == "SparseSSP") {
     engine.CreateTable<float>(kTableId, range, 
-        ModelType::SparseSSPModel, StorageType::MapStorage, FLAGS_kStaleness, FLAGS_kSpeculation);
+        ModelType::SparseSSPModel, StorageType::VectorStorage, FLAGS_kStaleness, FLAGS_kSpeculation);
   } else {
     CHECK(false);
   }
@@ -134,6 +135,8 @@ void Run() {
     std::vector<third_party::SArray<Key>> future_keys = GenerateRandomKeys(FLAGS_num_nonzeros, FLAGS_num_dims, FLAGS_num_iters+FLAGS_kSpeculation);
     // std::vector<third_party::SArray<Key>> future_keys = GenerateFixedKeys(FLAGS_num_iters+FLAGS_kSpeculation, info.worker_id);
     // std::vector<third_party::SArray<Key>> future_keys = GenerateAllKeys(FLAGS_num_dims, FLAGS_num_iters+FLAGS_kSpeculation);
+
+    auto start_time = std::chrono::steady_clock::now();
 
     if (FLAGS_kModelType == "SSP") {  // SSP mode
       auto table = info.CreateKVClientTable<float>(kTableId);
@@ -165,9 +168,14 @@ void Run() {
         table.Add(keys, vals);
         LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
       }
+
     } else {
       CHECK(false);
     }
+
+    auto end_time = std::chrono::steady_clock::now();
+    auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
+    LOG(INFO) << "total time: " << total_time << " ms on worker: " << info.worker_id;
   });
 
   if (my_node.id == 0) {

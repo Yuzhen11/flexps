@@ -29,10 +29,10 @@ params = {
     "config_file" : hostfile_path,
     "kStaleness" : 0,
     "kSpeculation" : 5,
-    "kModelType" : "SparseSSP",
-    # "kModelType" : "SSP",
-    "num_dims" : 100000000,
-    "num_nonzeros" : 10000,
+    # "kModelType" : "SparseSSP",
+    "kModelType" : "SSP",
+    "num_dims" : 10000000,
+    "num_nonzeros" : 100,
     "num_iters" : 100,
 }
 
@@ -50,7 +50,7 @@ env_params = (
 
 # TODO: May need to ls before run to make sure the related files are synced.
 # clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; ulimit -c unlimited; "
-clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null;  "
+clear_cmd = "ls " + dirname(hostfile_path) + " > /dev/null; ls " + dirname(prog_path) + " > /dev/null; "
 
 with open(hostfile_path, "r") as f:
   hostlist = []  
