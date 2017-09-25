@@ -1510,5 +1510,132 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
   EXPECT_EQ(reply_queue.Size(), 2);
 }
 
+
+// staleness = 0
+// speculation = 2 (Send the Get in the next 2 iterations before Clock)
+// The two threads are accessing the different key.
+// Get_i_j represents the jth Get from thread i
+//
+// Thread 2              Thread 3
+// Get_2_0 [0](reply)      Get_3_0 [1](reply)
+// Get_2_1 [0]             Get_3_1 [2]
+//
+// Clock (reply since Get_2_1 does not conflict with Get_3_0)
+//
+// Get_2_3 [2]
+// Clock (No Reply)
+//
+//                         Get_3_2 [1]
+//                         Clock (Reply Get_3_1)
+//
+//                         Get_3_3 [1]
+//                         Clock (Reply Get_3_2)
+TEST_F(TestSparseSSPModel, ClockWithoutGet) {
+  const int model_id = 0;
+  const int staleness = 0;
+  const int speculation = 2;
+  ThreadsafeQueue<Message> reply_queue;
+  std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
+  std::unique_ptr<AbstractModel> model(
+      new SparseSSPModel(model_id, std::move(storage), &reply_queue, staleness, speculation));
+
+  Message reset_msg;
+  third_party::SArray<uint32_t> tids({2, 3});
+  reset_msg.AddData(tids);
+  model->ResetWorker(reset_msg);
+  Message reset_reply_msg;
+  reply_queue.WaitAndPop(&reset_reply_msg);
+  EXPECT_EQ(reset_reply_msg.meta.flag, Flag::kResetWorkerInModel);
+
+  // for Check use
+  Message check_msg;
+  auto rep_keys = third_party::SArray<int>();
+  auto rep_vals = third_party::SArray<int>();
+
+  Message msg;
+  // Get_2_0
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 0, {0});
+  model->Get(msg);
+  // Get_3_0
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 0, {1});
+  model->Get(msg);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.version, 0);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 3);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 1);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_1
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 1, {0});
+  model->Get(msg);
+  // Get_3_1
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 1, {2});
+  model->Get(msg);
+
+  // Clock from thread2
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 0);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.sender, 0);
+  EXPECT_EQ(check_msg.meta.recver, 2);
+  EXPECT_EQ(check_msg.meta.version, 1);
+  EXPECT_EQ(check_msg.data.size(), 2);
+  rep_keys = third_party::SArray<int>(check_msg.data[0]);
+  rep_vals = third_party::SArray<int>(check_msg.data[1]);
+  EXPECT_EQ(rep_keys.size(), 1);
+  EXPECT_EQ(rep_vals.size(), 1);
+  EXPECT_EQ(rep_keys[0], 0);
+  EXPECT_EQ(rep_vals[0], 0);
+
+  // Get_2_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 2, 0, 3, {2});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 2, 0, 1);
+  model->Clock(msg);
+
+  EXPECT_EQ(reply_queue.Size(), 0);
+
+  // Get_3_2 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 2, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 0);
+  model->Clock(msg);
+  
+  EXPECT_EQ(reply_queue.Size(), 1);
+  reply_queue.WaitAndPop(&check_msg);
+
+  // Get_3_3 and Clock
+  msg = CreateMessage(Flag::kGet, 0, 3, 0, 3, {1});
+  model->Get(msg);
+  msg = CreateMessage(Flag::kClock, 0, 3, 0, 1);
+  model->Clock(msg);
+  
+  EXPECT_EQ(reply_queue.Size(), 1);
+}
+
 }  // namespace
 }  // namespace flexps

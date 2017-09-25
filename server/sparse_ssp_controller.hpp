@@ -26,7 +26,6 @@ class SparseSSPController {
   // recorder's func
   bool HasConflict(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                             const int end_version, int& forwarded_thread_id, int& forwarded_version);
-  void AddRecord(const int version, const uint32_t tid, const third_party::SArray<uint32_t>& paramIDs);
   void RemoveRecord(const int version, const uint32_t tid,
                             const third_party::SArray<uint32_t>& paramIDs);
   void ClockRemoveRecord(const int version);
