@@ -9,8 +9,14 @@ namespace flexps {
 std::list<Message> SparseSSPController::Clock(int progress, int sender, int updated_min_clock, int min_clock) {
   // Remove my own keys when I am clocking.
   RemoveRecord(progress - 1, sender, keys_[sender]);
-  CHECK_GT(buffer_[progress][sender].size(), 0);
-  keys_[sender] = buffer_[progress][sender].begin()->data[0];
+  // keys_[sender] = buffer_[progress][sender].begin()->data[0];
+  if (buffer_[progress][sender].size() != 0) {
+    // TODO(Ruoyu Wu): Should be carefully considered
+    keys_[sender] = buffer_[progress][sender].begin()->data[0];
+  } 
+  else {
+    keys_[sender] = {};
+  }
 
   std::list<Message> rets;
   // Handle too_fast_buffer_ if min_clock updated
@@ -86,10 +92,14 @@ std::list<Message> SparseSSPController::Clock(int progress, int sender, int upda
 
 
 void SparseSSPController::AddRecord(Message& msg) {
-  if (msg.meta.version == 0) {  // Initialzie the keys_ for the first Get()
+  if (msg.meta.version == 0) {  // Initialze the keys_ for the first Get()
     keys_[msg.meta.sender] = third_party::SArray<Key>(msg.data[0]);
   }
-  AddRecord(msg.meta.version, msg.meta.sender, third_party::SArray<uint32_t>(msg.data[0]));
+
+  for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
+    recorder_[msg.meta.version][key].insert(msg.meta.sender);
+  }
+
   Push(msg.meta.version, msg, msg.meta.sender);
 }
 
@@ -135,13 +145,6 @@ bool SparseSSPController::HasConflict(const third_party::SArray<uint32_t>& param
     }
   }
   return false;
-}
-
-void SparseSSPController::AddRecord(const int version, const uint32_t tid,
-                                       const third_party::SArray<uint32_t>& paramIDs) {
-  for (auto& key : paramIDs) {
-    recorder_[version][key].insert(tid);
-  }
 }
 
 void SparseSSPController::RemoveRecord(const int version, const uint32_t tid,
