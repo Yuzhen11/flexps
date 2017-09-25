@@ -19,6 +19,9 @@ DEFINE_int32(num_dims, 1000, "number of dimensions");
 DEFINE_int32(num_nonzeros, 10, "number of nonzeros");
 DEFINE_int32(num_iters, 10, "number of iters");
 
+DEFINE_int32(kStaleness, 0, "stalness");
+DEFINE_int32(kSpeculation, 1, "speculation");
+
 namespace flexps {
 
 std::vector<third_party::SArray<Key>> GenerateRandomKeys(int num_nz, int num_dims, int num_iters) {
@@ -70,6 +73,10 @@ void Run() {
   CHECK_GT(FLAGS_num_nonzeros, 0);
   CHECK_GT(FLAGS_num_iters, 0);
   CHECK_LE(FLAGS_num_nonzeros, FLAGS_num_dims);
+  CHECK_LE(FLAGS_kStaleness, 5);
+  CHECK_GE(FLAGS_kStaleness, 0);
+  CHECK_LE(FLAGS_kSpeculation, 5);
+  CHECK_GE(FLAGS_kSpeculation, 1);
 
   if (FLAGS_my_id == 0) {
     LOG(INFO) << "Running in " << FLAGS_kModelType << " mode";
@@ -94,8 +101,6 @@ void Run() {
 
   // 2. Create tables
   const int kTableId = 0;
-  const int kStaleness = 0;
-  const int kSpeculation = 1;
   std::vector<third_party::Range> range;
   for (int i = 0; i < nodes.size() - 1; ++ i) {
     range.push_back({FLAGS_num_dims / nodes.size() * i, FLAGS_num_dims / nodes.size() * (i + 1)});
@@ -103,10 +108,10 @@ void Run() {
   range.push_back({FLAGS_num_dims / nodes.size() * (nodes.size() - 1), (uint64_t)FLAGS_num_dims});
   if (FLAGS_kModelType == "SSP") {
     engine.CreateTable<float>(kTableId, range, 
-        ModelType::SSPModel, StorageType::MapStorage);
+        ModelType::SSPModel, StorageType::MapStorage, FLAGS_kStaleness);
   } else if (FLAGS_kModelType == "SparseSSP") {
     engine.CreateTable<float>(kTableId, range, 
-        ModelType::SparseSSPModel, StorageType::MapStorage, kStaleness, kSpeculation);
+        ModelType::SparseSSPModel, StorageType::MapStorage, FLAGS_kStaleness, FLAGS_kSpeculation);
   } else {
     CHECK(false);
   }
@@ -120,13 +125,13 @@ void Run() {
   }
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});  // Use table 0
-  task.SetLambda([kTableId, kSpeculation](const Info& info){
+  task.SetLambda([kTableId](const Info& info){
     LOG(INFO) << "Hi";
     LOG(INFO) << info.DebugString();
     // 1. Prepare the future keys
-    std::vector<third_party::SArray<Key>> future_keys = GenerateRandomKeys(FLAGS_num_nonzeros, FLAGS_num_dims, FLAGS_num_iters+kSpeculation);
-    // std::vector<third_party::SArray<Key>> future_keys = GenerateFixedKeys(FLAGS_num_iters+kSpeculation, info.worker_id);
-    // std::vector<third_party::SArray<Key>> future_keys = GenerateAllKeys(FLAGS_num_dims, FLAGS_num_iters+kSpeculation);
+    std::vector<third_party::SArray<Key>> future_keys = GenerateRandomKeys(FLAGS_num_nonzeros, FLAGS_num_dims, FLAGS_num_iters+FLAGS_kSpeculation);
+    // std::vector<third_party::SArray<Key>> future_keys = GenerateFixedKeys(FLAGS_num_iters+FLAGS_kSpeculation, info.worker_id);
+    // std::vector<third_party::SArray<Key>> future_keys = GenerateAllKeys(FLAGS_num_dims, FLAGS_num_iters+FLAGS_kSpeculation);
 
     if (FLAGS_kModelType == "SSP") {  // SSP mode
       auto table = info.CreateKVClientTable<float>(kTableId);
@@ -145,7 +150,7 @@ void Run() {
         LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
       }
     } else if (FLAGS_kModelType == "SparseSSP") {  // Sparse SSP mode
-      auto table = info.CreateSparseKVClientTable<float>(kTableId, kSpeculation, future_keys);
+      auto table = info.CreateSparseKVClientTable<float>(kTableId, FLAGS_kSpeculation, future_keys);
       third_party::SArray<float> rets;
       third_party::SArray<float> vals;
       for (int i = 0; i < FLAGS_num_iters; ++ i) {
