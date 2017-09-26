@@ -1,4 +1,3 @@
-#pragma once
 
 #include "hdfs/hdfs.h"
 #include "master.hpp"

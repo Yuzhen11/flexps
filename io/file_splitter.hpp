@@ -10,7 +10,7 @@ namespace flexps {
     
 class HDFSFileSplitterML{
    public:
-    HDFSFileSplitterML(int num_threads, int id, Coordinator* coordinator, std::string hostname, std::string hdfs_namenode, std::string hdfs_namenode_port)
+    HDFSFileSplitterML(int num_threads, int id, Coordinator* coordinator, std::string hostname, std::string hdfs_namenode, int hdfs_namenode_port)
     {
         data_= nullptr;
         num_threads_ = num_threads;
@@ -87,7 +87,7 @@ class HDFSFileSplitterML{
         // init fs_
         struct hdfsBuilder* builder = hdfsNewBuilder();
         hdfsBuilderSetNameNode(builder, hdfs_namenode_.c_str());
-        hdfsBuilderSetNameNodePort(builder, std::stoi(hdfs_namenode_port_));
+        hdfsBuilderSetNameNodePort(builder, hdfs_namenode_port_);
         fs_ = hdfsBuilderConnect(builder);
         hdfsFreeBuilder(builder);
 		{
@@ -131,8 +131,10 @@ class HDFSFileSplitterML{
         std::string url_;
         std::string hostname_;
         std::string hdfs_namenode_;
-        std::string hdfs_namenode_port_;
+        int hdfs_namenode_port_;
         static size_t hdfs_block_size;
 };
+
+size_t HDFSFileSplitterML::hdfs_block_size = 0;
 
 }  // namespace flexps
