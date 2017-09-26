@@ -46,7 +46,7 @@ class HDFSFileSplitterML{
             std::string fn;
             answer >> fn;
             answer >> offset_;
-
+            LOG(INFO)<<fn<<offset_;
             if (fn.empty()) {
                 // no more files
                 return "";
@@ -69,7 +69,7 @@ class HDFSFileSplitterML{
     static void init_blocksize(hdfsFS fs, const std::string& url)
     {
         int num_files;
-        auto file_info = hdfsListDirectory(fs, url.c_str(), &num_files);
+        hdfsFileInfo* file_info = hdfsListDirectory(fs, url.c_str(), &num_files);
         for (int i = 0; i < num_files; ++i) {
             if (file_info[i].mKind == kObjectKindFile) {
                 hdfs_block_size = file_info[i].mBlockSize;
@@ -90,11 +90,9 @@ class HDFSFileSplitterML{
         hdfsBuilderSetNameNodePort(builder, hdfs_namenode_port_);
         fs_ = hdfsBuilderConnect(builder);
         hdfsFreeBuilder(builder);
-		{
-			std::mutex gCallOnceMutex;
-			std::lock_guard<std::mutex> guard(gCallOnceMutex);
-        	init_blocksize(fs_, url_);
-		}
+		//	std::mutex gCallOnceMutex;
+		//	std::lock_guard<std::mutex> guard(gCallOnceMutex);
+        init_blocksize(fs_, url_);
         data_ = new char[hdfs_block_size];
     }
 
@@ -119,7 +117,7 @@ class HDFSFileSplitterML{
             return start;
         }
         Coordinator* coordinator_;
-        int kLoadHdfsType_;
+        std::string kLoadHdfsType_ = "load_hdfs_globally";
         int num_threads_;
         int id_;
         size_t offset_ = 0;

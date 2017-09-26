@@ -30,19 +30,18 @@ namespace flexps {
 
 Master::Master() {}
 
-void Master::setup(int master_port) {
+void Master::setup(int master_port, zmq::context_t* zmq_context) {
     running = true;
-    init_socket(master_port);
+    init_socket(master_port, zmq_context);
 
     for (auto setup_handler : external_setup_handlers) {
         setup_handler();
     }
 }
 
-void Master::init_socket(int master_port) {
-    master_socket.reset(new zmq::socket_t(zmq_context, ZMQ_ROUTER));
+void Master::init_socket(int master_port, zmq::context_t* zmq_context) {
+    master_socket.reset(new zmq::socket_t(*zmq_context, ZMQ_ROUTER));
     master_socket->bind("tcp://*:" + std::to_string(master_port));
-    LOG(INFO) << "Binded to tcp://*:" << std::to_string(master_port);
 }
 
 void Master::serve() {

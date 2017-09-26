@@ -34,9 +34,8 @@ class Master {
 
     virtual ~Master() = default;
 
-    void setup(int master_port);
-    void setup();
-    void init_socket(int master_port);
+    void setup(int master_port, zmq::context_t* context);
+    void init_socket(int master_port, zmq::context_t* context);
     void serve();
     void handle_message(uint32_t message, const std::string& id);
 
@@ -54,7 +53,6 @@ class Master {
     bool running;
     std::string cur_client;
     // Networking
-    zmq::context_t zmq_context;
     std::shared_ptr<zmq::socket_t> master_socket;
 
     // External handlers

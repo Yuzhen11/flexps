@@ -8,7 +8,8 @@
 #include "io/file_splitter.hpp"
 #include "boost/utility/string_ref.hpp"
 
-namespace flexps {
+using namespace flexps;
+
 
 class TestLineInput : public testing::Test {
    public:
@@ -24,40 +25,41 @@ class TestLineInput : public testing::Test {
 };
 
 TEST_F(TestLineInput, Read) {
-    
-
-    std::thread master_thread([] {
-        int master_port = 1817;
+    std::string hdfs_namenode = "proj10";
+    int hdfs_namenode_port = 9000;
+    int master_port = 19817;
+    zmq::context_t* zmq_context = new zmq::context_t(1);
+    std::thread master_thread([zmq_context,master_port,hdfs_namenode_port,hdfs_namenode] {
+        int master_port = 19817;
         auto& master = Master::get_instance();
-        master.setup(master_port);
+        HDFSBlockAssigner hdfs_block_assigner(hdfs_namenode,hdfs_namenode_port);
+        master.setup(master_port, zmq_context);
         master.serve();
-        HDFSBlockAssigner hdfs_block_assigner;
     });
 
-    std::thread worker_thread([] {
+    std::thread worker_thread([zmq_context,master_port,hdfs_namenode_port,hdfs_namenode] {
 		std::string master_host = "proj10";
-     	int master_port = 1817;
-     	std::string input = "hdfs:///dataset/ml/netflix_small.txt";
-     	std::string hdfs_namenode = "proj10";
-     	int hdfs_namenode_port = 9000;
-     	std::string worker_host = "proj10";
-     	int worker_port = 81817;
-     	int num_threads = 2;
-     	int first_id = 0;
-     	int second_id = 1;
+     	std::string input = "hdfs:///datasets/classification/a9";
+     	int num_threads = 1;
+     	int second_id = 0;
+        std::string worker_host = "proj10";
      	int proc_id = getpid();
-     	zmq::context_t zmq_context;        
-        Coordinator* coordinator = new Coordinator(proc_id, worker_host, &zmq_context, master_host, master_port);
+        Coordinator* coordinator = new Coordinator(proc_id, worker_host, zmq_context, master_host, master_port);
         coordinator->serve();
+        LOG(INFO)<<"Coordinator begin to serve";
         HDFSFileSplitterML* splitter = new HDFSFileSplitterML(num_threads,second_id,coordinator,worker_host,hdfs_namenode,hdfs_namenode_port);
+        LOG(INFO)<<"splitter is well prepared";
         LineInputFormatML infmt(input, num_threads, second_id, splitter);
         infmt.set_input(input);
-        bool success = false;
+        LOG(INFO)<<"Line input is well prepared";
+        bool success = true;
         int count = 0;
         boost::string_ref record;
         while(true){
-            infmt.next(record);
+            success = infmt.next(record);
             count++;
+            if(success == false)
+                break;
         }
         LOG(INFO) << "the number of lines of netflix_small is " << count;
     });
@@ -69,4 +71,3 @@ TEST_F(TestLineInput, Read) {
 
 
 
-}  // namespace ml

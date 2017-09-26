@@ -21,11 +21,11 @@ bool operator==(const BlkDesc& lhs, const BlkDesc& rhs);
 
 class HDFSBlockAssigner{
    public: 
-    HDFSBlockAssigner();
+    HDFSBlockAssigner(std::string hdfsNameNode, int hdfsNameNodePort);
     ~HDFSBlockAssigner() = default;
     void master_main_handler_ml();
     inline bool is_valid() const { return is_valid_; }
-    void init_hdfs(const std::string& node, const std::string& port);
+    void init_hdfs(const std::string& node, const int& port);
     void browse_hdfs(int id, const std::string& url);
     std::pair<std::string, size_t> answer(const std::string& host, const std::string& url, int id, const std::string& load_type);
 

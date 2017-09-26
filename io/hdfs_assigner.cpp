@@ -7,15 +7,15 @@
 
 namespace flexps {
 
-    static HDFSBlockAssigner hdfs_block_assigner;
 
     bool operator==(const BlkDesc& lhs, const BlkDesc& rhs) {
         return lhs.filename == rhs.filename && lhs.offset == rhs.offset && lhs.block_location == rhs.block_location;
     }
 
-    HDFSBlockAssigner::HDFSBlockAssigner() {
+    HDFSBlockAssigner::HDFSBlockAssigner(std::string hdfs_namenode, int hdfs_namenode_port) {
         // 301 is a constant for IO load
         Master::get_instance().register_main_handler(301, std::bind(&HDFSBlockAssigner::master_main_handler_ml, this));
+        init_hdfs(hdfs_namenode, hdfs_namenode_port);
     }
 
     void HDFSBlockAssigner::master_main_handler_ml() {
@@ -32,7 +32,7 @@ namespace flexps {
         
         // reset num_worker_alive
         num_workers_alive = num_threads;
-
+        LOG(INFO)<<url<<host<<num_threads<<id<<load_type;  
         std::pair<std::string, size_t> ret = answer(host, url, id, load_type);
         stream.clear();
         stream << ret.first << ret.second;
@@ -40,15 +40,15 @@ namespace flexps {
 
         zmq_send_common(master_socket.get(), master.get_cur_client().data(),master.get_cur_client().length(), ZMQ_SNDMORE);
         zmq_send_common(master_socket.get(), nullptr, 0, ZMQ_SNDMORE);
-        zmq_send_common(master_socket.get(), stream.get_remained_buffer(), stream.size(), ZMQ_SNDMORE);
+        zmq_send_common(master_socket.get(), stream.get_remained_buffer(), stream.size());
     }
 
-    void HDFSBlockAssigner::init_hdfs(const std::string& node, const std::string& port) {
+    void HDFSBlockAssigner::init_hdfs(const std::string& node, const int& port) {
         int num_retries = 3;
         while (num_retries--) {
             struct hdfsBuilder* builder = hdfsNewBuilder();
             hdfsBuilderSetNameNode(builder, node.c_str());
-            hdfsBuilderSetNameNodePort(builder, std::stoi(port));
+            hdfsBuilderSetNameNodePort(builder, port);
             fs_ = hdfsBuilderConnect(builder);
             hdfsFreeBuilder(builder);
             if (fs_)
@@ -118,6 +118,7 @@ namespace flexps {
          *     when loading local host, selected_host equals host, 
          *     when loading gloabl host, selected_host equals an unfinished host 
          */
+        LOG(INFO)<<"MISSION complete";
         std::string selected_host;
         if (load_type.empty() || load_type == "load_hdfs_globally") { // default is load data globally
             // selected_file

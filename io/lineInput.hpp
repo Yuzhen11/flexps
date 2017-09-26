@@ -82,7 +82,6 @@ class LineInputFormatML{
                 return true;
             }
         }
-
         if (splitter_->get_offset() == 0 && r == 0) {
             // begin of a file
             l = 0;
@@ -95,6 +94,7 @@ class LineInputFormatML{
             l = find_next(buffer_, r, '\n') + 1;
             r = find_next(buffer_, l, '\n');
         }
+        LOG(INFO)<<"second stage";
         // if the right end does not exist in current block
         if (r == boost::string_ref::npos) {
             auto last = buffer_.substr(l);
