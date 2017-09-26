@@ -10,7 +10,8 @@ file(GLOB server-src-files
   sparse_pending_buffer.cpp
   sparse_conflict_detector.cpp
   bsp_model.cpp
-  sparse_ssp_controller.cpp)
+  sparse_ssp_controller.cpp
+  unordered_map_sparse_ssp_recorder.cpp)
 
 add_library(server-objs OBJECT ${server-src-files})
 set_property(TARGET server-objs PROPERTY CXX_STANDARD 11)

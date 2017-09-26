@@ -1,4 +1,6 @@
 #include "server/sparse_ssp_controller.hpp"
+#include "server/abstract_sparse_ssp_recorder.hpp"
+#include "server/unordered_map_sparse_ssp_recorder.hpp"
 
 #include "glog/logging.h"
 
@@ -7,29 +9,20 @@
 
 namespace flexps {
 
+SparseSSPController::SparseSSPController(uint32_t staleness, uint32_t speculation)
+    : staleness_(staleness), speculation_(speculation) {
+  this->recorder_ = std::unique_ptr<AbstractSparseSSPRecorder>(new UnorderedMapSparseSSPRecorder(staleness, speculation));
+}
+
 std::list<Message> SparseSSPController::Clock(int progress, int sender, int updated_min_clock, int min_clock) {
-  if (future_keys_[sender].size() > 0 && future_keys_[sender].front().first == progress - 1) {
-    RemoveRecord(progress - 1, sender, future_keys_[sender].front().second);
-    future_keys_[sender].pop();
-  }
+
+  // TODO(Ruoyu Wu): comment
+  recorder_->HandleFutureKeys(progress, sender);
 
   std::list<Message> rets;
-  // Handle too_fast_buffer_ if min_clock updated
-  // Maybe it's clear to move this logic to handle updated_min_clock out.
-  if (updated_min_clock != -1) {
-    for (auto& msg : too_fast_buffer_) {
-      int forwarded_worker_id = -1;
-      int forwarded_version = -1;
-      if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
-            msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
-        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
-        Push(forwarded_version, msg, forwarded_worker_id);
-      } else {
-        rets.push_back(std::move(msg));
-      }
-    }
-    too_fast_buffer_.clear();
-  }
+
+  // TODO(Ruoyu Wu): comment
+  HandleTooFastBuffer(updated_min_clock, min_clock, rets);
 
   std::list<Message> get_messages = Pop(progress, sender);
   VLOG(1) << "progress: " << progress << " sender: " << sender
@@ -50,7 +43,7 @@ std::list<Message> SparseSSPController::Clock(int progress, int sender, int upda
         << "min_clock " << min_clock << " check_biggest_version " << (*get_msg_iter).meta.version - staleness_ - 1;
       int forwarded_worker_id = -1;
       int forwarded_version = -1;
-      if (HasConflict(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
+      if (recorder_->HasConflict(third_party::SArray<uint32_t>((*get_msg_iter).data[0]), min_clock,
                                    (*get_msg_iter).meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
         CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         Push(forwarded_version, (*get_msg_iter), forwarded_worker_id);
@@ -78,26 +71,19 @@ std::list<Message> SparseSSPController::Clock(int progress, int sender, int upda
     }
     CHECK(Size(updated_min_clock - 1) == 0)
         << "[Error]SparseSSPModel: get_buffer_ of min_clock should empty";
-    CHECK(TotalSize(updated_min_clock - 1) == 0)
-        << "[Error]SparseSSPModel: Recorder Size should be 0";
-    ClockRemoveRecord(updated_min_clock - 1);
+    // CHECK(TotalSize(updated_min_clock - 1) == 0)
+    //     << "[Error]SparseSSPModel: Recorder Size should be 0";
+    recorder_->ClockRemoveRecord(updated_min_clock - 1);
     VLOG(1) << "Min clock updated to progress: " << progress;
   }
   return rets;
 }
 
-
 void SparseSSPController::AddRecord(Message& msg) {
-  CHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
-  future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
-
-  for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
-    recorder_[msg.meta.version][key].insert(msg.meta.sender);
-  }
-
+  recorder_->AddRecord(msg);
   Push(msg.meta.version, msg, msg.meta.sender);
-
 }
+
 
 std::list<Message> SparseSSPController::Pop(const int version, const int tid) {
   std::list<Message> ret = std::move(buffer_[version][tid]);
@@ -125,69 +111,24 @@ int SparseSSPController::Size(const int version) {
   return size;
 }
 
-/* IF:
- *   NO conflict: return 
- *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
- */
-bool SparseSSPController::HasConflict(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
-                                          const int end_version, int& forwarded_thread_id, int& forwarded_version) {
-  for (int check_version = end_version; check_version >= begin_version; check_version--) {
-    for (auto& key : paramIDs) {
-      auto it = recorder_[check_version].find(key);
-      if (it != recorder_[check_version].end()) {
-        forwarded_thread_id = *((it->second).begin());
-        forwarded_version = check_version + 1;
-        return true;
+void SparseSSPController::HandleTooFastBuffer(int updated_min_clock, int min_clock, std::list<Message>& rets) {
+  // Handle too_fast_buffer_ if min_clock updated
+  // Maybe it's clear to move this logic to handle updated_min_clock out.
+  if (updated_min_clock != -1) {
+    for (auto& msg : too_fast_buffer_) {
+      int forwarded_worker_id = -1;
+      int forwarded_version = -1;
+      if (recorder_->HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
+            msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
+        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
+        Push(forwarded_version, msg, forwarded_worker_id);
+      } else {
+        rets.push_back(std::move(msg));
       }
     }
-  }
-  return false;
-}
-
-void SparseSSPController::RemoveRecord(const int version, const uint32_t tid,
-                                          const third_party::SArray<uint32_t>& paramIDs) {
-  CHECK(recorder_.find(version) != recorder_.end());
-  for (auto& key : paramIDs) {
-    CHECK(recorder_[version].find(key) != recorder_[version].end());
-    CHECK(recorder_[version][key].find(tid) != recorder_[version][key].end());
-    recorder_[version][key].erase(tid);
-    CHECK(recorder_[version][key].size() >= 0);
-    if (recorder_[version][key].size() == 0) {
-      recorder_[version].erase(key);
-    }
+    too_fast_buffer_.clear();
   }
 }
 
-void SparseSSPController::ClockRemoveRecord(const int version) { recorder_.erase(version); }
-
-int SparseSSPController::ParamSize(const int version) {
-  if (recorder_.find(version) == recorder_.end())
-    return 0;
-  return recorder_[version].size();
-}
-
-int SparseSSPController::WorkerSize(const int version) {
-  if (recorder_.find(version) == recorder_.end())
-    return 0;
-  std::set<uint32_t> thread_id;
-  for (auto& param_map : recorder_[version]) {
-    for (auto& thread : param_map.second) {
-      thread_id.insert(thread);
-    }
-  }
-  return thread_id.size();
-}
-
-int SparseSSPController::TotalSize(const int version) {
-  if (recorder_.find(version) == recorder_.end())
-    return 0;
-  int total_count = 0;
-  for (auto& param_map : recorder_[version]) {
-    for (auto& thread : param_map.second) {
-      total_count++;
-    }
-  }
-  return total_count;
-}
 
 }  // namespace flexps
