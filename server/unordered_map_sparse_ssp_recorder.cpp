@@ -4,7 +4,7 @@
 namespace flexps {
 
 void UnorderedMapSparseSSPRecorder::AddRecord(Message& msg) {
-  CHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
+  DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
   for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
@@ -14,12 +14,12 @@ void UnorderedMapSparseSSPRecorder::AddRecord(Message& msg) {
 
 void UnorderedMapSparseSSPRecorder::RemoveRecord(const int version, const uint32_t tid,
                                           const third_party::SArray<uint32_t>& paramIDs) {
-  CHECK(main_recorder_.find(version) != main_recorder_.end());
+  DCHECK(main_recorder_.find(version) != main_recorder_.end());
   for (auto& key : paramIDs) {
-    CHECK(main_recorder_[version].find(key) != main_recorder_[version].end());
-    CHECK(main_recorder_[version][key].find(tid) != main_recorder_[version][key].end());
+    DCHECK(main_recorder_[version].find(key) != main_recorder_[version].end());
+    DCHECK(main_recorder_[version][key].find(tid) != main_recorder_[version][key].end());
     main_recorder_[version][key].erase(tid);
-    CHECK(main_recorder_[version][key].size() >= 0);
+    DCHECK(main_recorder_[version][key].size() >= 0);
     if (main_recorder_[version][key].size() == 0) {
       main_recorder_[version].erase(key);
     }
@@ -72,7 +72,7 @@ std::list<Message> UnorderedMapSparseSSPRecorder::PopMsg(const int version, cons
 }
 
 void UnorderedMapSparseSSPRecorder::PushMsg(const int version, Message& message, const int tid) {
-  // CHECK_EQ(buffer_[version][tid].size(), 0);
+  // DCHECK_EQ(buffer_[version][tid].size(), 0);
   buffer_[version][tid].push_back(std::move(message));
 }
 
@@ -126,7 +126,7 @@ void UnorderedMapSparseSSPRecorder::HandleTooFastBuffer(int updated_min_clock, i
       int forwarded_version = -1;
       if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
             msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
-        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
+        DCHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         PushMsg(forwarded_version, msg, forwarded_worker_id);
       } else {
         rets.push_back(std::move(msg));
