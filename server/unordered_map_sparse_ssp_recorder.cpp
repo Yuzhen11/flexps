@@ -54,6 +54,39 @@ void UnorderedMapSparseSSPRecorder::HandleFutureKeys(int progress, int sender) {
   }
 }
 
+void UnorderedMapSparseSSPRecorder::PushBackTooFastBuffer(Message& msg) {
+  too_fast_buffer_.push_back(std::move(msg));
+}
+
+void UnorderedMapSparseSSPRecorder::EraseMsgBuffer(int version) {
+  buffer_.erase(version);
+}
+
+std::list<Message> UnorderedMapSparseSSPRecorder::PopMsg(const int version, const int tid) {
+  std::list<Message> ret = std::move(buffer_[version][tid]);
+  buffer_[version].erase(tid);
+  if (buffer_[version].empty()) {
+    buffer_.erase(version);
+  }
+  return ret;
+}
+
+void UnorderedMapSparseSSPRecorder::PushMsg(const int version, Message& message, const int tid) {
+  // CHECK_EQ(buffer_[version][tid].size(), 0);
+  buffer_[version][tid].push_back(std::move(message));
+}
+
+int UnorderedMapSparseSSPRecorder::MsgBufferSize(const int version) {
+  if (buffer_.find(version) == buffer_.end()) {
+    return 0;
+  }
+  int size = 0;
+  for (auto& tid_messages : buffer_[version]) {
+    size += tid_messages.second.size();
+  }
+  return size;
+}
+
 int UnorderedMapSparseSSPRecorder::ParamSize(const int version) {
   if (main_recorder_.find(version) == main_recorder_.end())
     return 0;
@@ -82,6 +115,25 @@ int UnorderedMapSparseSSPRecorder::TotalSize(const int version) {
     }
   }
   return total_count;
+}
+
+void UnorderedMapSparseSSPRecorder::HandleTooFastBuffer(int updated_min_clock, int min_clock, std::list<Message>& rets) {
+  // Handle too_fast_buffer_ if min_clock updated
+  // Maybe it's clear to move this logic to handle updated_min_clock out.
+  if (updated_min_clock != -1) {
+    for (auto& msg : too_fast_buffer_) {
+      int forwarded_worker_id = -1;
+      int forwarded_version = -1;
+      if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
+            msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
+        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
+        PushMsg(forwarded_version, msg, forwarded_worker_id);
+      } else {
+        rets.push_back(std::move(msg));
+      }
+    }
+    too_fast_buffer_.clear();
+  }
 }
 
 } // namespace flexps

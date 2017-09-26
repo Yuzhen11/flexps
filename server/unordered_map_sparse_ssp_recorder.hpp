@@ -19,7 +19,14 @@ public:
   virtual bool HasConflict(const third_party::SArray<uint32_t>& paramIDs, const int begin_version,
                             const int end_version, int& forwarded_thread_id, int& forwarded_version) override;
 
+  virtual std::list<Message> PopMsg(const int version, const int tid) override;
+  virtual void PushMsg(const int version, Message& message, const int tid) override;
+  virtual void EraseMsgBuffer(int version) override;
+  virtual int MsgBufferSize(const int version) override;
+
+  virtual void HandleTooFastBuffer(int updated_min_clock, int min_clock, std::list<Message>& rets) override;
   virtual void HandleFutureKeys(int progress, int sender) override;
+  virtual void PushBackTooFastBuffer(Message& msg) override;
 
   int ParamSize(const int version);
   int WorkerSize(const int version);
@@ -33,6 +40,11 @@ private:
 
   // <thread_id, [<version, key>]>, has at most speculation_ + 1 queue size for each thread_id
   std::unordered_map<int, std::queue<std::pair<int, third_party::SArray<Key>>>> future_keys_;
+
+  // <version, <thread_id, [msg]>>
+  std::unordered_map<int, std::unordered_map<int, std::list<Message>>> buffer_;
+
+  std::vector<Message> too_fast_buffer_;
 };
 
 }  // namespace flexps
