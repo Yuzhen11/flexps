@@ -1,6 +1,6 @@
 #include "server/sparse_ssp_controller.hpp"
-#include "server/abstract_sparse_ssp_recorder.hpp"
 #include "server/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/vector_sparse_ssp_recorder.hpp"
 
 #include "glog/logging.h"
 
@@ -11,7 +11,7 @@ namespace flexps {
 
 SparseSSPController::SparseSSPController(uint32_t staleness, uint32_t speculation)
     : staleness_(staleness), speculation_(speculation) {
-  this->recorder_ = std::unique_ptr<AbstractSparseSSPRecorder>(new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  this->recorder_ = std::unique_ptr<AbstractSparseSSPRecorder>(new VectorSparseSSPRecorder(staleness, speculation));
 }
 
 std::list<Message> SparseSSPController::Clock(int progress, int sender, int updated_min_clock, int min_clock) {

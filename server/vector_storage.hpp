@@ -44,6 +44,14 @@ class VectorStorage : public AbstractStorage {
 
   virtual void FinishIter() override {}
 
+  int GetBegin() {
+    return range_.begin();
+  }
+
+  int GetEnd() {
+    return range_.end();
+  }
+
   size_t Size() const {
     CHECK_EQ(range_.size(), storage_.size());
     return storage_.size();

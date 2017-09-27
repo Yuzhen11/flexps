@@ -5,12 +5,13 @@
 
 #include <unordered_map>
 #include <queue>
+#include <vector>
 
 namespace flexps {
 
-class UnorderedMapSparseSSPRecorder : public AbstractSparseSSPRecorder {
+class VectorSparseSSPRecorder : public AbstractSparseSSPRecorder {
 public:
-  UnorderedMapSparseSSPRecorder(uint32_t staleness, uint32_t speculation) : staleness_(staleness), speculation_(speculation) {}
+  VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation) : staleness_(staleness), speculation_(speculation) {}
 
   virtual void AddRecord(Message& msg) override;
   virtual void RemoveRecord(const int version, const uint32_t tid,
@@ -28,31 +29,23 @@ public:
   virtual void HandleFutureKeys(int progress, int sender) override;
   virtual void PushBackTooFastBuffer(Message& msg) override;
 
-  int ParamSize(const int version);
-  int WorkerSize(const int version);
-  int TotalSize(const int version);
-
 private:
   uint32_t staleness_;
   uint32_t speculation_;
 
-  // <version, <key, [tid]>>
-  std::unordered_map<int, std::unordered_map<uint32_t, std::set<uint32_t>>> main_recorder_;
+  uint32_t paramStart = 0;
+  uint32_t paramEnd = 0;
 
-  // <thread_id, [<version, key>]>, has at most speculation_ + 1 queue size for each thread_id
-  std::unordered_map<int, std::queue<std::pair<int, third_party::SArray<Key>>>> future_keys_;
+  // <version, <key, [tid]>>
+  std::unordered_map<int, std::vector<std::set<uint32_t>>> main_recorder_;
 
   // <version, <thread_id, [msg]>>
   std::unordered_map<int, std::unordered_map<int, std::list<Message>>> buffer_;
 
+  // <thread_id, [<version, key>]>, has at most speculation_ + 1 queue size for each thread_id
+  std::unordered_map<int, std::queue<std::pair<int, third_party::SArray<Key>>>> future_keys_;
+
   std::vector<Message> too_fast_buffer_;
-
-  // for performance info use
-  int key_size = 0;
-  int key_count = 0;
-
-  int version_size = 0;
-  int version_count = 0;
 };
 
 }  // namespace flexps
