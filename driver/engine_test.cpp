@@ -80,7 +80,7 @@ TEST_F(TestEngine, SimpleTaskMapStorage) {
   engine.StartEverything();
 
   engine.CreateTable<float>(0, {{0, 10}}, 
-      ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10)
+      ModelType::SSP, StorageType::Map);  // table 0, range [0,10)
   engine.Barrier();
   MLTask task;
   task.SetWorkerAlloc({{0, 3}});  // 3 workers on node 0
@@ -101,7 +101,7 @@ TEST_F(TestEngine, SimpleTaskVectorStorage) {
   engine.StartEverything();
 
   engine.CreateTable<float>(0, {{0, 10}}, 
-      ModelType::SSPModel, StorageType::VectorStorage);  // table 0, range [0,10)
+      ModelType::SSP, StorageType::Vector);  // table 0, range [0,10)
   engine.Barrier();
   MLTask task;
   task.SetWorkerAlloc({{0, 3}});  // 3 workers on node 0
@@ -129,7 +129,7 @@ TEST_F(TestEngine, MultipleTasks) {
       engine.StartEverything();
 
       engine.CreateTable<float>(0, {{0, 10}, {10, 20}, {20, 30}},
-          ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10), [10, 20), [20, 30)
+          ModelType::SSP, StorageType::Map);  // table 0, range [0,10), [10, 20), [20, 30)
       engine.Barrier();
       MLTask task;
       // 3 workers on node 0, 2 workers on node 1, 3 workers on node 2
@@ -157,7 +157,7 @@ TEST_F(TestEngine, KVClientTableMapStorage) {
 
   const int kTableId = 0;
   engine.CreateTable<float>(kTableId, {{0, 10}},
-      ModelType::SSPModel, StorageType::MapStorage);  // table 0, range [0,10)
+      ModelType::SSP, StorageType::Map);  // table 0, range [0,10)
   engine.Barrier();
   MLTask task;
   task.SetWorkerAlloc({{0, 3}});  // 3 workers on node 0
@@ -191,7 +191,7 @@ TEST_F(TestEngine, KVClientTableVectorStorage) {
 
   const int kTableId = 0;
   engine.CreateTable<float>(kTableId, {{0, 10}},
-      ModelType::SSPModel, StorageType::VectorStorage);  // table 0, range [0,10)
+      ModelType::SSP, StorageType::Vector);  // table 0, range [0,10)
   engine.Barrier();
   MLTask task;
   task.SetWorkerAlloc({{0, 3}});  // 3 workers on node 0

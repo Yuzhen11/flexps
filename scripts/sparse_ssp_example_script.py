@@ -29,11 +29,12 @@ params = {
     "config_file" : hostfile_path,
     "kStaleness" : 0,
     "kSpeculation" : 5,
-    # "kModelType" : "SparseSSP",
-    "kModelType" : "SSP",
+    "kModelType" : "ASP",  # {ASP/SSP/BSP/SparseSSP}
+    "kStorageType" : "Vector",  # {Vector/Map}
+    "kSparseSSPRecorderType" : "Map",  # {Vector/Map}
     "num_dims" : 10000000,
-    "num_nonzeros" : 100,
-    "num_iters" : 100,
+    "num_nonzeros" : 1000,
+    "num_iters" : 1000,
 }
 
 ssh_cmd = (

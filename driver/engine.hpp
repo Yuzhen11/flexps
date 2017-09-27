@@ -27,10 +27,13 @@
 namespace flexps {
 
 enum class ModelType {
-  SSPModel, BSPModel, ASPModel, SparseSSPModel
+  SSP, BSP, ASP, SparseSSP
 };
 enum class StorageType {
-  MapStorage, VectorStorage
+  Map, Vector
+};
+enum class SparseSSPRecorderType {
+  None, Map, Vector
 };
 
 
@@ -71,7 +74,8 @@ class Engine {
   WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
   template<typename Val>
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges,
-      ModelType model_type, StorageType storage_type, int model_staleness = 0, int speculation = 0);
+      ModelType model_type, StorageType storage_type, int model_staleness = 0, int speculation = 0,
+      SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
 
@@ -97,7 +101,8 @@ class Engine {
 template<typename Val>
 void Engine::CreateTable(uint32_t table_id,
     const std::vector<third_party::Range>& ranges,
-    ModelType model_type, StorageType storage_type, int model_staleness, int speculation) {
+    ModelType model_type, StorageType storage_type, int model_staleness, int speculation,
+    SparseSSPRecorderType sparse_ssp_recorder_type) {
   RegisterRangeManager(table_id, ranges);
   CHECK(server_thread_group_);
 
@@ -109,22 +114,30 @@ void Engine::CreateTable(uint32_t table_id,
     std::unique_ptr<AbstractStorage> storage;
     std::unique_ptr<AbstractModel> model;
     // Set up storage
-    if (storage_type == StorageType::MapStorage) {
+    if (storage_type == StorageType::Map) {
       storage.reset(new MapStorage<Val>());
-    } else if (storage_type == StorageType::VectorStorage){
+    } else if (storage_type == StorageType::Vector){
       auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
       storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()]));
     } else {
       CHECK(false) << "Unknown storage_type";
     }
     // Set up model
-    if (model_type == ModelType::SSPModel) {
+    if (model_type == ModelType::SSP) {
       model.reset(new SSPModel(table_id, std::move(storage), model_staleness, server_thread_group_->GetReplyQueue()));
-    } else if (model_type == ModelType::BSPModel) {
+    } else if (model_type == ModelType::BSP) {
       model.reset(new BSPModel(table_id, std::move(storage), server_thread_group_->GetReplyQueue()));
-    } else if (model_type == ModelType::ASPModel) {
+    } else if (model_type == ModelType::ASP) {
       model.reset(new ASPModel(table_id, std::move(storage), server_thread_group_->GetReplyQueue()));
-    } else if (model_type == ModelType::SparseSSPModel) {
+    } else if (model_type == ModelType::SparseSSP) {
+      CHECK(sparse_ssp_recorder_type != SparseSSPRecorderType::None);
+      if (sparse_ssp_recorder_type == SparseSSPRecorderType::Map) {
+        // TODO
+      } else if (sparse_ssp_recorder_type == SparseSSPRecorderType::Vector) {
+        // TODO
+      } else {
+        CHECK(false);
+      }
       model.reset(new SparseSSPModel(table_id, std::move(storage), server_thread_group_->GetReplyQueue(), model_staleness, speculation));
     } else {
       CHECK(false) << "Unknown model_type";

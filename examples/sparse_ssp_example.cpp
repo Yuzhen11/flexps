@@ -16,14 +16,15 @@
 DEFINE_int32(my_id, -1, "The process id of this program");
 DEFINE_string(config_file, "", "The config file path");
 
-DEFINE_string(kModelType, "", "SSP/SparseSSP");
-
 DEFINE_int32(num_dims, 1000, "number of dimensions");
 DEFINE_int32(num_nonzeros, 10, "number of nonzeros");
 DEFINE_int32(num_iters, 10, "number of iters");
 
+DEFINE_string(kModelType, "", "ASP/SSP/BSP/SparseSSP");
+DEFINE_string(kStorageType, "", "Map/Vector");
 DEFINE_int32(kStaleness, 0, "stalness");
 DEFINE_int32(kSpeculation, 1, "speculation");
+DEFINE_string(kSparseSSPRecorderType, "", "None/Map/Vector");
 
 namespace flexps {
 
@@ -71,7 +72,9 @@ void Run() {
   srand(0);
   CHECK_NE(FLAGS_my_id, -1);
   CHECK(!FLAGS_config_file.empty());
-  CHECK(FLAGS_kModelType == "SSP" || FLAGS_kModelType == "SparseSSP");
+  CHECK(FLAGS_kModelType == "ASP" || FLAGS_kModelType == "BSP" || FLAGS_kModelType == "SSP" || FLAGS_kModelType == "SparseSSP");
+  CHECK(FLAGS_kSparseSSPRecorderType == "None" || FLAGS_kSparseSSPRecorderType == "Map" || FLAGS_kSparseSSPRecorderType == "Vector");
+  CHECK(FLAGS_kStorageType == "Map" || FLAGS_kStorageType == "Vector");
   CHECK_GT(FLAGS_num_dims, 0);
   CHECK_GT(FLAGS_num_nonzeros, 0);
   CHECK_GT(FLAGS_num_iters, 0);
@@ -109,15 +112,41 @@ void Run() {
     range.push_back({FLAGS_num_dims / nodes.size() * i, FLAGS_num_dims / nodes.size() * (i + 1)});
   }
   range.push_back({FLAGS_num_dims / nodes.size() * (nodes.size() - 1), (uint64_t)FLAGS_num_dims});
-  if (FLAGS_kModelType == "SSP") {
-    engine.CreateTable<float>(kTableId, range, 
-        ModelType::SSPModel, StorageType::VectorStorage, FLAGS_kStaleness);
+
+  ModelType model_type;
+  if (FLAGS_kModelType == "ASP") {
+    model_type = ModelType::ASP;
+  } else if (FLAGS_kModelType == "SSP") {
+    model_type = ModelType::SSP;
+  } else if (FLAGS_kModelType == "BSP") {
+    model_type = ModelType::BSP;
   } else if (FLAGS_kModelType == "SparseSSP") {
-    engine.CreateTable<float>(kTableId, range, 
-        ModelType::SparseSSPModel, StorageType::VectorStorage, FLAGS_kStaleness, FLAGS_kSpeculation);
+    model_type = ModelType::SparseSSP;
   } else {
-    CHECK(false);
+    CHECK(false) << "model type error: " << FLAGS_kModelType;
   }
+
+  StorageType storage_type;
+  if (FLAGS_kStorageType == "Map") {
+    storage_type = StorageType::Map;
+  } else if (FLAGS_kStorageType == "Vector") {
+    storage_type = StorageType::Vector;
+  } else {
+    CHECK(false) << "storage type error: " << FLAGS_kStorageType;
+  }
+
+  SparseSSPRecorderType sparse_ssp_recorder_type;
+  if (FLAGS_kSparseSSPRecorderType == "None") {
+    sparse_ssp_recorder_type = SparseSSPRecorderType::None;
+  } else if (FLAGS_kSparseSSPRecorderType == "Map") {
+    sparse_ssp_recorder_type = SparseSSPRecorderType::Map;
+  } else if (FLAGS_kSparseSSPRecorderType == "Vector") {
+    sparse_ssp_recorder_type = SparseSSPRecorderType::Vector;
+  } else {
+    CHECK(false) << "sparse_ssp_storage type error: " << FLAGS_kSparseSSPRecorderType;
+  }
+  engine.CreateTable<float>(kTableId, range, 
+      model_type, storage_type, FLAGS_kStaleness, FLAGS_kSpeculation, sparse_ssp_recorder_type);
   engine.Barrier();
 
   // 3. Construct tasks
@@ -138,7 +167,7 @@ void Run() {
 
     auto start_time = std::chrono::steady_clock::now();
 
-    if (FLAGS_kModelType == "SSP") {  // SSP mode
+    if (FLAGS_kModelType == "SSP" || FLAGS_kModelType == "ASP" || FLAGS_kModelType == "BSP") {  // normal mode
       auto table = info.CreateKVClientTable<float>(kTableId);
       third_party::SArray<float> rets;
       third_party::SArray<float> vals;
@@ -152,7 +181,8 @@ void Run() {
         table.Add(keys, vals);
         table.Clock();
         CHECK_EQ(rets.size(), keys.size());
-        LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
+        if (i % 10 == 0)
+          LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
       }
     } else if (FLAGS_kModelType == "SparseSSP") {  // Sparse SSP mode
       auto table = info.CreateSparseKVClientTable<float>(kTableId, FLAGS_kSpeculation, future_keys);
@@ -166,7 +196,8 @@ void Run() {
         vals.resize(keys.size());
         for (int i = 0; i < vals.size(); ++ i) vals[i] = 0.5;
         table.Add(keys, vals);
-        LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
+        if (i % 10 == 0)
+          LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
       }
 
     } else {
@@ -181,6 +212,7 @@ void Run() {
   if (my_node.id == 0) {
     ProfilerStart("/data/opt/tmp/a.prof");
   }
+
   // 4. Run tasks
   engine.Run(task);
 
