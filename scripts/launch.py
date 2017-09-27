@@ -15,10 +15,8 @@ from os.path import dirname, join
 # 4:worker5:37542
 # 
 # hostfile = "machinefiles/local"
-# hostfile = "machinefiles/5node"
-hostfile = "machinefiles/2node"
-# progfile = "debug/BasicExample"
-progfile = "release/KTableExample"
+hostfile = "machinefiles/5node"
+progfile = "debug/BasicExample"
 
 script_path = os.path.realpath(__file__)
 proj_dir = dirname(dirname(script_path))
