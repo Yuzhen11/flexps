@@ -10,6 +10,13 @@ void UnorderedMapSparseSSPRecorder::AddRecord(Message& msg) {
   for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
     main_recorder_[msg.meta.version][key].insert(msg.meta.sender);
   }
+
+  // for performance info use
+  key_count ++;
+  key_size += main_recorder_[msg.meta.version].size();
+
+  version_count ++;
+  version_size += main_recorder_.size();
 }
 
 void UnorderedMapSparseSSPRecorder::RemoveRecord(const int version, const uint32_t tid,
@@ -26,7 +33,18 @@ void UnorderedMapSparseSSPRecorder::RemoveRecord(const int version, const uint32
   }
 }
 
-void UnorderedMapSparseSSPRecorder::ClockRemoveRecord(const int version) { main_recorder_.erase(version); }
+void UnorderedMapSparseSSPRecorder::ClockRemoveRecord(const int version) { 
+  main_recorder_.erase(version); 
+
+  // for performance info use
+  LOG(INFO) << "Average key size: " << key_size / double(key_count);
+  key_size = 0;
+  key_count = 0;
+
+  LOG(INFO) << "Average version size: " << version_size / double(version_count);
+  version_size = 0;
+  version_count = 0;
+}
 
 /* IF:
  *   NO conflict: return 
