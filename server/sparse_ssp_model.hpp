@@ -7,7 +7,10 @@
 #include "server/abstract_storage.hpp"
 #include "server/progress_tracker.hpp"
 #include "server/map_storage.hpp"
-#include "server/sparse_ssp_controller.hpp"
+
+#include "server/abstract_sparse_ssp_recorder.hpp"
+#include "server/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/vector_sparse_ssp_recorder.hpp"
 
 #include <map>
 #include <vector>
@@ -16,7 +19,8 @@ namespace flexps {
 
 class SparseSSPModel : public AbstractModel {
  public:
-  explicit SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage,
+  explicit SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage, 
+                          std::unique_ptr<AbstractSparseSSPRecorder> recorder,
                           ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation);
 
   virtual void Clock(Message& message) override;
@@ -32,7 +36,7 @@ class SparseSSPModel : public AbstractModel {
   std::unique_ptr<AbstractStorage> storage_;
   ProgressTracker progress_tracker_;
 
-  SparseSSPController sparse_ssp_controller_;
+  std::unique_ptr<AbstractSparseSSPRecorder> recorder_;
 
   std::vector<Message> buffer_;
   int staleness_;
