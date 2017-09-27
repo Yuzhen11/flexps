@@ -11,7 +11,8 @@ namespace flexps {
 
 class VectorSparseSSPRecorder : public AbstractSparseSSPRecorder {
 public:
-  VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation) : staleness_(staleness), speculation_(speculation) {}
+  VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation, uint64_t paramStart, uint64_t paramEnd) : 
+  staleness_(staleness), speculation_(speculation), paramStart_(paramStart), paramEnd_(paramEnd) {}
 
   virtual void AddRecord(Message& msg) override;
   virtual void RemoveRecord(const int version, const uint32_t tid,
@@ -33,8 +34,8 @@ private:
   uint32_t staleness_;
   uint32_t speculation_;
 
-  uint32_t paramStart = 0;
-  uint32_t paramEnd = 0;
+  uint32_t paramStart_ = 0;
+  uint32_t paramEnd_ = 0;
 
   // <version, <key, [tid]>>
   std::unordered_map<int, std::vector<std::set<uint32_t>>> main_recorder_;

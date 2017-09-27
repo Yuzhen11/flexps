@@ -10,9 +10,7 @@ SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<Abstract
     : model_id_(model_id), reply_queue_(reply_queue),
     storage_(std::move(storage)),
     recorder_(std::move(recorder)),
-    staleness_(staleness), speculation_(speculation) {
-  this->recorder_ = std::unique_ptr<AbstractSparseSSPRecorder>(new VectorSparseSSPRecorder(staleness, speculation));
-}
+    staleness_(staleness), speculation_(speculation) {}
 
 void SparseSSPModel::Clock(Message& message) {
   int min_clock = progress_tracker_.GetMinClock();
