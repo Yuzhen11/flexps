@@ -65,7 +65,7 @@ void Coordinator::notify_master(BinStream& message, size_t type) {
     // send dummy
     zmq_send_common(zmq_coord_, nullptr, 0, ZMQ_SNDMORE);
     //send type
-    zmq_sendmore_int32(zmq_coord_, type);
+    zmq_send_common(zmq_coord_, &type, sizeof(int32_t), ZMQ_SNDMORE);
     // Message body
     zmq_send_common(zmq_coord_, message.get_remained_buffer(), message.size());
     coord_lock_.unlock();

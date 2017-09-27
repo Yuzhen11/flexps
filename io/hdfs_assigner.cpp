@@ -1,4 +1,3 @@
-
 #include "hdfs/hdfs.h"
 #include "master.hpp"
 #include "glog/logging.h"
@@ -28,14 +27,14 @@ namespace flexps {
         int worker_id;
         BinStream stream;
         zmq::message_t msg;
-        zmq_recv_common(socket, &msg, flag);
+        zmq_recv_common(master_handler.get(), &msg);
         stream.push_back_bytes(reinterpret_cast<char*>(msg.data()), msg.size());
         stream >> worker_name >> worker_id;
         finished_workers_.insert(worker_id);
 
         LOG(INFO)<< "master => worker finsished @" << worker_name << "-" << std::to_string(worker_id);
 
-        if (!master.is_continuous() && (finished_workers_.size() == num_workers_alive)) {
+        if ((finished_workers_.size() == num_workers_alive)) {
             master.halt();
         }
 
@@ -51,12 +50,12 @@ namespace flexps {
         zmq_recv_common(master_socket.get(), &msg1);
         BinStream stream;
         stream.push_back_bytes(reinterpret_cast<char*>(msg1.data()), msg1.size());
-        stream >> url >> host >> num_threads >> id >> load_type;
+        stream >> url >> host >> num_threads >> id;
         
         // reset num_worker_alive
         num_workers_alive = num_threads;
         LOG(INFO)<<url<<host<<num_threads<<id<<load_type;  
-        std::pair<std::string, size_t> ret = answer(host, url, id, load_type);
+        std::pair<std::string, size_t> ret = answer(host, url, id);
         stream.clear();
         stream << ret.first << ret.second;
 

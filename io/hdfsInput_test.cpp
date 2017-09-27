@@ -49,7 +49,6 @@ TEST_F(TestLineInput, Read) {
         coordinator->serve();
         LOG(INFO)<<"Coordinator begin to serve";
         LineInputFormat infmt(input, num_threads, second_id, coordinator,worker_host,hdfs_namenode,hdfs_namenode_port);
-        infmt.set_input(input);
         LOG(INFO)<<"Line input is well prepared";
         bool success = true;
         int count = 0;

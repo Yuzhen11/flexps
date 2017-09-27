@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>  
-#include <coordinator.hpp>
+#include "coordinator.hpp"
 #include "boost/utility/string_ref.hpp"  
 #include "glog/logging.h"
 #include "file_splitter.hpp"
@@ -16,7 +16,7 @@ class LineInputFormat{
         id_ = id;
         splitter_ = new HDFSFileSplitter(num_threads, id, coordinator, hostname, hdfs_namenode, hdfs_namenode_port);
         // set_up url
-        set_input(url);
+        set_splitter(url);
     }
 
 

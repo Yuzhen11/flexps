@@ -131,6 +131,6 @@ class HDFSFileSplitter{
         static size_t hdfs_block_size;
 };
 
-size_t HDFSFileSplitterML::hdfs_block_size = 0;
+size_t HDFSFileSplitter::hdfs_block_size = 0;
 
 }  // namespace flexps

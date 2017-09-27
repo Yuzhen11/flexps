@@ -1,3 +1,5 @@
+#pragma once
+
 #include <zmq.h>
 #include <glog/logging.h>
 
