@@ -11,6 +11,7 @@ SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<Abstract
     storage_(std::move(storage)),
     sparse_ssp_controller_(staleness, speculation),
     staleness_(staleness), speculation_(speculation) {
+  
 }
 
 void SparseSSPModel::Clock(Message& message) {
