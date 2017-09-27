@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <chrono>
+#include <ctime>
 
 DEFINE_int32(my_id, -1, "The process id of this program");
 DEFINE_string(config_file, "", "The config file path");
@@ -81,7 +82,7 @@ void Run() {
   CHECK_LE(FLAGS_num_nonzeros, FLAGS_num_dims);
   CHECK_LE(FLAGS_kStaleness, 5);
   CHECK_GE(FLAGS_kStaleness, 0);
-  CHECK_LE(FLAGS_kSpeculation, 5);
+  CHECK_LE(FLAGS_kSpeculation, 50);
   CHECK_GE(FLAGS_kSpeculation, 1);
 
   if (FLAGS_my_id == 0) {
@@ -153,7 +154,7 @@ void Run() {
   MLTask task;
   std::vector<WorkerAlloc> worker_alloc;
   for (auto& node : nodes) {
-    worker_alloc.push_back({node.id, 3});  // each node has 3 workers
+    worker_alloc.push_back({node.id, 3});  // each node has 10 workers
   }
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});  // Use table 0
@@ -166,6 +167,7 @@ void Run() {
     // std::vector<third_party::SArray<Key>> future_keys = GenerateAllKeys(FLAGS_num_dims, FLAGS_num_iters+FLAGS_kSpeculation);
 
     auto start_time = std::chrono::steady_clock::now();
+    srand(time(0));
 
     if (FLAGS_kModelType == "SSP" || FLAGS_kModelType == "ASP" || FLAGS_kModelType == "BSP") {  // normal mode
       auto table = info.CreateKVClientTable<float>(kTableId);
@@ -183,6 +185,13 @@ void Run() {
         CHECK_EQ(rets.size(), keys.size());
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
+
+        // double r = (double)rand() / RAND_MAX;
+        // if (r < 0.05) {
+        //   double delay = (double)rand() / RAND_MAX * 100;
+        //   std::this_thread::sleep_for(std::chrono::milliseconds(int(delay)));
+        //   LOG(INFO) << "sleep for " << int(delay) << " ms";
+        // }
       }
     } else if (FLAGS_kModelType == "SparseSSP") {  // Sparse SSP mode
       auto table = info.CreateSparseKVClientTable<float>(kTableId, FLAGS_kSpeculation, future_keys);
@@ -198,6 +207,13 @@ void Run() {
         table.Add(keys, vals);
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
+
+        // double r = (double)rand() / RAND_MAX;
+        // if (r < 0.05) {
+        //   double delay = (double)rand() / RAND_MAX * 100;
+        //   std::this_thread::sleep_for(std::chrono::milliseconds(int(delay)));
+        //   LOG(INFO) << "sleep for " << int(delay) << " ms";
+        // }
       }
 
     } else {

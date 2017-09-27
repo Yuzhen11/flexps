@@ -29,11 +29,11 @@ params = {
     "config_file" : hostfile_path,
     "kStaleness" : 0,
     "kSpeculation" : 5,
-    "kModelType" : "ASP",  # {ASP/SSP/BSP/SparseSSP}
+    "kModelType" : "SparseSSP",  # {ASP/SSP/BSP/SparseSSP}
     "kStorageType" : "Vector",  # {Vector/Map}
-    "kSparseSSPRecorderType" : "Map",  # {Vector/Map}
+    "kSparseSSPRecorderType" : "Vector",  # {Vector/Map}
     "num_dims" : 10000000,
-    "num_nonzeros" : 1000,
+    "num_nonzeros" : 10000,
     "num_iters" : 1000,
 }
 

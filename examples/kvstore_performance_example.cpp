@@ -38,7 +38,7 @@ void Run() {
   range.push_back({kMaxKey / 2, kMaxKey});
 
   engine.CreateTable<float>(kTableId, range, 
-      ModelType::SSPModel, StorageType::VectorStorage, kStaleness);
+      ModelType::SSP, StorageType::Vector, kStaleness);
   engine.Barrier();
 
   // 3. Construct tasks
