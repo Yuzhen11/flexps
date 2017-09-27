@@ -81,7 +81,7 @@ void SparseSSPModel::Clock(Message& message) {
       recorder_->EraseMsgBuffer(0);
     }
     CHECK(recorder_->MsgBufferSize(updated_min_clock - 1) == 0)
-        << "[Error]SparseSSPModel: get_buffer_ of min_clock should empty";
+        << "[Error]SparseSSPModel: get_buffer_ of min_clock should empty " << updated_min_clock;
     // CHECK(TotalSize(updated_min_clock - 1) == 0)
     //     << "[Error]SparseSSPModel: Recorder Size should be 0";
     recorder_->ClockRemoveRecord(updated_min_clock - 1);
@@ -126,7 +126,7 @@ void SparseSSPModel::ResetWorker(Message& msg) {
   std::vector<uint32_t> tids_vec;
   for (auto tid : tids)
     tids_vec.push_back(tid);
-  this->progress_tracker_.Init(tids_vec);
+  this->progress_tracker_.Init(tids_vec);  
   Message reply_msg;
   reply_msg.meta.model_id = model_id_;
   reply_msg.meta.recver = msg.meta.sender;

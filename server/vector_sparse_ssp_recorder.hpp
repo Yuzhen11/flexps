@@ -1,5 +1,6 @@
 #pragma once
 
+#include "base/third_party/range.h"
 #include "server/abstract_sparse_ssp_recorder.hpp"
 #include "glog/logging.h"
 
@@ -11,8 +12,7 @@ namespace flexps {
 
 class VectorSparseSSPRecorder : public AbstractSparseSSPRecorder {
 public:
-  VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation, uint64_t paramStart, uint64_t paramEnd) : 
-  staleness_(staleness), speculation_(speculation), paramStart_(paramStart), paramEnd_(paramEnd) {}
+  VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation, third_party::Range range);
 
   virtual void AddRecord(Message& msg) override;
   virtual void RemoveRecord(const int version, const uint32_t tid,
@@ -34,11 +34,12 @@ private:
   uint32_t staleness_;
   uint32_t speculation_;
 
-  uint32_t paramStart_ = 0;
-  uint32_t paramEnd_ = 0;
+  third_party::Range range_;
+
+  uint32_t main_recorder_version_level_size_ = 0;
 
   // <version, <key, [tid]>>
-  std::unordered_map<int, std::vector<std::set<uint32_t>>> main_recorder_;
+  std::vector<std::vector<std::set<uint32_t>>> main_recorder_;
 
   // <version, <thread_id, [msg]>>
   std::unordered_map<int, std::unordered_map<int, std::list<Message>>> buffer_;

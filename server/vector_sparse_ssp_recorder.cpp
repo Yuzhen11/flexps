@@ -3,31 +3,52 @@
 
 namespace flexps {
 
+VectorSparseSSPRecorder::VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation, third_party::Range range) 
+  : staleness_(staleness), speculation_(speculation), range_(range) {
+
+  // Just make sure that preallocated space is larger than needed
+  main_recorder_version_level_size_ = staleness_ + 2 * speculation_ + 3;
+
+  main_recorder_.resize(main_recorder_version_level_size_);
+
+  for (auto& version_recorder : main_recorder_) {
+    DCHECK(range_.end() > range_.begin());
+    version_recorder.resize(range_.end() - range_.begin());
+  }
+}
+
 void VectorSparseSSPRecorder::AddRecord(Message& msg) {
-  CHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
+  DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
   for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
-    main_recorder_[msg.meta.version][key - paramStart].insert(msg.meta.sender);
+    DCHECK(key >= range_.begin() && key < range_.end());
+    main_recorder_[msg.meta.version % main_recorder_version_level_size_][key - range_.begin()].insert(msg.meta.sender);
   }
 }
 
 void VectorSparseSSPRecorder::RemoveRecord(const int version, const uint32_t tid,
                                           const third_party::SArray<uint32_t>& paramIDs) {
-  CHECK(main_recorder_.find(version) != main_recorder_.end());
   for (auto& key : paramIDs) {
-    CHECK(main_recorder_[version].size() > key - paramStart);
-    CHECK(main_recorder_[version][key - paramStart].find(tid) != main_recorder_[version][key - paramStart].end());
-    main_recorder_[version][key - paramStart].erase(tid);
-    CHECK(main_recorder_[version][key - paramStart].size() >= 0);
-    // if (main_recorder_[version][key - paramStart].size() == 0) {
-    //   main_recorder_[version].erase(key - paramStart);
-    // }
+    DCHECK(main_recorder_[version % main_recorder_version_level_size_].size() > key - range_.begin());
+    DCHECK(key >= range_.begin() && key < range_.end());
+    main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].erase(tid);
+    DCHECK(main_recorder_[version][key - range_.begin()].size() >= 0);
   }
 }
 
-void VectorSparseSSPRecorder::ClockRemoveRecord(const int version) { 
-  main_recorder_.erase(version); 
+void VectorSparseSSPRecorder::ClockRemoveRecord(const int version) {
+
+  // // For test use
+  // int count = 0;
+
+  // // TODO(Ruoyu Wu): if logic is right, this func can be eliminated
+  // for (auto& version_key_set : main_recorder_[version % main_recorder_version_level_size_]) {
+  //   count += version_key_set.size();
+  //   version_key_set.clear();
+  // }
+
+  // LOG(INFO) << version << " " << version % main_recorder_version_level_size_ << " CLOCK REMOVE SIZE " << count;
 }
 
 /* IF:
@@ -38,8 +59,9 @@ bool VectorSparseSSPRecorder::HasConflict(const third_party::SArray<uint32_t>& p
                                           const int end_version, int& forwarded_thread_id, int& forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : paramIDs) {
-      if (main_recorder_[check_version][key - paramStart].size() > 0) {
-        forwarded_thread_id = *(main_recorder_[check_version][key - paramStart].begin());
+      DCHECK(key >= range_.begin() && key < range_.end());
+      if (main_recorder_[check_version % main_recorder_version_level_size_][key - range_.begin()].size() > 0) {
+        forwarded_thread_id = *(main_recorder_[check_version % main_recorder_version_level_size_][key - range_.begin()].begin());
         forwarded_version = check_version + 1;
         return true;
       } 
@@ -97,7 +119,7 @@ void VectorSparseSSPRecorder::HandleTooFastBuffer(int updated_min_clock, int min
       int forwarded_version = -1;
       if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
             msg.meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
-        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
+        DCHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
         PushMsg(forwarded_version, msg, forwarded_worker_id);
       } else {
         rets.push_back(std::move(msg));

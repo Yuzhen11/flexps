@@ -139,8 +139,7 @@ void Engine::CreateTable(uint32_t table_id,
         recorder.reset(new UnorderedMapSparseSSPRecorder(model_staleness, speculation));
       } else if (sparse_ssp_recorder_type == SparseSSPRecorderType::Vector) {
         auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
-        recorder.reset(new VectorSparseSSPRecorder(model_staleness, speculation, 
-          ranges[it - server_thread_ids.begin()].begin(), ranges[it - server_thread_ids.begin()].end()));
+        recorder.reset(new VectorSparseSSPRecorder(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
       } else {
         CHECK(false);
       }
