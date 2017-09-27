@@ -6,7 +6,7 @@
 #include "hdfs/hdfs.h"
 #include "master.hpp"
 #include "glog/logging.h"
-
+#include "zmq_helper.hpp"
 namespace flexps {
 
 
@@ -23,51 +23,19 @@ class HDFSBlockAssigner{
    public: 
     HDFSBlockAssigner(std::string hdfsNameNode, int hdfsNameNodePort);
     ~HDFSBlockAssigner() = default;
+    void master_exit_handler_ml();
     void master_main_handler_ml();
     inline bool is_valid() const { return is_valid_; }
     void init_hdfs(const std::string& node, const int& port);
     void browse_hdfs(int id, const std::string& url);
-    std::pair<std::string, size_t> answer(const std::string& host, const std::string& url, int id, const std::string& load_type);
-
+    std::pair<std::string, size_t> answer(const std::string& host, const std::string& url, int id);
     int num_workers_alive;
    
    private:
-    inline void zmq_send_common(zmq::socket_t* socket, const void* data, const size_t& len, int flag = !ZMQ_NOBLOCK) {
-        CHECK(socket != nullptr) << "zmq::socket_t cannot be nullptr!";
-        CHECK(data != nullptr || len == 0) << "data and len are not matched!";
-        while (true)
-            try {
-                size_t bytes = socket->send(data, len, flag);
-                CHECK(bytes == len) << "zmq::send error!";
-                break;
-            } catch (zmq::error_t e) {
-            switch (e.num()) {
-                case EHOSTUNREACH:
-                case EINTR:
-                continue;
-            default:
-                LOG(ERROR) << "Invalid type of zmq::error!";
-            }
-        }
-    }
-
-    inline void zmq_recv_common(zmq::socket_t* socket, zmq::message_t* msg, int flag = !ZMQ_NOBLOCK) {
-        CHECK(socket != nullptr) << "zmq::socket_t cannot be nullptr!";
-        CHECK(msg != nullptr) << "data and len are not matched!";
-        while (true)
-            try {
-                bool successful = socket->recv(msg, flag);
-                CHECK(successful) << "zmq::receive error!";
-                break;
-            } catch (zmq::error_t e) {
-            if (e.num() == EINTR)
-                continue;
-            LOG(ERROR) << "Invalid type of zmq::error!";
-        }
-    }
 
     bool is_valid_ = false;
     hdfsFS fs_ = NULL;
+    std::set<int> finished_workers_;
     std::map<std::string, int> finish_dict;
     std::map<std::string, std::unordered_set<BlkDesc>> files_locality_dict;
     /*

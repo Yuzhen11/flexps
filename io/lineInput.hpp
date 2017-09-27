@@ -1,37 +1,26 @@
 #pragma once
 
 #include <string>  
+#include <coordinator.hpp>
 #include "boost/utility/string_ref.hpp"  
 #include "glog/logging.h"
 #include "file_splitter.hpp"
 
 namespace flexps {
 
-enum LineInputFormatSetUp {
-    NotSetUp = 0,
-    InputSetUp = 1 << 1,
-    AllSetUp = InputSetUp,
-};
-
-
-
-class LineInputFormatML{
+class LineInputFormat{
    public:
-    LineInputFormatML(const std::string url, int num_threads, int id, HDFSFileSplitterML* splitter) {
+    LineInputFormat(const std::string url, int num_threads, int id,
+        Coordinator* coordinator, std::string hostname, std::string hdfs_namenode, int hdfs_namenode_port) {
         num_threads_ = num_threads;
         id_ = id;
-        splitter_ = splitter;
+        splitter_ = new HDFSFileSplitter(num_threads, id, coordinator, hostname, hdfs_namenode, hdfs_namenode_port);
         // set_up url
         set_input(url);
     }
 
-    LineInputFormatML(int num_threads, int id, HDFSFileSplitterML* splitter) {
-        num_threads_ = num_threads;
-        id_ = id;
-        splitter_ = splitter;
-    }
 
-    virtual ~LineInputFormatML(){}
+    virtual ~LineInputFormat(){}
         
     /// function for creating different splitters for different urls
     void set_splitter(const std::string& url) {
@@ -54,11 +43,6 @@ class LineInputFormatML{
         id_ = id;
     }
         
-
-    void set_input(const std::string& url){
-        set_splitter(url);
-        is_setup_ |= LineInputFormatSetUp::InputSetUp;
-    }
     bool next(boost::string_ref& ref) {
         if (buffer_.size() == 0) {
             bool success = fetch_new_block();
@@ -94,7 +78,6 @@ class LineInputFormatML{
             l = find_next(buffer_, r, '\n') + 1;
             r = find_next(buffer_, l, '\n');
         }
-        LOG(INFO)<<"second stage";
         // if the right end does not exist in current block
         if (r == boost::string_ref::npos) {
             auto last = buffer_.substr(l);
@@ -110,8 +93,6 @@ class LineInputFormatML{
         }
     }
 
-
-    bool is_setup() const { return !(is_setup_ ^ LineInputFormatSetUp::AllSetUp); }
 
 
    private:
@@ -164,8 +145,7 @@ class LineInputFormatML{
     }
 
 
-    HDFSFileSplitterML* splitter_; 
-    bool is_setup_;
+    HDFSFileSplitter* splitter_; 
     int num_threads_;
     int id_;
     int l = 0;

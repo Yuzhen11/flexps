@@ -7,7 +7,7 @@
 #include "io/coordinator.hpp"
 #include "io/file_splitter.hpp"
 #include "boost/utility/string_ref.hpp"
-
+#include "base/serialization.hpp"
 using namespace flexps;
 
 
@@ -29,6 +29,7 @@ TEST_F(TestLineInput, Read) {
     int hdfs_namenode_port = 9000;
     int master_port = 19817;
     zmq::context_t* zmq_context = new zmq::context_t(1);
+
     std::thread master_thread([zmq_context,master_port,hdfs_namenode_port,hdfs_namenode] {
         int master_port = 19817;
         auto& master = Master::get_instance();
@@ -47,9 +48,7 @@ TEST_F(TestLineInput, Read) {
         Coordinator* coordinator = new Coordinator(proc_id, worker_host, zmq_context, master_host, master_port);
         coordinator->serve();
         LOG(INFO)<<"Coordinator begin to serve";
-        HDFSFileSplitterML* splitter = new HDFSFileSplitterML(num_threads,second_id,coordinator,worker_host,hdfs_namenode,hdfs_namenode_port);
-        LOG(INFO)<<"splitter is well prepared";
-        LineInputFormatML infmt(input, num_threads, second_id, splitter);
+        LineInputFormat infmt(input, num_threads, second_id, coordinator,worker_host,hdfs_namenode,hdfs_namenode_port);
         infmt.set_input(input);
         LOG(INFO)<<"Line input is well prepared";
         bool success = true;
@@ -61,6 +60,10 @@ TEST_F(TestLineInput, Read) {
             if(success == false)
                 break;
         }
+        BinStream finish_signal;
+        finish_signal << worker_host << second_id;
+        coordinator->notify_master(finish_signal, 300);
+
         LOG(INFO) << "the number of lines of netflix_small is " << count;
     });
     master_thread.join();

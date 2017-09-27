@@ -8,9 +8,9 @@
 
 namespace flexps {
     
-class HDFSFileSplitter{
+class HDFSFileSplitterML{
    public:
-    HDFSFileSplitter(int num_threads, int id, Coordinator* coordinator, std::string hostname, std::string hdfs_namenode, int hdfs_namenode_port)
+    HDFSFileSplitterML(int num_threads, int id, Coordinator* coordinator, std::string hostname, std::string hdfs_namenode, std::string hdfs_namenode_port)
     {
         data_= nullptr;
         num_threads_ = num_threads;
@@ -21,7 +21,7 @@ class HDFSFileSplitter{
         hdfs_namenode_port_ = hdfs_namenode_port;
     }
 
-    virtual ~HDFSFileSplitter() {
+    virtual ~HDFSFileSplitterML() {
         if (data_)
             delete[] data_;
     }
@@ -40,12 +40,13 @@ class HDFSFileSplitter{
             // ask master for a new block
             BinStream question;
             question << url_ << hostname_
-                << num_threads_ << id_;
+                << num_threads_ << id_ << kLoadHdfsType_;
             // 301 is constant for kIOHDFSSubsetLoad
             BinStream answer = coordinator_->ask_master(question, 301);
             std::string fn;
             answer >> fn;
             answer >> offset_;
+
             if (fn.empty()) {
                 // no more files
                 return "";
@@ -68,7 +69,7 @@ class HDFSFileSplitter{
     static void init_blocksize(hdfsFS fs, const std::string& url)
     {
         int num_files;
-        hdfsFileInfo* file_info = hdfsListDirectory(fs, url.c_str(), &num_files);
+        auto file_info = hdfsListDirectory(fs, url.c_str(), &num_files);
         for (int i = 0; i < num_files; ++i) {
             if (file_info[i].mKind == kObjectKindFile) {
                 hdfs_block_size = file_info[i].mBlockSize;
@@ -86,12 +87,14 @@ class HDFSFileSplitter{
         // init fs_
         struct hdfsBuilder* builder = hdfsNewBuilder();
         hdfsBuilderSetNameNode(builder, hdfs_namenode_.c_str());
-        hdfsBuilderSetNameNodePort(builder, hdfs_namenode_port_);
+        hdfsBuilderSetNameNodePort(builder, std::stoi(hdfs_namenode_port_));
         fs_ = hdfsBuilderConnect(builder);
         hdfsFreeBuilder(builder);
-		//	std::mutex gCallOnceMutex;
-		//	std::lock_guard<std::mutex> guard(gCallOnceMutex);
-        init_blocksize(fs_, url_);
+		{
+			std::mutex gCallOnceMutex;
+			std::lock_guard<std::mutex> guard(gCallOnceMutex);
+        	init_blocksize(fs_, url_);
+		}
         data_ = new char[hdfs_block_size];
     }
 
@@ -116,6 +119,7 @@ class HDFSFileSplitter{
             return start;
         }
         Coordinator* coordinator_;
+        int kLoadHdfsType_;
         int num_threads_;
         int id_;
         size_t offset_ = 0;
@@ -127,10 +131,8 @@ class HDFSFileSplitter{
         std::string url_;
         std::string hostname_;
         std::string hdfs_namenode_;
-        int hdfs_namenode_port_;
+        std::string hdfs_namenode_port_;
         static size_t hdfs_block_size;
 };
-
-size_t HDFSFileSplitterML::hdfs_block_size = 0;
 
 }  // namespace flexps

@@ -4,6 +4,7 @@
 #include "glog/logging.h"
 #include "hdfs_assigner.hpp"
 #include "base/serialization.hpp"
+#include "zmq_helper.hpp"
 
 namespace flexps {
 
@@ -14,8 +15,30 @@ namespace flexps {
 
     HDFSBlockAssigner::HDFSBlockAssigner(std::string hdfs_namenode, int hdfs_namenode_port) {
         // 301 is a constant for IO load
+        // 300 is for exit procedure
         Master::get_instance().register_main_handler(301, std::bind(&HDFSBlockAssigner::master_main_handler_ml, this));
+        Master::get_instance().register_main_handler(300, std::bind(&HDFSBlockAssigner::master_exit_handler_ml, this));
         init_hdfs(hdfs_namenode, hdfs_namenode_port);
+    }
+
+    void HDFSBlockAssigner::master_exit_handler_ml(){
+        auto& master = Master::get_instance();
+        auto master_handler = master.get_socket();
+        std::string worker_name;
+        int worker_id;
+        BinStream stream;
+        zmq::message_t msg;
+        zmq_recv_common(socket, &msg, flag);
+        stream.push_back_bytes(reinterpret_cast<char*>(msg.data()), msg.size());
+        stream >> worker_name >> worker_id;
+        finished_workers_.insert(worker_id);
+
+        LOG(INFO)<< "master => worker finsished @" << worker_name << "-" << std::to_string(worker_id);
+
+        if (!master.is_continuous() && (finished_workers_.size() == num_workers_alive)) {
+            master.halt();
+        }
+
     }
 
     void HDFSBlockAssigner::master_main_handler_ml() {
@@ -90,7 +113,7 @@ namespace flexps {
         hdfsFreeFileInfo(file_info, num_files);
     }
 
-    std::pair<std::string, size_t> HDFSBlockAssigner::answer(const std::string& host, const std::string& url, int id, const std::string& load_type) {
+    std::pair<std::string, size_t> HDFSBlockAssigner::answer(const std::string& host, const std::string& url, int id) {
         if (!fs_)
             return {"", 0};
 
@@ -118,38 +141,40 @@ namespace flexps {
          *     when loading local host, selected_host equals host, 
          *     when loading gloabl host, selected_host equals an unfinished host 
          */
-        LOG(INFO)<<"MISSION complete";
         std::string selected_host;
-        if (load_type.empty() || load_type == "load_hdfs_globally") { // default is load data globally
+  //      if (load_type.empty() || load_type == "load_hdfs_globally") { // default is load data globally
             // selected_file
             // if there is local file, allocate local file
-            if (all_files_locality[host].size()) {  
-                selected_host = host;
-            } else {  // there is no local file, so need to check all hosts
+        if (all_files_locality[host].size()) {  
+            selected_host = host;
+        } else {  // there is no local file, so need to check all hosts
                 // when loading data globally, util that all hosts finished means finishing
-                bool is_finish = true;
-                for(auto& item:all_files_locality) {
+            bool is_finish = true;
+            for(auto& item:all_files_locality) {
                     // when loading globally, any host havingn't been finished means unfinished  
-                    if (item.second.size() != 0) {
-                        is_finish = false;
+                if (item.second.size() != 0) {
+                    is_finish = false;
                         // in fact, there can be optimizing. for example, everytime, we can calculate the host
                         // which has the longest blocks. It may be good for load balance but search is time-consuming
-                        selected_host = item.first;   // default allocate a unfinished host block
-                        break;
-                    }
+                    selected_host = item.first;   // default allocate a unfinished host block
+                    break;
                 }
+            }
 
-                if (is_finish) {
-                    finish_multi_dict[id][url].second += 1;
-                    if(finish_multi_dict[id][url].second == num_workers_alive) {
+            if (is_finish) {
+                finish_multi_dict[id][url].second += 1;
+                if(finish_multi_dict[id][url].second == num_workers_alive) {
                         // this means all workers's requests about this url are rejected
                         // blocks under this url are all allocated
-                        files_locality_multi_dict[id].erase(url); 
-                    }
-                    return {"", 0};
-                } 
-            }
-        } else if (load_type == "load_hdfs_globally") {    // load data globally
+                files_locality_multi_dict[id].erase(url); 
+                }
+            return {"", 0};
+            } 
+        }
+
+    //    } 
+       /* 
+        else if (load_type == "load_hdfs_globally") {    // load data globally
             auto& local_files_locality = all_files_locality[host];
 
             if (local_files_locality.size() == 0) {     // local data is empty
@@ -162,10 +187,8 @@ namespace flexps {
 
             // local host has data, so set host to seletced_host 
             selected_host = host;   
-        } else {
-            LOG(ERROR)<<"[hdfs_binary_assigner_ml] kLoadHdfsType error.";
         }
-
+        */
         // according selected_host to get the select file
         auto selected_file = all_files_locality[selected_host].begin();
         // select

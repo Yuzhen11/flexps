@@ -32,7 +32,6 @@ void Coordinator::serve() {
         return;
 
     std::string hostname = hostname_ + "-" + std::to_string(proc_id_);
-
     zmq_coord_ = new zmq::socket_t(*context_, ZMQ_DEALER);
     zmq_coord_->setsockopt(ZMQ_IDENTITY, hostname.c_str(), hostname.size());
     int linger = 2000;
@@ -63,10 +62,10 @@ BinStream Coordinator::ask_master(BinStream& question, size_t type) {
 
 void Coordinator::notify_master(BinStream& message, size_t type) {
     coord_lock_.lock();
-
-    // type
+    // send dummy
     zmq_send_common(zmq_coord_, nullptr, 0, ZMQ_SNDMORE);
-    //zmq_sendmore_int32(zmq_coord_, type);
+    //send type
+    zmq_sendmore_int32(zmq_coord_, type);
     // Message body
     zmq_send_common(zmq_coord_, message.get_remained_buffer(), message.size());
     coord_lock_.unlock();
