@@ -34,6 +34,7 @@ include(cmake/modules/glog.cmake)
 include(cmake/modules/gflags.cmake)
 include(cmake/modules/gtest.cmake)
 include(cmake/modules/zeromq.cmake)
+include(cmake/dep.cmake)
 
 # External Includes
 set(HUSKY_EXTERNAL_INCLUDE ${ZMQ_INCLUDE_DIR} ${GLOG_INCLUDE_DIR} ${GFLAGS_INCLUDE_DIR})
