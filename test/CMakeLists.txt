@@ -1,15 +1,16 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
-add_library(flexps STATIC 
-  $<TARGET_OBJECTS:server-objs> 
-  $<TARGET_OBJECTS:worker-objs> 
-  $<TARGET_OBJECTS:comm-objs> 
+add_library(flexps STATIC
+  $<TARGET_OBJECTS:server-objs>
+  $<TARGET_OBJECTS:worker-objs>
+  $<TARGET_OBJECTS:comm-objs>
   $<TARGET_OBJECTS:base-objs>
   $<TARGET_OBJECTS:driver-objs>
+  $<TARGET_OBJECTS:io-objs>
   )
 
 # Unit Test
-file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp) 
+file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp)
 include_directories(${GTEST_INCLUDE})
 add_executable(HuskyUnitTest ${UNITTEST_FILES} test_main.cpp)
 add_dependencies(HuskyUnitTest gtest)
