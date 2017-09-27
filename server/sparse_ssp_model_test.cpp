@@ -3,7 +3,6 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "server/sparse_ssp_model.hpp"
-#include "server/sparse_ssp_controller.hpp"
 #include "server/map_storage.hpp"
 
 namespace flexps {

@@ -1,17 +1,17 @@
 #include "server/sparse_ssp_model.hpp"
-#include "glog/logging.h"
 
-#include <iostream>
+#include "glog/logging.h"
 
 namespace flexps {
 
-SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage,
+SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage, 
+                               std::unique_ptr<AbstractSparseSSPRecorder> recorder,
                                ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation)
     : model_id_(model_id), reply_queue_(reply_queue),
     storage_(std::move(storage)),
-    sparse_ssp_controller_(staleness, speculation),
+    recorder_(std::move(recorder)),
     staleness_(staleness), speculation_(speculation) {
-  
+  this->recorder_ = std::unique_ptr<AbstractSparseSSPRecorder>(new VectorSparseSSPRecorder(staleness, speculation));
 }
 
 void SparseSSPModel::Clock(Message& message) {
@@ -28,8 +28,68 @@ void SparseSSPModel::Clock(Message& message) {
   int updated_min_clock = progress_tracker_.AdvanceAndGetChangedMinClock(sender);
   int progress = progress_tracker_.GetProgress(message.meta.sender);
 
-  // Although we assume only one get message in a version, multiple messages can still be poped out
-  std::list<Message> get_messages = sparse_ssp_controller_.Clock(progress, sender, updated_min_clock, min_clock);
+  // TODO(Ruoyu Wu): comment
+  recorder_->HandleFutureKeys(progress, sender);
+
+  // Although we assume only one get message in a version, multiple messages can be in get_messages list
+  std::list<Message> get_messages;
+
+  // TODO(Ruoyu Wu): comment
+  recorder_->HandleTooFastBuffer(updated_min_clock, min_clock, get_messages);
+
+  std::list<Message> pop_messages = recorder_->PopMsg(progress, sender);
+  VLOG(1) << "progress: " << progress << " sender: " << sender
+    << " pop_messages size " << pop_messages.size();
+  auto pop_msg_iter = pop_messages.begin();
+  while(pop_msg_iter != pop_messages.end()) {
+    VLOG(1) << "message version: " << (*pop_msg_iter).meta.version << " message sender: " << (*pop_msg_iter).meta.sender;
+    CHECK(((*pop_msg_iter).meta.version > min_clock) || ((*pop_msg_iter).meta.version < min_clock + staleness_ + speculation_))
+        << "[Error]SparseSSPModel: progress invalid";
+    CHECK((*pop_msg_iter).data.size() == 1);
+    if ((*pop_msg_iter).meta.version <= staleness_ + min_clock) {
+      get_messages.push_back(std::move(*pop_msg_iter));
+      pop_msg_iter ++;
+      VLOG(1) << "Not in speculation zone! Satisfied by stalenss";
+    } 
+    else if ((*pop_msg_iter).meta.version <= staleness_ + speculation_ + min_clock) {
+      VLOG(1) << "In speculation zone! "
+        << "min_clock " << min_clock << " check_biggest_version " << (*pop_msg_iter).meta.version - staleness_ - 1;
+      int forwarded_worker_id = -1;
+      int forwarded_version = -1;
+      if (recorder_->HasConflict(third_party::SArray<uint32_t>((*pop_msg_iter).data[0]), min_clock,
+                                   (*pop_msg_iter).meta.version - staleness_ - 1, forwarded_worker_id, forwarded_version)) {
+        CHECK(forwarded_version >= min_clock) << "[Error]SparseSSPModel: forwarded_version invalid";
+        recorder_->PushMsg(forwarded_version, (*pop_msg_iter), forwarded_worker_id);
+        pop_msg_iter = pop_messages.erase(pop_msg_iter);
+        VLOG(1) << "Conflict, forwarded to version: " << forwarded_version << " worker_id: " << forwarded_worker_id;
+      } 
+      else {
+        get_messages.push_back(std::move(*pop_msg_iter));
+        pop_msg_iter ++;
+        VLOG(1) << "No Conflict, Satisfied by sparsity";
+      }
+    }
+    else if ((*pop_msg_iter).meta.version == staleness_ + speculation_ + min_clock + 1) {
+      recorder_->PushBackTooFastBuffer((*pop_msg_iter));
+      pop_msg_iter = pop_messages.erase(pop_msg_iter);
+    }
+    else {
+      CHECK(false) << " version: " << (*pop_msg_iter).meta.version << " tid: " << (*pop_msg_iter).meta.sender << " current clock tid: " << sender << " version: " << progress;
+    }
+  }
+
+  if (updated_min_clock != -1) {  // min clock updated
+    if (updated_min_clock == 1) {  // for the first version, no one is clearing the buffer
+      recorder_->EraseMsgBuffer(0);
+    }
+    CHECK(recorder_->MsgBufferSize(updated_min_clock - 1) == 0)
+        << "[Error]SparseSSPModel: get_buffer_ of min_clock should empty";
+    // CHECK(TotalSize(updated_min_clock - 1) == 0)
+    //     << "[Error]SparseSSPModel: Recorder Size should be 0";
+    recorder_->ClockRemoveRecord(updated_min_clock - 1);
+    VLOG(1) << "Min clock updated to progress: " << progress;
+  }
+
   for (auto& msg : get_messages) {
     CHECK(msg.data.size() == 1);
     reply_queue_->Push(storage_->Get(msg));
@@ -50,7 +110,9 @@ void SparseSSPModel::Get(Message& message) {
   if (message.meta.version == 0) {
     reply_queue_->Push(storage_->Get(message));
   }
-  sparse_ssp_controller_.AddRecord(message);
+
+  recorder_->AddRecord(message);
+  recorder_->PushMsg(message.meta.version, message, message.meta.sender);
 }
 
 void SparseSSPModel::Add(Message& message) {
