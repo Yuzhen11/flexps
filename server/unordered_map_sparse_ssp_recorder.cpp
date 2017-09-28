@@ -37,11 +37,11 @@ void UnorderedMapSparseSSPRecorder::ClockRemoveRecord(const int version) {
   main_recorder_.erase(version); 
 
   // for performance info use
-  LOG(INFO) << "Average key size: " << key_size / double(key_count);
+  VLOG(1) << "Average key size: " << key_size / double(key_count);
   key_size = 0;
   key_count = 0;
 
-  LOG(INFO) << "Average version size: " << version_size / double(version_count);
+  VLOG(1) << "Average version size: " << version_size / double(version_count);
   version_size = 0;
   version_count = 0;
 }

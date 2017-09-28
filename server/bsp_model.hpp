@@ -11,6 +11,12 @@
 
 namespace flexps {
 
+
+/* 
+ * TODO: The BSPModel is now problematic!!!
+ * This is because the Get() request is only sent to the servers that have the keys, and thus
+ * it is possible that a worker is fast so that a server may receive Clock() which is min_clock + 2.
+ */
 class BSPModel : public AbstractModel {
  public:
   explicit BSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage_ptr,
