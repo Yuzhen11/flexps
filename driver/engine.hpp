@@ -30,6 +30,7 @@
 #include "server/sparse_ssp_model_2.hpp"
 #include "server/abstract_sparse_ssp_recorder_2.hpp"
 #include "server/unordered_map_sparse_ssp_recorder_2.hpp"
+#include "server/vector_sparse_ssp_recorder_2.hpp"
 
 namespace flexps {
 
@@ -142,9 +143,8 @@ void Engine::CreateTable(uint32_t table_id,
       if (sparse_ssp_recorder_type == SparseSSPRecorderType::Map) {
         recorder.reset(new UnorderedMapSparseSSPRecorder2(model_staleness, speculation));
       } else if (sparse_ssp_recorder_type == SparseSSPRecorderType::Vector) {
-        CHECK(false);
-        // auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
-        // recorder.reset(new VectorSparseSSPRecorder2(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
+        auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
+        recorder.reset(new VectorSparseSSPRecorder2(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
       } else {
         CHECK(false);
       }

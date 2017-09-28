@@ -13,6 +13,7 @@ file(GLOB server-src-files
   unordered_map_sparse_ssp_recorder.cpp
   vector_sparse_ssp_recorder.cpp
   unordered_map_sparse_ssp_recorder_2.cpp
+  vector_sparse_ssp_recorder_2.cpp
   sparse_ssp_model_2.cpp)
 
 add_library(server-objs OBJECT ${server-src-files})

@@ -33,7 +33,7 @@ void VectorSparseSSPRecorder::RemoveRecord(const int version, const uint32_t tid
     DCHECK(main_recorder_[version % main_recorder_version_level_size_].size() > key - range_.begin());
     DCHECK(key >= range_.begin() && key < range_.end());
     main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].erase(tid);
-    DCHECK(main_recorder_[version][key - range_.begin()].size() >= 0);
+    DCHECK(main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].size() >= 0);
   }
 }
 
