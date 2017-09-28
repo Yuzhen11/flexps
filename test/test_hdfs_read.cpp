@@ -8,23 +8,13 @@
 #include "io/file_splitter.hpp"
 #include "boost/utility/string_ref.hpp"
 #include "base/serialization.hpp"
-using namespace flexps;
 
 
-class TestLineInput : public testing::Test {
-   public:
-    TestLineInput() {}
-    ~TestLineInput() {}
 
-   protected:
-    void SetUp() {
-    }
-    void TearDown() {
-    }
+namespace flexps{
 
-};
 
-TEST_F(TestLineInput, Read) {
+void HDFS_Read() {
     std::string hdfs_namenode = "proj10";
     int hdfs_namenode_port = 9000;
     int master_port = 19817;
@@ -67,7 +57,12 @@ TEST_F(TestLineInput, Read) {
     });
     master_thread.join();
     worker_thread.join();
-    
+}
+
+}
+
+int main(){
+    flexps::HDFS_Read();
 }
 
 

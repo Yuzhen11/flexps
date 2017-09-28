@@ -34,3 +34,15 @@ target_link_libraries(TestServer flexps)
 target_link_libraries(TestServer ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET TestServer PROPERTY CXX_STANDARD 11)
 add_dependencies(TestServer ${external_project_dependencies})
+
+# TestRead
+if(LIBHDFS3_FOUND)
+	add_executable(TestRead test_hdfs_read.cpp)
+	target_link_libraries(TestRead flexps)
+	target_link_libraries(TestRead ${HUSKY_EXTERNAL_LIB})
+	set_property(TARGET TestRead PROPERTY CXX_STANDARD 11)
+	add_dependencies(TestRead ${external_project_dependencies})
+endif(LIBHDFS3_FOUND)
+
+
+
