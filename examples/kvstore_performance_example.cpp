@@ -6,6 +6,7 @@
 #include "worker/kv_client_table.hpp"
 
 #include <algorithm>
+#include <numeric>
 
 DEFINE_int32(my_id, -1, "The process id of this program");
 DEFINE_string(config_file, "", "The config file path");
