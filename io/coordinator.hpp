@@ -16,31 +16,29 @@
 
 #include <mutex>
 
-#include "zmq.hpp"
-#include "glog/logging.h"
 #include "base/serialization.hpp"
+#include "glog/logging.h"
+#include "zmq.hpp"
 #include "zmq_helper.hpp"
 
-namespace flexps{
+namespace flexps {
 
 class Coordinator {
-   public:
-    Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host, int master_port);
-    ~Coordinator();
+ public:
+  Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host, int master_port);
+  ~Coordinator();
 
-    void serve();
-    BinStream ask_master(BinStream& question, size_t type);
-    void notify_master(BinStream& message, size_t type);
+  void serve();
+  BinStream ask_master(BinStream& question, size_t type);
+  void notify_master(BinStream& message, size_t type);
 
-   private:
-    std::mutex coord_lock_;
-    int proc_id_;
-    int master_port_;
-    std::string hostname_;
-    std::string master_host_;
-    zmq::context_t* context_;
-    zmq::socket_t* zmq_coord_;
-
+ private:
+  std::mutex coord_lock_;
+  int proc_id_;
+  int master_port_;
+  std::string hostname_;
+  std::string master_host_;
+  zmq::context_t* context_;
+  zmq::socket_t* zmq_coord_;
 };
-
-}  
+}

@@ -14,52 +14,48 @@
 
 #pragma once
 
-#include <string>
+#include <glog/logging.h>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <glog/logging.h>
 #include "zmq.hpp"
 #include "zmq_helper.hpp"
 namespace flexps {
 
 class Master {
-   public:
-    static Master& get_instance() {
-        static Master master;
-        return master;
-    }
+ public:
+  static Master& get_instance() {
+    static Master master;
+    return master;
+  }
 
-    virtual ~Master() = default;
+  virtual ~Master() = default;
 
-    void setup(int master_port, zmq::context_t* context);
-    void init_socket(int master_port, zmq::context_t* context);
-    void serve();
-    void handle_message(uint32_t message, const std::string& id);
+  void setup(int master_port, zmq::context_t* context);
+  void init_socket(int master_port, zmq::context_t* context);
+  void serve();
+  void handle_message(uint32_t message, const std::string& id);
 
-    inline void halt() { running = false; }
-    inline std::shared_ptr<zmq::socket_t> get_socket() const { return master_socket; }
-    inline const std::string& get_cur_client() const { return cur_client; }
-    inline void register_main_handler(uint32_t msg_type, std::function<void()> handler) {
-        external_main_handlers[msg_type] = handler;
-    }
+  inline void halt() { running = false; }
+  inline std::shared_ptr<zmq::socket_t> get_socket() const { return master_socket; }
+  inline const std::string& get_cur_client() const { return cur_client; }
+  inline void register_main_handler(uint32_t msg_type, std::function<void()> handler) {
+    external_main_handlers[msg_type] = handler;
+  }
 
-    inline void register_setup_handler(std::function<void()> handler) {
-        external_setup_handlers.push_back(handler); 
-    }
+  inline void register_setup_handler(std::function<void()> handler) { external_setup_handlers.push_back(handler); }
 
-   protected:
-    Master();
-    bool running;
-    std::string cur_client;
-    // Networking
-    std::shared_ptr<zmq::socket_t> master_socket;
-    // External handlers
-    std::unordered_map<uint32_t, std::function<void()>> external_main_handlers;
-    std::vector<std::function<void()>> external_setup_handlers;
-
+ protected:
+  Master();
+  bool running;
+  std::string cur_client;
+  // Networking
+  std::shared_ptr<zmq::socket_t> master_socket;
+  // External handlers
+  std::unordered_map<uint32_t, std::function<void()>> external_main_handlers;
+  std::vector<std::function<void()>> external_setup_handlers;
 };
-
 }  // namespace flexps

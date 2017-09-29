@@ -23,47 +23,46 @@
 
 #include "zmq.hpp"
 
-#include "glog/logging.h"
 #include "base/serialization.hpp"
+#include "glog/logging.h"
 
 namespace flexps {
 
 Master::Master() {}
 
 void Master::setup(int master_port, zmq::context_t* zmq_context) {
-    running = true;
-    init_socket(master_port, zmq_context);
+  running = true;
+  init_socket(master_port, zmq_context);
 
-    for (auto setup_handler : external_setup_handlers) {
-        setup_handler();
-    }
+  for (auto setup_handler : external_setup_handlers) {
+    setup_handler();
+  }
 }
 
 void Master::init_socket(int master_port, zmq::context_t* zmq_context) {
-    master_socket.reset(new zmq::socket_t(*zmq_context, ZMQ_ROUTER));
-    master_socket->bind("tcp://*:" + std::to_string(master_port));
+  master_socket.reset(new zmq::socket_t(*zmq_context, ZMQ_ROUTER));
+  master_socket->bind("tcp://*:" + std::to_string(master_port));
 }
 
 void Master::serve() {
-    LOG(INFO) << "MASTER READY";
-    while (running) {
-        zmq::message_t msg1,msg2,msg3;
-        zmq_recv_common(master_socket.get(), &msg1);
-        cur_client = std::string(reinterpret_cast<char*>(msg1.data()), msg1.size());
-        zmq_recv_common(master_socket.get(), &msg2);
-        zmq_recv_common(master_socket.get(), &msg3);
-        int msg_int = *reinterpret_cast<int32_t*>(msg3.data());
-        handle_message(msg_int, cur_client);
-    }
-    LOG(INFO) << "MASTER FINISHED";
+  LOG(INFO) << "MASTER READY";
+  while (running) {
+    zmq::message_t msg1, msg2, msg3;
+    zmq_recv_common(master_socket.get(), &msg1);
+    cur_client = std::string(reinterpret_cast<char*>(msg1.data()), msg1.size());
+    zmq_recv_common(master_socket.get(), &msg2);
+    zmq_recv_common(master_socket.get(), &msg3);
+    int msg_int = *reinterpret_cast<int32_t*>(msg3.data());
+    handle_message(msg_int, cur_client);
+  }
+  LOG(INFO) << "MASTER FINISHED";
 }
 
 void Master::handle_message(uint32_t message, const std::string& id) {
-    if (external_main_handlers.find(message) != external_main_handlers.end()) {
-        external_main_handlers[message]();
-    } else {
-        LOG(ERROR)<<"Unknown message type!";
-    }
+  if (external_main_handlers.find(message) != external_main_handlers.end()) {
+    external_main_handlers[message]();
+  } else {
+    LOG(ERROR) << "Unknown message type!";
+  }
 }
-
 }  // namespace flexps
