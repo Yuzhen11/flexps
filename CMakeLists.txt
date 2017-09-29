@@ -34,6 +34,7 @@ include(cmake/modules/glog.cmake)
 include(cmake/modules/gflags.cmake)
 include(cmake/modules/gtest.cmake)
 include(cmake/modules/zeromq.cmake)
+include(cmake/dep.cmake)
 
 # External Includes
 set(HUSKY_EXTERNAL_INCLUDE ${ZMQ_INCLUDE_DIR} ${GLOG_INCLUDE_DIR} ${GFLAGS_INCLUDE_DIR})
@@ -41,9 +42,16 @@ set(HUSKY_EXTERNAL_INCLUDE ${ZMQ_INCLUDE_DIR} ${GLOG_INCLUDE_DIR} ${GFLAGS_INCLU
 # External Libraries
 set(HUSKY_EXTERNAL_LIB ${GLOG_LIBRARY} ${GFLAGS_LIBRARY} ${ZMQ_LIBRARY} ${CMAKE_THREAD_LIBS_INIT})
 
+if(LIBHDFS3_FOUND)
+    list(APPEND HUSKY_EXTERNAL_INCLUDE ${LIBHDFS3_INCLUDE_DIR})
+    list(APPEND HUSKY_EXTERNAL_LIB ${LIBHDFS3_LIBRARY})
+    list(APPEND HUSKY_EXTERNAL_DEFINITION ${LIBHDFS3_DEFINITION})
+endif(LIBHDFS3_FOUND)
+
 add_subdirectory(base)
 add_subdirectory(server)
 add_subdirectory(worker)
+add_subdirectory(io)
 add_subdirectory(comm)
 add_subdirectory(driver)
 add_subdirectory(examples)

@@ -1,15 +1,16 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
-add_library(flexps STATIC 
-  $<TARGET_OBJECTS:server-objs> 
-  $<TARGET_OBJECTS:worker-objs> 
-  $<TARGET_OBJECTS:comm-objs> 
+add_library(flexps STATIC
+  $<TARGET_OBJECTS:server-objs>
+  $<TARGET_OBJECTS:worker-objs>
+  $<TARGET_OBJECTS:comm-objs>
   $<TARGET_OBJECTS:base-objs>
   $<TARGET_OBJECTS:driver-objs>
+  $<TARGET_OBJECTS:io-objs>
   )
 
 # Unit Test
-file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp) 
+file(GLOB_RECURSE UNITTEST_FILES ${PROJECT_SOURCE_DIR}/*_test.cpp)
 include_directories(${GTEST_INCLUDE})
 add_executable(HuskyUnitTest ${UNITTEST_FILES} test_main.cpp)
 add_dependencies(HuskyUnitTest gtest)
@@ -33,3 +34,15 @@ target_link_libraries(TestServer flexps)
 target_link_libraries(TestServer ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET TestServer PROPERTY CXX_STANDARD 11)
 add_dependencies(TestServer ${external_project_dependencies})
+
+# TestRead
+if(LIBHDFS3_FOUND)
+	add_executable(TestRead test_hdfs_read.cpp)
+	target_link_libraries(TestRead flexps)
+	target_link_libraries(TestRead ${HUSKY_EXTERNAL_LIB})
+	set_property(TARGET TestRead PROPERTY CXX_STANDARD 11)
+	add_dependencies(TestRead ${external_project_dependencies})
+endif(LIBHDFS3_FOUND)
+
+
+
