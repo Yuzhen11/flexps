@@ -13,6 +13,10 @@ file(GLOB server-src-files
   unordered_map_sparse_ssp_recorder.cpp
   vector_sparse_ssp_recorder.cpp
   min_counting.cpp)
+  unordered_map_sparse_ssp_recorder_2.cpp
+  vector_sparse_ssp_recorder_2.cpp
+  sparse_ssp_model_2.cpp)
+
 
 add_library(server-objs OBJECT ${server-src-files})
 set_property(TARGET server-objs PROPERTY CXX_STANDARD 11)

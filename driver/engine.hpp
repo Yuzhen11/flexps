@@ -27,6 +27,11 @@
 #include "driver/info.hpp"
 #include "driver/worker_spec.hpp"
 
+#include "server/sparse_ssp_model_2.hpp"
+#include "server/abstract_sparse_ssp_recorder_2.hpp"
+#include "server/unordered_map_sparse_ssp_recorder_2.hpp"
+#include "server/vector_sparse_ssp_recorder_2.hpp"
+
 namespace flexps {
 
 enum class ModelType {
@@ -133,17 +138,17 @@ void Engine::CreateTable(uint32_t table_id,
     } else if (model_type == ModelType::ASP) {
       model.reset(new ASPModel(table_id, std::move(storage), server_thread_group_->GetReplyQueue()));
     } else if (model_type == ModelType::SparseSSP) {
-      std::unique_ptr<AbstractSparseSSPRecorder> recorder;
+      std::unique_ptr<AbstractSparseSSPRecorder2> recorder;
       CHECK(sparse_ssp_recorder_type != SparseSSPRecorderType::None);
       if (sparse_ssp_recorder_type == SparseSSPRecorderType::Map) {
-        recorder.reset(new UnorderedMapSparseSSPRecorder(model_staleness, speculation));
+        recorder.reset(new UnorderedMapSparseSSPRecorder2(model_staleness, speculation));
       } else if (sparse_ssp_recorder_type == SparseSSPRecorderType::Vector) {
         auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
-        recorder.reset(new VectorSparseSSPRecorder(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
+        recorder.reset(new VectorSparseSSPRecorder2(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
       } else {
         CHECK(false);
       }
-      model.reset(new SparseSSPModel(table_id, std::move(storage), std::move(recorder), server_thread_group_->GetReplyQueue(), model_staleness, speculation));
+      model.reset(new SparseSSPModel2(table_id, std::move(storage), std::move(recorder), server_thread_group_->GetReplyQueue(), model_staleness, speculation));
     } else {
       CHECK(false) << "Unknown model_type";
     }
