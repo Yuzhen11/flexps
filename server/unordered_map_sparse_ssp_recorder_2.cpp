@@ -41,7 +41,7 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::HandleTooFastBuffer(int min
   for (auto& msg : too_fast_buffer_) {
     int forwarded_key = -1;
     int forwarded_version = -1;
-    if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
+    if (HasConflict(third_party::SArray<Key>(msg.data[0]), min_clock,
           msg.meta.version - staleness_ - 1, &forwarded_key, &forwarded_version)) {
       main_recorder_[forwarded_version][forwarded_key].second.push_back(std::move(msg));
     } else {
@@ -56,7 +56,7 @@ void UnorderedMapSparseSSPRecorder2::AddRecord(Message& msg) {
   DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
-  for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
+  for (auto key : third_party::SArray<Key>(msg.data[0])) {
     main_recorder_[msg.meta.version][key].first += 1;
   }
 
@@ -67,10 +67,10 @@ void UnorderedMapSparseSSPRecorder2::AddRecord(Message& msg) {
 }
 
 std::vector<Message> UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
-                                          const third_party::SArray<uint32_t>& keys) {
+                                          const third_party::SArray<Key>& keys) {
   std::vector<Message> msgs_to_be_handled;
   DCHECK(main_recorder_.find(version) != main_recorder_.end());
-  for (auto& key : keys) {
+  for (auto key : keys) {
     DCHECK(main_recorder_[version].find(key) != main_recorder_[version].end());
     DCHECK_GE(main_recorder_[version][key].first, 0);
     main_recorder_[version][key].first -= 1;
@@ -103,7 +103,7 @@ void UnorderedMapSparseSSPRecorder2::RemoveRecord(const int version) {
  *   NO conflict: return 
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool UnorderedMapSparseSSPRecorder2::HasConflict(const third_party::SArray<uint32_t>& keys, const int begin_version,
+bool UnorderedMapSparseSSPRecorder2::HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
                                           const int end_version, int* forwarded_key, int* forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : keys) {

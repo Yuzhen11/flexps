@@ -18,9 +18,9 @@ public:
 
 private:
   std::vector<Message> RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
-                       const third_party::SArray<uint32_t>& keys);
+                       const third_party::SArray<Key>& keys);
 
-  bool HasConflict(const third_party::SArray<uint32_t>& keys, const int begin_version,
+  bool HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
                    const int end_version, int* forwarded_key, int* forwarded_version);
 
   uint32_t staleness_;

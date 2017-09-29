@@ -322,7 +322,7 @@ void SparseKVClientTable<Val>::Clock_() {
     msg.meta.recver = server_id;
     msg.meta.model_id = model_id_;
     msg.meta.flag = Flag::kClock;
-    msg.meta.version = get_count_ - 2;
+    msg.meta.version = get_count_ - 2;  // -2 because it is called in Get for the next iter.
     downstream_->Push(std::move(msg));
   }
 }

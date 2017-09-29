@@ -55,7 +55,7 @@ std::vector<Message> VectorSparseSSPRecorder2::HandleTooFastBuffer(int min_clock
   for (auto& msg : too_fast_buffer_) {
     int forwarded_key = -1;
     int forwarded_version = -1;
-    if (HasConflict(third_party::SArray<uint32_t>(msg.data[0]), min_clock,
+    if (HasConflict(third_party::SArray<Key>(msg.data[0]), min_clock,
           msg.meta.version - staleness_ - 1, &forwarded_key, &forwarded_version)) {
       main_recorder_[forwarded_version % main_recorder_version_level_size_][forwarded_key - range_.begin()].second.push_back(std::move(msg));
     } else {
@@ -70,7 +70,7 @@ void VectorSparseSSPRecorder2::AddRecord(Message& msg) {
   DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
-  for (auto& key : third_party::SArray<uint32_t>(msg.data[0])) {
+  for (auto key : third_party::SArray<Key>(msg.data[0])) {
     main_recorder_[msg.meta.version % main_recorder_version_level_size_][key - range_.begin()].first += 1;
   }
 
@@ -81,16 +81,18 @@ void VectorSparseSSPRecorder2::AddRecord(Message& msg) {
 }
 
 std::vector<Message> VectorSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
-                                          const third_party::SArray<uint32_t>& keys) {
+                                          const third_party::SArray<Key>& keys) {
   std::vector<Message> msgs_to_be_handled;
-  for (auto& key : keys) {
-    DCHECK_GE(main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].first, 0);
-    main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].first -= 1;
-    if (main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].first == 0) {
-      for (auto& msg : main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].second) {
+  int version_after_mod = version % main_recorder_version_level_size_;
+  for (auto key : keys) {
+    int key_after_minus = key - range_.begin();
+    DCHECK_GE(main_recorder_[version_after_mod][key_after_minus].first, 0);
+    main_recorder_[version_after_mod][key_after_minus].first -= 1;
+    if (main_recorder_[version_after_mod][key_after_minus].first == 0) {
+      for (auto& msg : main_recorder_[version_after_mod][key_after_minus].second) {
         msgs_to_be_handled.push_back(std::move(msg));
       }
-      main_recorder_[version % main_recorder_version_level_size_][key - range_.begin()].second.clear();
+      main_recorder_[version_after_mod][key_after_minus].second.clear();
     }
   }
   std::vector<Message> msgs_to_be_replied;
@@ -117,7 +119,7 @@ void VectorSparseSSPRecorder2::RemoveRecord(const int version) {
  *   NO conflict: return 
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool VectorSparseSSPRecorder2::HasConflict(const third_party::SArray<uint32_t>& keys, const int begin_version,
+bool VectorSparseSSPRecorder2::HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
                                           const int end_version, int* forwarded_key, int* forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : keys) {
