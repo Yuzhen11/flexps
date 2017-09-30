@@ -41,6 +41,7 @@ class SparseSSPModel2 : public AbstractModel {
   std::vector<Message> buffer_;
   int staleness_;
   int speculation_;
+
 };
 
 }  // namespace flexps

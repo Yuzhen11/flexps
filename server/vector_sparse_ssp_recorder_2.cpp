@@ -17,62 +17,114 @@ VectorSparseSSPRecorder2::VectorSparseSSPRecorder2(uint32_t staleness, uint32_t 
   }
 }
 
-std::vector<Message> VectorSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int min_clock) {
-  std::vector<Message> msgs;
+VectorSparseSSPRecorder2::~VectorSparseSSPRecorder2() {
+#ifdef USE_TIMER
+  LOG(INFO) << "add_record_time: " << add_record_time_.count()/1000. << " ms";
+  LOG(INFO) << "remove_record_time: " << remove_record_time_.count()/1000. 
+      << " ms";
+  LOG(INFO) << "handle_own_get_time: " << handle_own_get_time_.count()/1000. << " ms";
+  LOG(INFO) << "key_count: " << key_count_;
+  LOG(INFO) << "by_staleness: " << by_staleness_
+      << " forward: " << forward_
+      << " by_speculation: " << by_speculation_
+      << " too_fast: " << too_fast_
+      << " total_forward: " << total_forward_;
+#endif
+}
+
+void VectorSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) {
   // Get() that are block here
+#ifdef USE_TIMER
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   if (future_keys_[sender].size() > 0 && future_keys_[sender].front().first == progress - 1) {
-    msgs = RemoveRecordAndGetNonConflictMsgs(progress - 1, min_clock, sender, future_keys_[sender].front().second);
+    RemoveRecordAndGetNonConflictMsgs(progress - 1, min_clock, sender, future_keys_[sender].front().second, msgs);
     future_keys_[sender].pop();
   }
+#ifdef USE_TIMER
+  auto end_time = std::chrono::steady_clock::now();
+  remove_record_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+#endif
+
   // Its own Get()
+#ifdef USE_TIMER
+  start_time = std::chrono::steady_clock::now();
+#endif
   if (future_msgs_[sender].size() > 0 && future_msgs_[sender].front().first == progress) {
     Message& msg = future_msgs_[sender].front().second;
     CHECK(msg.meta.version >= min_clock && msg.meta.version < min_clock + staleness_ + speculation_ + 2)
         << "msg version: " << msg.meta.version << " min_clock: " << min_clock << " staleness: " << staleness_ << " speculation: " << speculation_ ;
     if (msg.meta.version <= staleness_ + min_clock) {
-      msgs.push_back(std::move(msg));
+      msgs->push_back(std::move(msg));
+#ifdef USE_TIMER
+      by_staleness_ += 1;
+#endif
     } else if (msg.meta.version <= min_clock + staleness_ + speculation_) {
       int forwarded_key = -1;
       int forwarded_version = -1;
       if (HasConflict(third_party::SArray<Key>(msg.data[0]), min_clock, 
              msg.meta.version - staleness_ - 1, &forwarded_key, &forwarded_version)) {
         main_recorder_[forwarded_version % main_recorder_version_level_size_][forwarded_key - range_.begin()].second.push_back(std::move(msg));
+#ifdef USE_TIMER
+        forward_ += 1;
+        total_forward_ += 1;
+#endif
       } else {
-        msgs.push_back(std::move(msg));
+        msgs->push_back(std::move(msg));
+#ifdef USE_TIMER
+        by_speculation_ += 1;
+#endif
       }
     } else if (msg.meta.version == min_clock + staleness_ + speculation_ + 1) {
       too_fast_buffer_.push_back(std::move(msg));
+#ifdef USE_TIMER
+      too_fast_ += 1;
+#endif
     } else {
       CHECK(false) << " version: " << msg.meta.version << " tid: " << msg.meta.sender;
     }
     future_msgs_[sender].pop();
   }
-  return msgs;
+#ifdef USE_TIMER
+  end_time = std::chrono::steady_clock::now();
+  handle_own_get_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+#endif
 }
 
-std::vector<Message> VectorSparseSSPRecorder2::HandleTooFastBuffer(int min_clock) {
-  std::vector<Message> rets;
+void VectorSparseSSPRecorder2::HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) {
   for (auto& msg : too_fast_buffer_) {
     int forwarded_key = -1;
     int forwarded_version = -1;
     if (HasConflict(third_party::SArray<Key>(msg.data[0]), min_clock,
           msg.meta.version - staleness_ - 1, &forwarded_key, &forwarded_version)) {
       main_recorder_[forwarded_version % main_recorder_version_level_size_][forwarded_key - range_.begin()].second.push_back(std::move(msg));
+#ifdef USE_TIMER
+      total_forward_ += 1;
+#endif
     } else {
-      rets.push_back(std::move(msg));
+      msgs->push_back(std::move(msg));
     }
   }
   too_fast_buffer_.clear();
-  return rets;
 }
 
 void VectorSparseSSPRecorder2::AddRecord(Message& msg) {
   DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
+#ifdef USE_TIMER
+  auto start_time = std::chrono::steady_clock::now();
+#endif
   for (auto key : third_party::SArray<Key>(msg.data[0])) {
     main_recorder_[msg.meta.version % main_recorder_version_level_size_][key - range_.begin()].first += 1;
+#ifdef USE_TIMER
+    key_count_ += 1;
+#endif
   }
+#ifdef USE_TIMER
+  auto end_time = std::chrono::steady_clock::now();
+  add_record_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+#endif
 
   int version = msg.meta.version;
   if (version != 0) {
@@ -80,8 +132,8 @@ void VectorSparseSSPRecorder2::AddRecord(Message& msg) {
   }
 }
 
-std::vector<Message> VectorSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
-                                          const third_party::SArray<Key>& keys) {
+void VectorSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
+                                          const third_party::SArray<Key>& keys, std::vector<Message>* msgs) {
   std::vector<Message> msgs_to_be_handled;
   int version_after_mod = version % main_recorder_version_level_size_;
   for (auto key : keys) {
@@ -95,18 +147,20 @@ std::vector<Message> VectorSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs
       main_recorder_[version_after_mod][key_after_minus].second.clear();
     }
   }
-  std::vector<Message> msgs_to_be_replied;
+
   for (auto& msg : msgs_to_be_handled) {
     int forwarded_key = -1;
     int forwarded_version = -1;
     if (HasConflict(third_party::SArray<Key>(msg.data[0]), min_clock, msg.meta.version - staleness_ - 1,
            &forwarded_key, &forwarded_version)) {
       main_recorder_[forwarded_version % main_recorder_version_level_size_][forwarded_key - range_.begin()].second.push_back(std::move(msg));
+#ifdef USE_TIMER
+      total_forward_ += 1;
+#endif
     } else {
-      msgs_to_be_replied.push_back(std::move(msg));
+      msgs->push_back(std::move(msg));
     }
   }
-  return msgs_to_be_replied;
 }
 
 void VectorSparseSSPRecorder2::RemoveRecord(const int version) { 

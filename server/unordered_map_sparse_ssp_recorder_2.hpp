@@ -11,14 +11,14 @@ namespace flexps {
 class UnorderedMapSparseSSPRecorder2 : public AbstractSparseSSPRecorder2 {
 public:
   UnorderedMapSparseSSPRecorder2(uint32_t staleness, uint32_t speculation) : staleness_(staleness), speculation_(speculation) {}
-  virtual std::vector<Message> GetNonConflictMsgs(int progress, int sender, int min_clock) override;
-  virtual std::vector<Message> HandleTooFastBuffer(int min_clock) override;
+  virtual void GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) override;
+  virtual void HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) override;
   virtual void RemoveRecord(int version) override;
   virtual void AddRecord(Message& msg) override;
 
 private:
-  std::vector<Message> RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
-                       const third_party::SArray<Key>& keys);
+  void RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
+                       const third_party::SArray<Key>& keys, std::vector<Message>* msgs);
 
   bool HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
                    const int end_version, int* forwarded_key, int* forwarded_version);

@@ -3,11 +3,10 @@
 
 namespace flexps {
 
-std::vector<Message> UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int min_clock) {
-  std::vector<Message> msgs;
+void UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) {
   // Get() that are block here
   if (future_keys_[sender].size() > 0 && future_keys_[sender].front().first == progress - 1) {
-    msgs = RemoveRecordAndGetNonConflictMsgs(progress - 1, min_clock, sender, future_keys_[sender].front().second);
+    RemoveRecordAndGetNonConflictMsgs(progress - 1, min_clock, sender, future_keys_[sender].front().second, msgs);
     future_keys_[sender].pop();
   }
   // Its own Get()
@@ -16,7 +15,7 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int prog
     CHECK(msg.meta.version >= min_clock && msg.meta.version < min_clock + staleness_ + speculation_ + 2)
         << "msg version: " << msg.meta.version << " min_clock: " << min_clock << " staleness: " << staleness_ << " speculation: " << speculation_ ;
     if (msg.meta.version <= staleness_ + min_clock) {
-      msgs.push_back(std::move(msg));
+      msgs->push_back(std::move(msg));
     } else if (msg.meta.version <= min_clock + staleness_ + speculation_) {
       int forwarded_key = -1;
       int forwarded_version = -1;
@@ -24,7 +23,7 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int prog
              msg.meta.version - staleness_ - 1, &forwarded_key, &forwarded_version)) {
         main_recorder_[forwarded_version][forwarded_key].second.push_back(std::move(msg));
       } else {
-        msgs.push_back(std::move(msg));
+        msgs->push_back(std::move(msg));
       }
     } else if (msg.meta.version == min_clock + staleness_ + speculation_ + 1) {
       too_fast_buffer_.push_back(std::move(msg));
@@ -33,11 +32,9 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int prog
     }
     future_msgs_[sender].pop();
   }
-  return msgs;
 }
 
-std::vector<Message> UnorderedMapSparseSSPRecorder2::HandleTooFastBuffer(int min_clock) {
-  std::vector<Message> rets;
+void UnorderedMapSparseSSPRecorder2::HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) {
   for (auto& msg : too_fast_buffer_) {
     int forwarded_key = -1;
     int forwarded_version = -1;
@@ -45,11 +42,10 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::HandleTooFastBuffer(int min
           msg.meta.version - staleness_ - 1, &forwarded_key, &forwarded_version)) {
       main_recorder_[forwarded_version][forwarded_key].second.push_back(std::move(msg));
     } else {
-      rets.push_back(std::move(msg));
+      msgs->push_back(std::move(msg));
     }
   }
   too_fast_buffer_.clear();
-  return rets;
 }
 
 void UnorderedMapSparseSSPRecorder2::AddRecord(Message& msg) {
@@ -66,8 +62,8 @@ void UnorderedMapSparseSSPRecorder2::AddRecord(Message& msg) {
   }
 }
 
-std::vector<Message> UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
-                                          const third_party::SArray<Key>& keys) {
+void UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
+                                          const third_party::SArray<Key>& keys, std::vector<Message>* msgs) {
   std::vector<Message> msgs_to_be_handled;
   DCHECK(main_recorder_.find(version) != main_recorder_.end());
   for (auto key : keys) {
@@ -81,7 +77,6 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConfli
       main_recorder_[version].erase(key);
     }
   }
-  std::vector<Message> msgs_to_be_replied;
   for (auto& msg : msgs_to_be_handled) {
     int forwarded_key = -1;
     int forwarded_version = -1;
@@ -89,10 +84,9 @@ std::vector<Message> UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConfli
            &forwarded_key, &forwarded_version)) {
       main_recorder_[forwarded_version][forwarded_key].second.push_back(std::move(msg));
     } else {
-      msgs_to_be_replied.push_back(std::move(msg));
+      msgs->push_back(std::move(msg));
     }
   }
-  return msgs_to_be_replied;
 }
 
 void UnorderedMapSparseSSPRecorder2::RemoveRecord(const int version) { 

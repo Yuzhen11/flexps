@@ -31,7 +31,8 @@ void SparseSSPModel2::Clock(Message& message) {
   // 1. Remove records in the last round
   // If the key count in the recorder becomes 0, forward the message if there are still conflicts, 
   // reply the message otherwise.
-  auto msgs = recorder_->GetNonConflictMsgs(progress, sender, min_clock);
+  std::vector<Message> msgs;
+  recorder_->GetNonConflictMsgs(progress, sender, min_clock, &msgs);
   for (auto& msg : msgs) {
     CHECK(msg.data.size() == 1);
     reply_queue_->Push(storage_->Get(msg));
@@ -41,8 +42,9 @@ void SparseSSPModel2::Clock(Message& message) {
   if (updated_min_clock != -1) {
     recorder_->RemoveRecord(updated_min_clock - 1);
 
-    auto msgs = recorder_->HandleTooFastBuffer(updated_min_clock);
-    for (auto& msg : msgs) {
+    std::vector<Message> updated_min_clock_msgs;
+    recorder_->HandleTooFastBuffer(updated_min_clock, &updated_min_clock_msgs);
+    for (auto& msg : updated_min_clock_msgs) {
       CHECK(msg.data.size() == 1);
       reply_queue_->Push(storage_->Get(msg));
     }

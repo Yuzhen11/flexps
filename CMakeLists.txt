@@ -27,6 +27,14 @@ if(CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-deprecated-declarations")
 endif()
 
+# This is to enable timer in server/vector_sparse_ssp_recorder_2.cpp
+# enable this by `cmake .. -DUSE_TIMER=ON`
+option(USE_TIMER "Use timer" OFF)
+if(USE_TIMER)
+    add_definitions(-DUSE_TIMER)
+    message("Compiled with USE_TIMER on")
+endif()
+
 find_package(Threads)
 
 # External Dependencies
