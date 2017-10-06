@@ -28,6 +28,7 @@ DEFINE_int32(kSpeculation, 1, "speculation");
 DEFINE_string(kSparseSSPRecorderType, "", "None/Map/Vector");
 DEFINE_int32(num_workers_per_node, 1, "num_workers_per_node");
 DEFINE_int32(with_injected_straggler, 0, "with injected straggler or not, 0/1");
+DEFINE_int32(num_servers_per_node, 1, "num_servers_per_node");
 
 namespace flexps {
 
@@ -88,6 +89,8 @@ void Run() {
   CHECK_GE(FLAGS_kSpeculation, 1);
   CHECK_LE(FLAGS_num_workers_per_node, 20);
   CHECK_GE(FLAGS_num_workers_per_node, 1);
+  CHECK_LE(FLAGS_num_servers_per_node, 20);
+  CHECK_GE(FLAGS_num_servers_per_node, 1);
   CHECK_GE(FLAGS_with_injected_straggler, 0);
   CHECK_LE(FLAGS_with_injected_straggler, 1);
 
@@ -98,6 +101,7 @@ void Run() {
     LOG(INFO) << "num_iters: " << FLAGS_num_iters;
     LOG(INFO) << "with_injected_straggler: " << FLAGS_with_injected_straggler;
     LOG(INFO) << "num_workers_per_node: " << FLAGS_num_workers_per_node;
+    LOG(INFO) << "num_servers_per_node: " << FLAGS_num_servers_per_node;
   }
 
   VLOG(1) << FLAGS_my_id << " " << FLAGS_config_file;
@@ -112,15 +116,16 @@ void Run() {
 
   // 1. Start engine
   Engine engine(my_node, nodes);
-  engine.StartEverything();
+  engine.StartEverything(FLAGS_num_servers_per_node);
 
   // 2. Create tables
   const int kTableId = 0;
   std::vector<third_party::Range> range;
-  for (int i = 0; i < nodes.size() - 1; ++ i) {
-    range.push_back({FLAGS_num_dims / nodes.size() * i, FLAGS_num_dims / nodes.size() * (i + 1)});
+  int num_total_servers = nodes.size() * FLAGS_num_servers_per_node;
+  for (int i = 0; i < num_total_servers - 1; ++ i) {
+    range.push_back({FLAGS_num_dims / num_total_servers * i, FLAGS_num_dims / num_total_servers * (i + 1)});
   }
-  range.push_back({FLAGS_num_dims / nodes.size() * (nodes.size() - 1), (uint64_t)FLAGS_num_dims});
+  range.push_back({FLAGS_num_dims / num_total_servers * (num_total_servers - 1), (uint64_t)FLAGS_num_dims});
 
   ModelType model_type;
   if (FLAGS_kModelType == "ASP") {

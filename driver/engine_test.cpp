@@ -42,6 +42,7 @@ TEST_F(TestEngine, Construct) {
 TEST_F(TestEngine, StartMailbox) {
   Node node{0, "localhost", 12353};
   Engine engine(node, {node});
+  engine.CreateIdMapper();
   engine.CreateMailbox();
   engine.StartMailbox();
   engine.StopMailbox();

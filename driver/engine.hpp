@@ -50,13 +50,14 @@ class Engine {
   Engine(const Node& node, const std::vector<Node>& nodes) : node_(node), nodes_(nodes) {}
   /*
    * The flow of starting the engine:
-   * 1. Create a mailbox
+   * 1. Create an id_mapper and a mailbox
    * 2. Start Sender
    * 3. Create ServerThreads, WorkerHelperThreads and ModelInitThread
    * 4. Register the threads to mailbox through ThreadsafeQueue
    * 5. Start the mailbox: bind and connect to all other nodes
    */
-  void StartEverything();
+  void StartEverything(int num_server_threads_per_node = 1);
+  void CreateIdMapper(int num_server_threads_per_node = 1);
   void CreateMailbox();
   void StartServerThreads();
   void StartWorkerHelperThreads();
