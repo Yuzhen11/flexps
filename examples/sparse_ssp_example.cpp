@@ -26,6 +26,8 @@ DEFINE_string(kStorageType, "", "Map/Vector");
 DEFINE_int32(kStaleness, 0, "stalness");
 DEFINE_int32(kSpeculation, 1, "speculation");
 DEFINE_string(kSparseSSPRecorderType, "", "None/Map/Vector");
+DEFINE_int32(num_workers_per_node, 1, "num_workers_per_node");
+DEFINE_int32(with_injected_straggler, 0, "with injected straggler or not, 0/1");
 
 namespace flexps {
 
@@ -84,12 +86,18 @@ void Run() {
   CHECK_GE(FLAGS_kStaleness, 0);
   CHECK_LE(FLAGS_kSpeculation, 50);
   CHECK_GE(FLAGS_kSpeculation, 1);
+  CHECK_LE(FLAGS_num_workers_per_node, 20);
+  CHECK_GE(FLAGS_num_workers_per_node, 1);
+  CHECK_GE(FLAGS_with_injected_straggler, 0);
+  CHECK_LE(FLAGS_with_injected_straggler, 1);
 
   if (FLAGS_my_id == 0) {
     LOG(INFO) << "Running in " << FLAGS_kModelType << " mode";
     LOG(INFO) << "num_dims: " << FLAGS_num_dims;
     LOG(INFO) << "num_nonzeros: " << FLAGS_num_nonzeros;
     LOG(INFO) << "num_iters: " << FLAGS_num_iters;
+    LOG(INFO) << "with_injected_straggler: " << FLAGS_with_injected_straggler;
+    LOG(INFO) << "num_workers_per_node: " << FLAGS_num_workers_per_node;
   }
 
   VLOG(1) << FLAGS_my_id << " " << FLAGS_config_file;
@@ -154,7 +162,7 @@ void Run() {
   MLTask task;
   std::vector<WorkerAlloc> worker_alloc;
   for (auto& node : nodes) {
-    worker_alloc.push_back({node.id, 20});  // each node has 10 workers
+    worker_alloc.push_back({node.id, FLAGS_num_workers_per_node});  // each node has num_workers_per_node workers
   }
   task.SetWorkerAlloc(worker_alloc);
   task.SetTables({kTableId});  // Use table 0
@@ -186,12 +194,14 @@ void Run() {
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
 
-        // double r = (double)rand() / RAND_MAX;
-        // if (r < 0.05) {
-        //   double delay = (double)rand() / RAND_MAX * 100;
-        //   std::this_thread::sleep_for(std::chrono::milliseconds(int(delay)));
-        //   LOG(INFO) << "sleep for " << int(delay) << " ms";
-        // }
+        if (FLAGS_with_injected_straggler) {
+          double r = (double)rand() / RAND_MAX;
+          if (r < 0.05) {
+            double delay = (double)rand() / RAND_MAX * 100;
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(delay)));
+            LOG(INFO) << "sleep for " << int(delay) << " ms";
+          }
+        }
       }
     } else if (FLAGS_kModelType == "SparseSSP") {  // Sparse SSP mode
       auto table = info.CreateSparseKVClientTable<float>(kTableId, FLAGS_kSpeculation, future_keys);
@@ -208,12 +218,14 @@ void Run() {
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
 
-        // double r = (double)rand() / RAND_MAX;
-        // if (r < 0.05) {
-        //   double delay = (double)rand() / RAND_MAX * 100;
-        //   std::this_thread::sleep_for(std::chrono::milliseconds(int(delay)));
-        //   LOG(INFO) << "sleep for " << int(delay) << " ms";
-        // }
+        if (FLAGS_with_injected_straggler) {
+          double r = (double)rand() / RAND_MAX;
+          if (r < 0.05) {
+            double delay = (double)rand() / RAND_MAX * 100;
+            std::this_thread::sleep_for(std::chrono::milliseconds(int(delay)));
+            LOG(INFO) << "sleep for " << int(delay) << " ms";
+          }
+        }
       }
 
     } else {
@@ -225,16 +237,16 @@ void Run() {
     LOG(INFO) << "total time: " << total_time << " ms on worker: " << info.worker_id;
   });
 
-  if (my_node.id == 0) {
-    ProfilerStart("/data/opt/tmp/a.prof");
-  }
+  // if (my_node.id == 0) {
+  //   ProfilerStart("/data/opt/tmp/a.prof");
+  // }
 
   // 4. Run tasks
   engine.Run(task);
 
-  if (my_node.id == 0) {
-    ProfilerStop();
-  }
+  // if (my_node.id == 0) {
+  //   ProfilerStop();
+  // }
 
   // 5. Stop engine
   engine.StopEverything();
