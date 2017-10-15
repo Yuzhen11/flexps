@@ -37,10 +37,11 @@ class SimpleIdMapper : public AbstractIdMapper {
   // BgThreads include server threads, worker helper threads and model init threads.
   // Their ids are [0, 100) for node id 0.
   static const uint32_t kMaxBgThreadsPerNode = 100;
-  // The worker helper thread's id for node id 0 is in [10, 20)
-  static const uint32_t kWorkerHelperThreadId = 10;
-  // The model init thread's id for node id 0 is in [20, 100)
-  static const uint32_t kModelInitThreadId = 20;
+  // The server thread id for node 0 is in [0, 50)
+  // The worker helper thread's id for node id 0 is in [50, 70)
+  static const uint32_t kWorkerHelperThreadId = 50;
+  // The model init thread's id for node id 0 is in [70, 100)
+  static const uint32_t kModelInitThreadId = 70;
 
  private:
   // The server thread's id in each node

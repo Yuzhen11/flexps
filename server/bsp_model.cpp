@@ -11,6 +11,8 @@ BSPModel::BSPModel(uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage
 
 void BSPModel::Clock(Message& msg) {
   int updated_min_clock = progress_tracker_.AdvanceAndGetChangedMinClock(msg.meta.sender);
+  int progress = progress_tracker_.GetProgress(msg.meta.sender);
+  CHECK_LE(progress, progress_tracker_.GetMinClock() + 1);
   if (updated_min_clock != -1) {  // min clock updated
     for (auto add_req : add_buffer_) {
       storage_->Add(add_req);
@@ -44,7 +46,7 @@ void BSPModel::Get(Message& msg) {
   } else if (progress == progress_tracker_.GetMinClock()) {
     reply_queue_->Push(storage_->Get(msg));
   } else {
-    CHECK(false) << "progress error in BSPModel::Get";
+    CHECK(false) << "progress error in BSPModel::Get { get progress: " << progress << ", min clock: " << progress_tracker_.GetMinClock() << " }";
   }
 }
 

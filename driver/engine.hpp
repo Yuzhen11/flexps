@@ -17,12 +17,20 @@
 #include "server/bsp_model.hpp"
 #include "server/asp_model.hpp"
 #include "server/sparse_ssp_model.hpp"
+#include "server/abstract_sparse_ssp_recorder.hpp"
+#include "server/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/vector_sparse_ssp_recorder.hpp"
 #include "comm/mailbox.hpp"
 #include "comm/sender.hpp"
 #include "driver/ml_task.hpp"
 #include "driver/simple_id_mapper.hpp"
 #include "driver/info.hpp"
 #include "driver/worker_spec.hpp"
+
+#include "server/sparse_ssp_model_2.hpp"
+#include "server/abstract_sparse_ssp_recorder_2.hpp"
+#include "server/unordered_map_sparse_ssp_recorder_2.hpp"
+#include "server/vector_sparse_ssp_recorder_2.hpp"
 
 namespace flexps {
 
@@ -42,13 +50,14 @@ class Engine {
   Engine(const Node& node, const std::vector<Node>& nodes) : node_(node), nodes_(nodes) {}
   /*
    * The flow of starting the engine:
-   * 1. Create a mailbox
+   * 1. Create an id_mapper and a mailbox
    * 2. Start Sender
    * 3. Create ServerThreads, WorkerHelperThreads and ModelInitThread
    * 4. Register the threads to mailbox through ThreadsafeQueue
    * 5. Start the mailbox: bind and connect to all other nodes
    */
-  void StartEverything();
+  void StartEverything(int num_server_threads_per_node = 1);
+  void CreateIdMapper(int num_server_threads_per_node = 1);
   void CreateMailbox();
   void StartServerThreads();
   void StartWorkerHelperThreads();
@@ -130,15 +139,17 @@ void Engine::CreateTable(uint32_t table_id,
     } else if (model_type == ModelType::ASP) {
       model.reset(new ASPModel(table_id, std::move(storage), server_thread_group_->GetReplyQueue()));
     } else if (model_type == ModelType::SparseSSP) {
+      std::unique_ptr<AbstractSparseSSPRecorder2> recorder;
       CHECK(sparse_ssp_recorder_type != SparseSSPRecorderType::None);
       if (sparse_ssp_recorder_type == SparseSSPRecorderType::Map) {
-        // TODO
+        recorder.reset(new UnorderedMapSparseSSPRecorder2(model_staleness, speculation));
       } else if (sparse_ssp_recorder_type == SparseSSPRecorderType::Vector) {
-        // TODO
+        auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
+        recorder.reset(new VectorSparseSSPRecorder2(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
       } else {
         CHECK(false);
       }
-      model.reset(new SparseSSPModel(table_id, std::move(storage), server_thread_group_->GetReplyQueue(), model_staleness, speculation));
+      model.reset(new SparseSSPModel2(table_id, std::move(storage), std::move(recorder), server_thread_group_->GetReplyQueue(), model_staleness, speculation));
     } else {
       CHECK(false) << "Unknown model_type";
     }

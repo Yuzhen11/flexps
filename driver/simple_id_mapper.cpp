@@ -11,17 +11,20 @@ const uint32_t SimpleIdMapper::kWorkerHelperThreadId;
 const uint32_t SimpleIdMapper::kModelInitThreadId;
 
 void SimpleIdMapper::Init(int num_server_threads_per_node) {
+  CHECK_GT(num_server_threads_per_node, 0);
+  CHECK_LE(num_server_threads_per_node, kWorkerHelperThreadId);
   // Suppose there are 1 server and 1 worker_helper_thread for each node
   for (const auto& node : nodes_) {
     CHECK_LT(node.id, kMaxNodeId);
-    CHECK_LT(num_server_threads_per_node, kWorkerHelperThreadId);
     // {0, 1000, 2000, ...} are server threads if num_server_threads_per_node is 1
     for (int i = 0; i < num_server_threads_per_node; ++ i) {
       node2server_[node.id].push_back(node.id * kMaxThreadsPerNode + i);
     }
+    // Only 1 worker helper thread now
     // {10, 1010, 2010, ...} are worker helper threads
     node2worker_helper_[node.id].push_back(node.id * kMaxThreadsPerNode + kWorkerHelperThreadId);
 
+    // Only 1 model init thread
     // {20, 1020, 2020, ...} are model init threads
     node2model_init_[node.id] = node.id * kMaxThreadsPerNode + kModelInitThreadId;
   }

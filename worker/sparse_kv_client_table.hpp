@@ -115,7 +115,7 @@ SparseKVClientTable<Val>::SparseKVClientTable(uint32_t app_thread_id, uint32_t m
 template <typename Val>
 void SparseKVClientTable<Val>::Setup_() {
   CHECK_GE(speculation_, 0);
-  CHECK_LE(speculation_, 10);
+  CHECK_LE(speculation_, 50);
   callback_runner_->RegisterRecvHandle(app_thread_id_, model_id_, [&](Message& msg) {
     CHECK_EQ(msg.data.size(), 2);
     KVPairs<Val> kvs;
@@ -322,7 +322,7 @@ void SparseKVClientTable<Val>::Clock_() {
     msg.meta.recver = server_id;
     msg.meta.model_id = model_id_;
     msg.meta.flag = Flag::kClock;
-    msg.meta.version = get_count_ - 2;
+    msg.meta.version = get_count_ - 2;  // -2 because it is called in Get for the next iter.
     downstream_->Push(std::move(msg));
   }
 }

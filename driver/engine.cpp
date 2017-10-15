@@ -8,7 +8,8 @@
 
 namespace flexps {
 
-void Engine::StartEverything() {
+void Engine::StartEverything(int num_server_thread_per_node) {
+  CreateIdMapper(num_server_thread_per_node);
   CreateMailbox();
   StartSender();
   StartServerThreads();
@@ -18,10 +19,11 @@ void Engine::StartEverything() {
   LOG(INFO) << "StartEverything in Node: " << node_.id;
 }
 
-void Engine::CreateMailbox() {
+void Engine::CreateIdMapper(int num_server_thread_per_node) {
   id_mapper_.reset(new SimpleIdMapper(node_, nodes_));
-  const int kNumServerThreadPerNode = 1;
-  id_mapper_->Init(kNumServerThreadPerNode);
+  id_mapper_->Init(num_server_thread_per_node);
+}
+void Engine::CreateMailbox() {
   mailbox_.reset(new Mailbox(node_, nodes_, id_mapper_.get()));
 }
 

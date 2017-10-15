@@ -2,34 +2,33 @@
 #include "gtest/gtest.h"
 
 #include "base/threadsafe_queue.hpp"
-#include "server/sparse_ssp_model.hpp"
+#include "server/sparse_ssp_model_2.hpp"
 #include "server/map_storage.hpp"
 
-#include "server/abstract_sparse_ssp_recorder.hpp"
-#include "server/vector_sparse_ssp_recorder.hpp"
-#include "server/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/abstract_sparse_ssp_recorder_2.hpp"
+#include "server/unordered_map_sparse_ssp_recorder_2.hpp"
 
 namespace flexps {
 namespace {
 
-class TestSparseSSPModel : public testing::Test {
+class TestSparseSSPModel2 : public testing::Test {
  public:
-  TestSparseSSPModel() {}
-  ~TestSparseSSPModel() {}
+  TestSparseSSPModel2() {}
+  ~TestSparseSSPModel2() {}
 
  protected:
   void SetUp() {}
   void TearDown() {}
 };
 
-TEST_F(TestSparseSSPModel, SArrayCasting) {
+TEST_F(TestSparseSSPModel2, SArrayCasting) {
   third_party::SArray<uint32_t> test({0});
   auto hehe = third_party::SArray<char>(test);
   auto haha = third_party::SArray<uint32_t>(hehe);
   EXPECT_EQ(haha[0], 0);
 }
 
-TEST_F(TestSparseSSPModel, CreateMessage) {
+TEST_F(TestSparseSSPModel2, CreateMessage) {
   Message m1 = CreateMessage(Flag::kAdd, 0, 3, 0, 0, {1}, {2});
   EXPECT_EQ(m1.data.size(), 2);
   auto rep_keys = third_party::SArray<int>(m1.data[0]);
@@ -51,29 +50,29 @@ TEST_F(TestSparseSSPModel, CreateMessage) {
   EXPECT_EQ(m3.data.size(), 0);
 }
 
-TEST_F(TestSparseSSPModel, CheckConstructor) {
+TEST_F(TestSparseSSPModel2, CheckConstructor) {
   const int model_id = 0;
   const int staleness = 2;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
 
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 }
 
-TEST_F(TestSparseSSPModel, GetAndAdd) {
+TEST_F(TestSparseSSPModel2, GetAndAdd) {
   const int model_id = 0;
   const int staleness = 2;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -162,16 +161,16 @@ TEST_F(TestSparseSSPModel, GetAndAdd) {
   // EXPECT_EQ(reply_queue.Size(), 0);
 }
 
-TEST_F(TestSparseSSPModel, SpeculationNoConflict) {
+TEST_F(TestSparseSSPModel2, SpeculationNoConflict) {
   const int model_id = 0;
   const int staleness = 2;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -276,7 +275,7 @@ TEST_F(TestSparseSSPModel, SpeculationNoConflict) {
   EXPECT_EQ(check_msg.meta.version, 4);
 }
 
-TEST_F(TestSparseSSPModel, SpeculationSeveralConflict) {
+TEST_F(TestSparseSSPModel2, SpeculationSeveralConflict) {
 }
 
 // staleness = 0
@@ -293,16 +292,16 @@ TEST_F(TestSparseSSPModel, SpeculationSeveralConflict) {
 //                      Get_3_1
 //                      Clock (2 replies since they are now in next iter)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation1Conflict) {
+TEST_F(TestSparseSSPModel2, staleness0speculation1Conflict) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 1;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -384,16 +383,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation1Conflict) {
 //                      Get_3_1
 //                      Clock (2 replies if Get_2_2 does not conflict with G_3_1)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase1) {
+TEST_F(TestSparseSSPModel2, staleness0speculation1NoConflictCase1) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 1;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -495,16 +494,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase1) {
 //                      Get_3_1
 //                      Clock (1 replies (Get_3_1) if Get_2_2 conflicts with G_3_1)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
+TEST_F(TestSparseSSPModel2, staleness0speculation1NoConflictCase2) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 1;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -618,16 +617,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
 //                      Get_3_2
 //                      Clock (2 replies since they are now in next iter)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Conflict) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Conflict) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -718,16 +717,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Conflict) {
 // Get_2_4 [0]
 // Clock (No reply)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Case1) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -852,16 +851,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
 //                        Get_3_2 [1]
 //                        Clock (Reply Get_3_1 and Get_2_3 (No conflict between Get_2_3 with Get_3_1 and Get_3_2))
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Case2) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -995,16 +994,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
 //                        Clock (Reply Get_3_1 only. 
 //                        Do not reply Get_2_3 due to conflict between Get_2_3 with Get_3_2))
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Case3) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -1145,16 +1144,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
 //                        Get_3_4 [0]
 //                        Clock (Reply Get_3_3 and Get_2_3)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Case4) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -1305,16 +1304,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
 //                         Get_3_2 [1]
 //                         Clock (Reply Get_3_1 and Get_2_2)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Case5) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Case5) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -1428,16 +1427,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case5) {
 //                         Get_3_3 [1]
 //                         Clock (Reply Get_3_2 and Get_2_2)
 //
-TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
+TEST_F(TestSparseSSPModel2, staleness0speculation2Case6) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
@@ -1559,16 +1558,16 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
 //
 //                         Get_3_3 [1]
 //                         Clock (Reply Get_3_2)
-TEST_F(TestSparseSSPModel, ClockWithoutGet) {
+TEST_F(TestSparseSSPModel2, ClockWithoutGet) {
   const int model_id = 0;
   const int staleness = 0;
   const int speculation = 2;
   ThreadsafeQueue<Message> reply_queue;
   std::unique_ptr<AbstractStorage> storage(new MapStorage<int>());
-  std::unique_ptr<AbstractSparseSSPRecorder> recorder(
-      new UnorderedMapSparseSSPRecorder(staleness, speculation));
+  std::unique_ptr<AbstractSparseSSPRecorder2> recorder(
+      new UnorderedMapSparseSSPRecorder2(staleness, speculation));
   std::unique_ptr<AbstractModel> model(
-      new SparseSSPModel(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
+      new SparseSSPModel2(model_id, std::move(storage), std::move(recorder), &reply_queue, staleness, speculation));
 
   Message reset_msg;
   third_party::SArray<uint32_t> tids({2, 3});
