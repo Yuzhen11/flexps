@@ -21,3 +21,12 @@ target_link_libraries(KVStorePerformanceExample flexps)
 target_link_libraries(KVStorePerformanceExample ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET KVStorePerformanceExample PROPERTY CXX_STANDARD 11)
 add_dependencies(KVStorePerformanceExample ${external_project_dependencies})
+
+# HdfsReadExample
+if(LIBHDFS3_FOUND)
+  add_executable(HdfsReadExample hdfs_read_example.cpp)
+  target_link_libraries(HdfsReadExample flexps)
+  target_link_libraries(HdfsReadExample ${HUSKY_EXTERNAL_LIB})
+  set_property(TARGET HdfsReadExample PROPERTY CXX_STANDARD 11)
+  add_dependencies(HdfsReadExample ${external_project_dependencies})
+endif(LIBHDFS3_FOUND)
