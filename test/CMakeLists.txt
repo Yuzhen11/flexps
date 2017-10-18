@@ -44,5 +44,12 @@ if(LIBHDFS3_FOUND)
 	add_dependencies(TestRead ${external_project_dependencies})
 endif(LIBHDFS3_FOUND)
 
-
+#TestMultiThreadRead
+if(LIBHDFS3_FOUND)
+    add_executable(TestReadML test_hdfs_read_ml.cpp)
+    target_link_libraries(TestReadML flexps)
+    target_link_libraries(TestReadML ${HUSKY_EXTERNAL_LIB})
+    set_property(TARGET TestReadML PROPERTY CXX_STANDARD 11)
+    add_dependencies(TestReadML ${external_project_dependencies})
+endif(LIBHDFS3_FOUND)
 
