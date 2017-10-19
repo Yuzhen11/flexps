@@ -2,12 +2,11 @@
 #include "gtest/gtest.h"
 
 #include "base/threadsafe_queue.hpp"
-#include "server/sparse_ssp_model.hpp"
 #include "server/map_storage.hpp"
 
-#include "server/abstract_sparse_ssp_recorder.hpp"
-#include "server/vector_sparse_ssp_recorder.hpp"
-#include "server/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/sparse_ssp_model.hpp"
+#include "server/sparsessp/abstract_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/unordered_map_sparse_ssp_recorder.hpp"
 
 namespace flexps {
 namespace {

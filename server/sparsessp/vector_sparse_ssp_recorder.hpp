@@ -1,6 +1,6 @@
 #pragma once
 
-#include "server/abstract_sparse_ssp_recorder_2.hpp"
+#include "server/sparsessp/abstract_sparse_ssp_recorder.hpp"
 #include "glog/logging.h"
 
 #include <unordered_map>
@@ -12,10 +12,10 @@
 
 namespace flexps {
 
-class VectorSparseSSPRecorder2 : public AbstractSparseSSPRecorder2 {
+class VectorSparseSSPRecorder : public AbstractSparseSSPRecorder {
 public:
-  VectorSparseSSPRecorder2(uint32_t staleness, uint32_t speculation, third_party::Range range);
-  ~VectorSparseSSPRecorder2();
+  VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation, third_party::Range range);
+  ~VectorSparseSSPRecorder();
   virtual void GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) override;
   virtual void HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) override;
   virtual void RemoveRecord(int version) override;

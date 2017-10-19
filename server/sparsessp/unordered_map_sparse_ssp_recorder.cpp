@@ -1,9 +1,9 @@
-#include "server/unordered_map_sparse_ssp_recorder_2.hpp"
+#include "server/sparsessp/unordered_map_sparse_ssp_recorder.hpp"
 #include "glog/logging.h"
 
 namespace flexps {
 
-void UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) {
+void UnorderedMapSparseSSPRecorder::GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) {
   // Get() that are block here
   if (future_keys_[sender].size() > 0 && future_keys_[sender].front().first == progress - 1) {
     RemoveRecordAndGetNonConflictMsgs(progress - 1, min_clock, sender, future_keys_[sender].front().second, msgs);
@@ -34,7 +34,7 @@ void UnorderedMapSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender
   }
 }
 
-void UnorderedMapSparseSSPRecorder2::HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) {
+void UnorderedMapSparseSSPRecorder::HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) {
   for (auto& msg : too_fast_buffer_) {
     int forwarded_key = -1;
     int forwarded_version = -1;
@@ -48,7 +48,7 @@ void UnorderedMapSparseSSPRecorder2::HandleTooFastBuffer(int min_clock, std::vec
   too_fast_buffer_.clear();
 }
 
-void UnorderedMapSparseSSPRecorder2::AddRecord(Message& msg) {
+void UnorderedMapSparseSSPRecorder::AddRecord(Message& msg) {
   DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
@@ -62,7 +62,7 @@ void UnorderedMapSparseSSPRecorder2::AddRecord(Message& msg) {
   }
 }
 
-void UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
+void UnorderedMapSparseSSPRecorder::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
                                           const third_party::SArray<Key>& keys, std::vector<Message>* msgs) {
   std::vector<Message> msgs_to_be_handled;
   DCHECK(main_recorder_.find(version) != main_recorder_.end());
@@ -89,7 +89,7 @@ void UnorderedMapSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int versi
   }
 }
 
-void UnorderedMapSparseSSPRecorder2::RemoveRecord(const int version) { 
+void UnorderedMapSparseSSPRecorder::RemoveRecord(const int version) { 
   main_recorder_.erase(version); 
 }
 
@@ -97,7 +97,7 @@ void UnorderedMapSparseSSPRecorder2::RemoveRecord(const int version) {
  *   NO conflict: return 
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool UnorderedMapSparseSSPRecorder2::HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
+bool UnorderedMapSparseSSPRecorder::HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
                                           const int end_version, int* forwarded_key, int* forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : keys) {

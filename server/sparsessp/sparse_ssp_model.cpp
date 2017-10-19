@@ -1,18 +1,18 @@
-#include "server/sparse_ssp_model_2.hpp"
+#include "server/sparsessp/sparse_ssp_model.hpp"
 
 #include "glog/logging.h"
 
 namespace flexps {
 
-SparseSSPModel2::SparseSSPModel2(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage, 
-                               std::unique_ptr<AbstractSparseSSPRecorder2> recorder,
+SparseSSPModel::SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage, 
+                               std::unique_ptr<AbstractSparseSSPRecorder> recorder,
                                ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation)
     : model_id_(model_id), reply_queue_(reply_queue),
     storage_(std::move(storage)),
     recorder_(std::move(recorder)),
     staleness_(staleness), speculation_(speculation) {}
 
-void SparseSSPModel2::Clock(Message& message) {
+void SparseSSPModel::Clock(Message& message) {
   int min_clock = progress_tracker_.GetMinClock();
   
   // If the Clock is too fast, store it in buffer_ first. Handle this Clock when min_clock is updated.
@@ -59,7 +59,7 @@ void SparseSSPModel2::Clock(Message& message) {
   }
 }
 
-void SparseSSPModel2::Get(Message& message) {
+void SparseSSPModel::Get(Message& message) {
   CHECK(progress_tracker_.CheckThreadValid(message.meta.sender));
   CHECK(message.data.size() == 1);
   if (message.meta.version == 0) {
@@ -69,13 +69,13 @@ void SparseSSPModel2::Get(Message& message) {
   recorder_->AddRecord(message);
 }
 
-void SparseSSPModel2::Add(Message& message) {
+void SparseSSPModel::Add(Message& message) {
   CHECK(message.meta.version == progress_tracker_.GetProgress(message.meta.sender))
-      << "[Error]SparseSSPModel2: Add version invalid";
+      << "[Error]SparseSSPModel: Add version invalid";
   storage_->Add(message);
 }
 
-void SparseSSPModel2::ResetWorker(Message& msg) {
+void SparseSSPModel::ResetWorker(Message& msg) {
   CHECK_EQ(msg.data.size(), 1);
   third_party::SArray<uint32_t> tids;
   tids = msg.data[0];
@@ -90,6 +90,6 @@ void SparseSSPModel2::ResetWorker(Message& msg) {
   reply_queue_->Push(reply_msg);
 }
 
-int SparseSSPModel2::GetProgress(int tid) { return progress_tracker_.GetProgress(tid); }
+int SparseSSPModel::GetProgress(int tid) { return progress_tracker_.GetProgress(tid); }
 
 }  // namespace flexps

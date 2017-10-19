@@ -8,19 +8,19 @@
 #include "server/progress_tracker.hpp"
 #include "server/map_storage.hpp"
 
-#include "server/abstract_sparse_ssp_recorder_2.hpp"
-#include "server/unordered_map_sparse_ssp_recorder.hpp"
-#include "server/vector_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/abstract_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/vector_sparse_ssp_recorder.hpp"
 
 #include <map>
 #include <vector>
 
 namespace flexps {
 
-class SparseSSPModel2 : public AbstractModel {
+class SparseSSPModel : public AbstractModel {
  public:
-  explicit SparseSSPModel2(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage, 
-                          std::unique_ptr<AbstractSparseSSPRecorder2> recorder,
+  explicit SparseSSPModel(const uint32_t model_id, std::unique_ptr<AbstractStorage>&& storage, 
+                          std::unique_ptr<AbstractSparseSSPRecorder> recorder,
                           ThreadsafeQueue<Message>* reply_queue, int staleness, int speculation);
 
   virtual void Clock(Message& message) override;
@@ -36,7 +36,7 @@ class SparseSSPModel2 : public AbstractModel {
   std::unique_ptr<AbstractStorage> storage_;
   ProgressTracker progress_tracker_;
 
-  std::unique_ptr<AbstractSparseSSPRecorder2> recorder_;
+  std::unique_ptr<AbstractSparseSSPRecorder> recorder_;
 
   std::vector<Message> buffer_;
   int staleness_;

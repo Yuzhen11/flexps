@@ -1,9 +1,9 @@
-#include "server/vector_sparse_ssp_recorder_2.hpp"
+#include "server/sparsessp/vector_sparse_ssp_recorder.hpp"
 #include "glog/logging.h"
 
 namespace flexps {
 
-VectorSparseSSPRecorder2::VectorSparseSSPRecorder2(uint32_t staleness, uint32_t speculation, third_party::Range range) 
+VectorSparseSSPRecorder::VectorSparseSSPRecorder(uint32_t staleness, uint32_t speculation, third_party::Range range) 
     : staleness_(staleness), speculation_(speculation), range_(range) {
 
   // Just make sure that preallocated space is larger than needed
@@ -17,7 +17,7 @@ VectorSparseSSPRecorder2::VectorSparseSSPRecorder2(uint32_t staleness, uint32_t 
   }
 }
 
-VectorSparseSSPRecorder2::~VectorSparseSSPRecorder2() {
+VectorSparseSSPRecorder::~VectorSparseSSPRecorder() {
 #ifdef USE_TIMER
   LOG(INFO) << "add_record_time: " << add_record_time_.count()/1000. << " ms";
   LOG(INFO) << "remove_record_time: " << remove_record_time_.count()/1000. 
@@ -32,7 +32,7 @@ VectorSparseSSPRecorder2::~VectorSparseSSPRecorder2() {
 #endif
 }
 
-void VectorSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) {
+void VectorSparseSSPRecorder::GetNonConflictMsgs(int progress, int sender, int min_clock, std::vector<Message>* const msgs) {
   // Get() that are block here
 #ifdef USE_TIMER
   auto start_time = std::chrono::steady_clock::now();
@@ -91,7 +91,7 @@ void VectorSparseSSPRecorder2::GetNonConflictMsgs(int progress, int sender, int 
 #endif
 }
 
-void VectorSparseSSPRecorder2::HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) {
+void VectorSparseSSPRecorder::HandleTooFastBuffer(int min_clock, std::vector<Message>* const msgs) {
   for (auto& msg : too_fast_buffer_) {
     int forwarded_key = -1;
     int forwarded_version = -1;
@@ -108,7 +108,7 @@ void VectorSparseSSPRecorder2::HandleTooFastBuffer(int min_clock, std::vector<Me
   too_fast_buffer_.clear();
 }
 
-void VectorSparseSSPRecorder2::AddRecord(Message& msg) {
+void VectorSparseSSPRecorder::AddRecord(Message& msg) {
   DCHECK_LT(future_keys_[msg.meta.sender].size(), speculation_ + 1);
   future_keys_[msg.meta.sender].push({msg.meta.version, third_party::SArray<Key>(msg.data[0])});
 
@@ -132,7 +132,7 @@ void VectorSparseSSPRecorder2::AddRecord(Message& msg) {
   }
 }
 
-void VectorSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
+void VectorSparseSSPRecorder::RemoveRecordAndGetNonConflictMsgs(int version, int min_clock, uint32_t tid,
                                           const third_party::SArray<Key>& keys, std::vector<Message>* msgs) {
   std::vector<Message> msgs_to_be_handled;
   int version_after_mod = version % main_recorder_version_level_size_;
@@ -163,7 +163,7 @@ void VectorSparseSSPRecorder2::RemoveRecordAndGetNonConflictMsgs(int version, in
   }
 }
 
-void VectorSparseSSPRecorder2::RemoveRecord(const int version) { 
+void VectorSparseSSPRecorder::RemoveRecord(const int version) { 
   // for (int i = 0; i < main_recorder_[version % main_recorder_version_level_size_].size(); ++ i) {
   //   CHECK_EQ(main_recorder_[version % main_recorder_version_level_size_][i].first, 0);
   // }
@@ -173,7 +173,7 @@ void VectorSparseSSPRecorder2::RemoveRecord(const int version) {
  *   NO conflict: return 
  *   ONE or SEVERAL conflict: append to the corresponding get buffer, return true
  */
-bool VectorSparseSSPRecorder2::HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
+bool VectorSparseSSPRecorder::HasConflict(const third_party::SArray<Key>& keys, const int begin_version,
                                           const int end_version, int* forwarded_key, int* forwarded_version) {
   for (int check_version = end_version; check_version >= begin_version; check_version--) {
     for (auto& key : keys) {
