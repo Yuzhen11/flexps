@@ -30,3 +30,12 @@ if(LIBHDFS3_FOUND)
   set_property(TARGET HdfsReadExample PROPERTY CXX_STANDARD 11)
   add_dependencies(HdfsReadExample ${external_project_dependencies})
 endif(LIBHDFS3_FOUND)
+
+
+if(LIBHDFS3_FOUND)
+add_executable(HdfsManagerExample hdfs_manager_example.cpp)
+  target_link_libraries(HdfsManagerExample flexps)
+  target_link_libraries(HdfsManagerExample ${HUSKY_EXTERNAL_LIB})
+  set_property(TARGET HdfsManagerExample PROPERTY CXX_STANDARD 11)
+  add_dependencies(HdfsManagerExample ${external_project_dependencies})
+endif(LIBHDFS3_FOUND)

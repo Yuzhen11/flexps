@@ -1,5 +1,6 @@
 #pragma once
 
+#include <thread>
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
@@ -23,7 +24,7 @@ namespace flexps {
  * hdfs_manager.Start();
  * TODO: Need to figure a way to support multiple threads friendly, the hdfs_manager should
  * know the number of loading thread beforehand so that it can tell the hdfs_assigner
- * std::thread th([](){  
+ * std::thread th([](){
  *   while (hdfs_manager.HasRecord()) {
  *     auto record = hdfs_manager.NextRecord();
  *   }
@@ -41,45 +42,78 @@ class HDFSManager {
     int worker_port;
     int hdfs_namenode_port;
   };
-  HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context)
-    : node_(node), nodes_(nodes), config_(config), zmq_context_(zmq_context_) {
-    // TODO: Check there must be node0 in nodes
+  struct InputFormat {
+    LineInputFormat* infmt_;
+    boost::string_ref record;
+    InputFormat(const Config& config, Coordinator* coordinator, int num_threads) {
+      infmt_ = new LineInputFormat(config.input, num_threads, 0, coordinator, config.worker_host, config.hdfs_namenode,
+                                   config.hdfs_namenode_port);
+    }
+
+    bool HasRecord() {
+      bool has_record = infmt_->next(record);
+      return has_record;
+    }
+
+    boost::string_ref GetNextRecord() { return record; }
+  };
+
+  HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context,
+              int num_threads_per_node)
+      : node_(node),
+        nodes_(nodes),
+        config_(config),
+        zmq_context_(zmq_context),
+        num_threads_per_node_(num_threads_per_node) {
+    CHECK(!nodes.empty()) << "not a valid node group";
   }
   void Start() {
     if (node_.id == 0) {
-      hdfs_main_thread = std::thread([this]{
-        HDFSBlockAssigner hdfs_block_assigner(config.hdfs_namenode, config.hdfs_namenode_port, zmq_context, config.master_port);
+      hdfs_main_thread_ = std::thread([this] {
+        HDFSBlockAssigner hdfs_block_assigner(config_.hdfs_namenode, config_.hdfs_namenode_port, zmq_context_,
+                                              config_.master_port);
         hdfs_block_assigner.Serve();
       });
     }
-    // TODO
-    coordinator_.reset(new ...);
   }
-  // TODO
-  // Try to wrap all the logic inside
-  // The user should use a much simpler interface like:
-  // while (hdfs_manager.HasRecord()) {
-  //   boost::string_ref record = hdfs_manager.GetNextRecord();
-  // }
-  bool HasRecord() {
-  }
-  boost::string_ref GetNextRecord() {
-  }
-  void Stop() {
-    // TODO use coordinator to send finish_signal
-    //
-    if (hdfs_main_thread.joinable()) {  // join only for node 0
-      hdfs_main_thread.join();
+
+  void Run(const std::function<void(InputFormat*)>& func) {
+    int num_threads = nodes_.size() * num_threads_per_node_;
+    coordinator_ =
+        new Coordinator(node_.id, config_.worker_host, zmq_context_, config_.master_host, config_.master_port);
+    coordinator_->serve();
+    std::vector<std::thread> threads;
+    for (int i = 0; i < num_threads_per_node_; ++i) {
+      std::thread load_thread = std::thread([this, num_threads, i, func] {
+        InputFormat input_format(config_, coordinator_, num_threads);
+        func(&input_format);
+        BinStream finish_signal;
+        LOG(INFO) << "Send finish signal";
+        finish_signal << config_.worker_host << node_.id * num_threads_per_node_ + i;
+        coordinator_->notify_master(finish_signal, 300);
+      });
+      threads.push_back(std::move(load_thread));
+    }
+    for (int i = 0; i < num_threads_per_node_; ++i) {
+      threads[i].join();
     }
   }
+
+  void Stop() {
+    if (node_.id == 0) {  // join only for node 0
+      hdfs_main_thread_.join();
+    }
+  }
+
  private:
   Node node_;
   std::vector<Node> nodes_;
-  Config config_;
-  std::unique_ptr<Coordinator> coordinator_;
+  const Config config_;
+  Coordinator* coordinator_;
   zmq::context_t* zmq_context_;
-
-  std::thread hdfs_assigner_thread_;  // Only in Node0
+  zmq::context_t context;
+  int num_threads_per_node_;
+  std::thread hdfs_main_thread_;  // Only in Node0
 };
 
 }  // namespace flexps

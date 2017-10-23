@@ -63,17 +63,19 @@ void Run() {
   config.hdfs_namenode_port = FLAGS_hdfs_namenode_port;
   zmq::context_t* zmq_context = new zmq::context_t(1);
   std::thread hdfs_main_thread;
+  std::thread load_thread;
   if(my_node.id == 0){
      hdfs_main_thread = std::thread([config, zmq_context]{
        HDFSBlockAssigner hdfs_block_assigner(config.hdfs_namenode, config.hdfs_namenode_port, zmq_context, config.master_port);
        hdfs_block_assigner.Serve();
      });
-  } 
-  std::thread load_thread([config, nodes, my_node, zmq_context]{
+  }
+  Coordinator* coordinator = new Coordinator(my_node.id, config.worker_host, zmq_context, config.master_host, config.master_port);
+  coordinator->serve();
+    
+  load_thread = std::thread([config, coordinator, nodes, my_node, zmq_context]{
     auto start_time = std::chrono::steady_clock::now();
     int proc_id = my_node.id;
-    Coordinator* coordinator = new Coordinator(proc_id, config.worker_host, zmq_context, config.master_host, config.master_port);
-    coordinator->serve();
     LineInputFormat infmt(config.input, nodes.size(), 0, coordinator, config.worker_host, config.hdfs_namenode,config.hdfs_namenode_port);
     bool success = true;
     int count = 0; 

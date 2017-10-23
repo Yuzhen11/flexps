@@ -16,7 +16,7 @@ from os.path import dirname, join
 #
 # hostfile = "machinefiles/local"
 hostfile = "machinefiles/5node"
-progfile = "debug/HdfsReadExample"
+progfile = "debug/HdfsManagerExample"
 
 script_path = os.path.realpath(__file__)
 proj_dir = dirname(dirname(script_path))
@@ -29,7 +29,7 @@ params = {
     "config_file" : hostfile_path,
     "hdfs_namenode" : "proj10",
     "hdfs_namenode_port" : 9000,
-    "input" : "hdfs:///datasets/ml/netflix",
+    "input" : "hdfs:///datasets/classification/a9",
 }
 
 ssh_cmd = (
@@ -49,7 +49,7 @@ env_params = (
   )
 
 # TODO: May need to ls before run to make sure the related files are synced.
-# clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; ulimit -c unlimited; "
+#clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; ulimit -c unlimited; "
 clear_cmd = "ls " + dirname(hostfile_path) + " > /dev/null; ls " + dirname(prog_path) + " > /dev/null; "
 
 with open(hostfile_path, "r") as f:

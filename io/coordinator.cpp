@@ -20,7 +20,7 @@ namespace flexps {
 
 Coordinator::Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host,
                          int master_port)
-    : proc_id_(proc_id), hostname_(hostname), context_(context), master_host_(master_host), master_port_(master_port) {}
+    :  zmq_coord_(nullptr),proc_id_(proc_id), hostname_(hostname), context_(context), master_host_(master_host), master_port_(master_port) {}
 
 Coordinator::~Coordinator() {
   delete zmq_coord_;
@@ -31,7 +31,7 @@ void Coordinator::serve() {
   if (zmq_coord_)
     return;
 
-  std::string hostname = hostname_ + "-" + std::to_string(proc_id_);
+  std::string hostname = hostname_ + "-" + std::to_string(proc_id_) + "2k";
   zmq_coord_ = new zmq::socket_t(*context_, ZMQ_DEALER);
   zmq_coord_->setsockopt(ZMQ_IDENTITY, hostname.c_str(), hostname.size());
   int linger = 2000;
