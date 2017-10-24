@@ -1,13 +1,13 @@
 #pragma once
 
+#include <thread>
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
+#include "base/node.hpp"
 #include "base/serialization.hpp"
 #include "boost/utility/string_ref.hpp"
 #include "io/coordinator.hpp"
-#include "io/file_splitter.hpp"
-#include "io/hdfs_assigner.hpp"
 #include "io/lineInput.hpp"
 
 namespace flexps {
@@ -23,7 +23,7 @@ namespace flexps {
  * hdfs_manager.Start();
  * TODO: Need to figure a way to support multiple threads friendly, the hdfs_manager should
  * know the number of loading thread beforehand so that it can tell the hdfs_assigner
- * std::thread th([](){  
+ * std::thread th([](){
  *   while (hdfs_manager.HasRecord()) {
  *     auto record = hdfs_manager.NextRecord();
  *   }
@@ -41,45 +41,36 @@ class HDFSManager {
     int worker_port;
     int hdfs_namenode_port;
   };
-  HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context)
-    : node_(node), nodes_(nodes), config_(config), zmq_context_(zmq_context_) {
-    // TODO: Check there must be node0 in nodes
-  }
-  void Start() {
-    if (node_.id == 0) {
-      hdfs_main_thread = std::thread([this]{
-        HDFSBlockAssigner hdfs_block_assigner(config.hdfs_namenode, config.hdfs_namenode_port, zmq_context, config.master_port);
-        hdfs_block_assigner.Serve();
-      });
+  struct InputFormat {
+    LineInputFormat* infmt_;
+    boost::string_ref record;
+    InputFormat(const Config& config, Coordinator* coordinator, int num_threads) {
+      infmt_ = new LineInputFormat(config.input, num_threads, 0, coordinator, config.worker_host, config.hdfs_namenode,
+                                   config.hdfs_namenode_port);
     }
-    // TODO
-    coordinator_.reset(new ...);
-  }
-  // TODO
-  // Try to wrap all the logic inside
-  // The user should use a much simpler interface like:
-  // while (hdfs_manager.HasRecord()) {
-  //   boost::string_ref record = hdfs_manager.GetNextRecord();
-  // }
-  bool HasRecord() {
-  }
-  boost::string_ref GetNextRecord() {
-  }
-  void Stop() {
-    // TODO use coordinator to send finish_signal
-    //
-    if (hdfs_main_thread.joinable()) {  // join only for node 0
-      hdfs_main_thread.join();
+
+    bool HasRecord() {
+      bool has_record = infmt_->next(record);
+      return has_record;
     }
-  }
+
+    boost::string_ref GetNextRecord() { return record; }
+  };
+
+  HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context,
+              int num_threads_per_node);
+  void Start();
+  void Run(const std::function<void(InputFormat*)>& func);
+  void Stop();
+
  private:
   Node node_;
   std::vector<Node> nodes_;
-  Config config_;
-  std::unique_ptr<Coordinator> coordinator_;
+  const Config config_;
+  Coordinator* coordinator_;
   zmq::context_t* zmq_context_;
-
-  std::thread hdfs_assigner_thread_;  // Only in Node0
+  int num_threads_per_node_;
+  std::thread hdfs_main_thread_;  // Only in Node0
 };
 
 }  // namespace flexps
