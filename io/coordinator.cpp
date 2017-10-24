@@ -16,6 +16,7 @@
 #include <glog/logging.h>
 #include <string>
 #include "base/serialization.hpp"
+
 namespace flexps {
 
 Coordinator::Coordinator(int proc_id, std::string hostname, zmq::context_t* context, std::string master_host,

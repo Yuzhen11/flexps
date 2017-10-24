@@ -1,4 +1,3 @@
-
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
@@ -13,11 +12,7 @@
 #include "boost/utility/string_ref.hpp"
 #include "driver/engine.hpp"
 #include "driver/node_parser.hpp"
-#include "io/coordinator.hpp"
-#include "io/file_splitter.hpp"
-#include "io/hdfs_assigner.hpp"
 #include "io/hdfs_manager.hpp"
-#include "io/lineInput.hpp"
 #include "worker/kv_client_table.hpp"
 
 DEFINE_int32(my_id, -1, "The process id of this program");
