@@ -1,4 +1,5 @@
 #include "io/hdfs_manager.hpp"
+
 #include "io/hdfs_assigner.hpp"
 #include "gflags/gflags.h"
 #include "glog/logging.h"
@@ -12,7 +13,9 @@ HDFSManager::HDFSManager(Node node, const std::vector<Node>& nodes, const Config
       config_(config),
       zmq_context_(zmq_context),
       num_threads_per_node_(num_threads_per_node) {
-  CHECK(!nodes.empty()) << "not a valid node group";
+  CHECK(!nodes.empty());
+  CHECK(CheckValidNodeIds(nodes));
+  CHECK(HasNode(nodes, 0));
 }
 void HDFSManager::Start() {
   if (node_.id == 0) {
@@ -24,7 +27,7 @@ void HDFSManager::Start() {
   }
 }
 
-void HDFSManager::Run(const std::function<void(InputFormat*)>& func) {
+void HDFSManager::Run(const std::function<void(InputFormat*, int)>& func) {
   int num_threads = nodes_.size() * num_threads_per_node_;
   coordinator_ = new Coordinator(node_.id, config_.worker_host, zmq_context_, config_.master_host, config_.master_port);
   coordinator_->serve();
@@ -32,7 +35,7 @@ void HDFSManager::Run(const std::function<void(InputFormat*)>& func) {
   for (int i = 0; i < num_threads_per_node_; ++i) {
     std::thread load_thread = std::thread([this, num_threads, i, func] {
       InputFormat input_format(config_, coordinator_, num_threads);
-      func(&input_format);
+      func(&input_format, i);
       BinStream finish_signal;
       LOG(INFO) << "Send finish signal";
       finish_signal << config_.worker_host << node_.id * num_threads_per_node_ + i;

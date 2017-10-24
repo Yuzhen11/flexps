@@ -6,7 +6,7 @@
 #include "io/coordinator.hpp"
 #include "io/file_splitter.hpp"
 #include "io/hdfs_assigner.hpp"
-#include "io/lineInput.hpp"
+#include "io/lineinput.hpp"
 
 namespace flexps {
 

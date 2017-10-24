@@ -32,7 +32,7 @@ void Coordinator::serve() {
   if (zmq_coord_)
     return;
 
-  std::string hostname = hostname_ + "-" + std::to_string(proc_id_) + "2k";
+  std::string hostname = hostname_ + "-" + std::to_string(proc_id_);
   zmq_coord_ = new zmq::socket_t(*context_, ZMQ_DEALER);
   zmq_coord_->setsockopt(ZMQ_IDENTITY, hostname.c_str(), hostname.size());
   int linger = 2000;

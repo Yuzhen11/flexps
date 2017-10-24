@@ -2,7 +2,7 @@
 
 #include "glog/logging.h"
 
-#include "driver/node_parser.hpp"
+#include "base/node_util.hpp"
 
 #include <fstream>
 #include <cstdio>

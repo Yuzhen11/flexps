@@ -3,7 +3,6 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-#include "driver/node_parser.hpp"
 #include "driver/engine.hpp"
 #include "worker/kv_client_table.hpp"
 

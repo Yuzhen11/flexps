@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include "base/node.hpp"
+#include "base/node_util.hpp"
 #include "worker/worker_helper_thread.hpp"
 #include "worker/app_blocker.hpp"
 #include "worker/simple_range_manager.hpp"

@@ -5,10 +5,11 @@
 #include "glog/logging.h"
 
 #include "base/node.hpp"
+#include "base/node_util.hpp"
 #include "base/serialization.hpp"
 #include "boost/utility/string_ref.hpp"
 #include "io/coordinator.hpp"
-#include "io/lineInput.hpp"
+#include "io/lineinput.hpp"
 
 namespace flexps {
 
@@ -19,13 +20,11 @@ namespace flexps {
  * HDFSManager::Config config;
  * config.input = ...
  * ...
- * HDFSManager hdfs_manager(my_node, nodes, config, zmq_context);
+ * HDFSManager hdfs_manager(my_node, nodes, config, zmq_context, num_threads_per_node);
  * hdfs_manager.Start();
- * TODO: Need to figure a way to support multiple threads friendly, the hdfs_manager should
- * know the number of loading thread beforehand so that it can tell the hdfs_assigner
- * std::thread th([](){
- *   while (hdfs_manager.HasRecord()) {
- *     auto record = hdfs_manager.NextRecord();
+ * hdfs_manager.Run([](HDFSManager::InputFormat* input_format, int local_tid) {
+ *   while (input_format->HasRecord()) {
+ *     auto record = input_format->GetNextRecord();
  *   }
  * });
  * hdfs_manager.Stop();
@@ -60,16 +59,16 @@ class HDFSManager {
   HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context,
               int num_threads_per_node);
   void Start();
-  void Run(const std::function<void(InputFormat*)>& func);
+  void Run(const std::function<void(InputFormat*, int)>& func);
   void Stop();
 
  private:
-  Node node_;
-  std::vector<Node> nodes_;
+  const Node node_;
+  const std::vector<Node> nodes_;
   const Config config_;
   Coordinator* coordinator_;
   zmq::context_t* zmq_context_;
-  int num_threads_per_node_;
+  const int num_threads_per_node_;
   std::thread hdfs_main_thread_;  // Only in Node0
 };
 

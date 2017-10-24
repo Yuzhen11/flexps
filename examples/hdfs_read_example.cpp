@@ -3,7 +3,6 @@
 
 #include <gperftools/profiler.h>
 
-#include "driver/node_parser.hpp"
 #include "driver/engine.hpp"
 #include "worker/kv_client_table.hpp"
 #include "base/serialization.hpp"
@@ -11,7 +10,7 @@
 #include "io/coordinator.hpp"
 #include "io/file_splitter.hpp"
 #include "io/hdfs_assigner.hpp"
-#include "io/lineInput.hpp"
+#include "io/lineinput.hpp"
 #include <algorithm>
 #include <cstdlib>
 #include <chrono>

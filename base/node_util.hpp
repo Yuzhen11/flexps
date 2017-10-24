@@ -43,5 +43,10 @@ Node GetNodeById(const std::vector<Node>& nodes, int id);
  */
 bool CheckConsecutiveIds(const std::vector<Node>& nodes);
 
+/*
+ * Return true if id is in nodes, false otherwise
+ */
+bool HasNode(const std::vector<Node>& nodes, uint32_t id);
+
 }  // namespace flexps
 

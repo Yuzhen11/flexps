@@ -8,12 +8,9 @@
 #include <cstdlib>
 #include <ctime>
 #include <thread>
-#include "base/serialization.hpp"
 #include "boost/utility/string_ref.hpp"
-#include "driver/engine.hpp"
-#include "driver/node_parser.hpp"
+#include "base/serialization.hpp"
 #include "io/hdfs_manager.hpp"
-#include "worker/kv_client_table.hpp"
 
 DEFINE_int32(my_id, -1, "The process id of this program");
 DEFINE_string(config_file, "", "The config file path");
@@ -24,7 +21,6 @@ DEFINE_int32(hdfs_namenode_port, -1, "The hdfs namenode port");
 namespace flexps {
 
 void Run() {
-  srand(0);
   CHECK_NE(FLAGS_my_id, -1);
   CHECK(!FLAGS_config_file.empty());
   VLOG(1) << FLAGS_my_id << " " << FLAGS_config_file;
@@ -52,14 +48,14 @@ void Run() {
   LOG(INFO) << "manager set up";
   hdfs_manager.Start();
   LOG(INFO) << "manager start";
-  hdfs_manager.Run([](HDFSManager::InputFormat* input_format) {
-    // hdfs_manager.Run();
+  hdfs_manager.Run([my_node](HDFSManager::InputFormat* input_format, int local_tid) {
     int count = 0;
     while (input_format->HasRecord()) {
       auto record = input_format->GetNextRecord();
       count++;
     }
-    LOG(INFO) << "the number of lines of datasets is " << count;
+    LOG(INFO) << count << " lines in (node, thread):(" 
+      << my_node.id << "," << local_tid << ")";
   });
   hdfs_manager.Stop();
 }

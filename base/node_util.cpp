@@ -1,4 +1,4 @@
-#include "driver/node_parser.hpp"
+#include "base/node_util.hpp"
 
 #include "glog/logging.h"
 
@@ -75,6 +75,15 @@ bool CheckConsecutiveIds(const std::vector<Node>& nodes) {
     }
   }
   return true;
+}
+
+bool HasNode(const std::vector<Node>& nodes, uint32_t id) {
+  for (const auto& node : nodes) {
+    if (node.id == id) {
+      return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace flexps
