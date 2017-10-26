@@ -29,7 +29,6 @@ struct Meta {
     ss << ", model_id: " << model_id;
     ss << ", flag: " << FlagName[static_cast<int>(flag)];
     ss << ", version: " << version;
-
     ss << "}";
     return ss.str();
   }

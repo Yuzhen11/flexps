@@ -14,14 +14,17 @@
 namespace flexps {
 
 struct Info {
-  uint32_t thread_id;
-  uint32_t worker_id;
-  ThreadsafeQueue<Message>* send_queue;
-  std::map<uint32_t, SimpleRangeManager> range_manager_map;
-  AbstractCallbackRunner* callback_runner;
+  uint32_t local_id;  // the local id for each process, {0, 1, 2...}
+  uint32_t worker_id;  // the global worker id for the whole system, {0, 1, 2...}
+  uint32_t thread_id;  // the global thread id
+
   std::string DebugString() const {
     std::stringstream ss;
-    ss << "thread_id: " << thread_id << " worker_id: " << worker_id;
+    ss << "Info: {";
+    ss << "local_id:" << local_id 
+       << ", thread_id:" << thread_id 
+       << ", worker_id:" << worker_id
+       << "}";
     return ss.str();
   }
 
@@ -33,6 +36,12 @@ struct Info {
   template <typename Val>
   SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, 
       uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const;
+
+  // The below fields are not supposed to be used by users
+  ThreadsafeQueue<Message>* send_queue;
+  std::map<uint32_t, SimpleRangeManager> range_manager_map;
+  AbstractCallbackRunner* callback_runner;
+
 };
 
 template <typename Val>

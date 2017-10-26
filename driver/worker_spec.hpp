@@ -9,7 +9,7 @@ namespace flexps {
 
 /*
  * node_id: 0, 1
- * worker_id for this task: 0, 1, 2 .. consecutive
+ * worker_id for a task: 0, 1, 2 .. consecutive
  * thread_id: global worker thread id
  */
 class WorkerSpec {

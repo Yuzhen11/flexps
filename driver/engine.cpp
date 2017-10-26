@@ -166,9 +166,12 @@ void Engine::Run(const MLTask& task) {
     std::vector<std::thread> thread_group(local_threads.size());
     LOG(INFO) << thread_group.size() << " workers run on proc: " << node_.id;
     for (int i = 0; i < thread_group.size(); ++ i) {
-      // TODO:
+      // TODO: Now I register the thread_id with the queue in worker_helper_thread to the mailbox.
+      // So that the message sent to thread_id will be pushed into worker_helper_thread_'s queue
+      // and worker_helper_thread_ is in charge of handling the message.
       mailbox_->RegisterQueue(local_threads[i], worker_helper_thread_->GetWorkQueue());
       Info info;
+      info.local_id = i;
       info.thread_id = local_threads[i];
       info.worker_id = local_workers[i];
       info.send_queue = sender_->GetMessageQueue();
