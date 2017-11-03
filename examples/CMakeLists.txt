@@ -39,3 +39,13 @@ add_executable(HdfsManagerExample hdfs_manager_example.cpp)
   set_property(TARGET HdfsManagerExample PROPERTY CXX_STANDARD 11)
   add_dependencies(HdfsManagerExample ${external_project_dependencies})
 endif(LIBHDFS3_FOUND)
+
+
+# LRExample
+if(LIBHDFS3_FOUND)
+  add_executable(LRExample logistic_regression.cpp)
+  target_link_libraries(LRExample flexps)
+  target_link_libraries(LRExample ${HUSKY_EXTERNAL_LIB})
+  set_property(TARGET LRExample PROPERTY CXX_STANDARD 11)
+  add_dependencies(LRExample ${external_project_dependencies})
+endif(LIBHDFS3_FOUND)

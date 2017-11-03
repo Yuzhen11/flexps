@@ -135,11 +135,7 @@ void KVClientTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
     std::sort(recv_kvs_.begin(), recv_kvs_.end(),
               [](const KVPairs<Val>& a, const KVPairs<Val>& b) { return a.keys.front() < b.keys.front(); });
     CHECK_NOTNULL(vals);
-    if (vals->empty()) {
-      vals->resize(total_val);
-    } else {
-      CHECK_EQ(vals->size(), total_val);
-    }
+    vals->resize(total_val);
     Val* p_vals = vals->data();
     for (const auto& s : recv_kvs_) {
       memcpy(p_vals, s.vals.data(), s.vals.size() * sizeof(Val));
