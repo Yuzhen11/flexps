@@ -1,6 +1,8 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
-file(GLOB io-src-files coordinator.cpp)
+file(GLOB io-src-files
+	coordinator.cpp
+	)
 
 if(LIBHDFS3_FOUND)
     file(GLOB io-src-hdfs-files hdfs_assigner.cpp hdfs_manager.cpp file_splitter.cpp)

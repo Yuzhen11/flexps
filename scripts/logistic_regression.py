@@ -16,7 +16,7 @@ from os.path import dirname, join
 #
 # hostfile = "machinefiles/local"
 hostfile = "machinefiles/5node"
-progfile = "debug/HdfsManagerExample"
+progfile = "debug/LRExample"
 
 script_path = os.path.realpath(__file__)
 proj_dir = dirname(dirname(script_path))
@@ -29,7 +29,19 @@ params = {
     "config_file" : hostfile_path,
     "hdfs_namenode" : "proj10",
     "hdfs_namenode_port" : 9000,
-    "input" : "hdfs:///jasper/SVHN",
+    "input" : "hdfs:///jasper/kdd12",
+    "kStaleness" : 0,
+    "kSpeculation" : 5,
+    "kModelType" : "SSP",  # {ASP/SSP/BSP/SparseSSP}
+    "kSparseSSPRecorderType" : "Vector",  # {Vector/Map}
+    "num_dims" : 54686452,
+    "batch_size" : 1,
+    "num_workers_per_node" : 2,
+    "num_servers_per_node" : 1,
+    "num_iters" : 1000,
+    "alpha" : 0.1, # learning rate
+    "with_injected_straggler" : 1,  # {0/1}
+    "kStorageType" : "Vector",  # {Vector/Map}
 }
 
 ssh_cmd = (
@@ -50,7 +62,7 @@ env_params = (
 
 # TODO: May need to ls before run to make sure the related files are synced.
 #clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; ulimit -c unlimited; "
-clear_cmd = "ls " + dirname(hostfile_path) + " > /dev/null; ls " + dirname(prog_path) + " > /dev/null; "
+clear_cmd = "ls " + dirname(hostfile_path) + " > /dev/null; ls " + dirname(prog_path) + " > /dev/null;"
 
 with open(hostfile_path, "r") as f:
   hostlist = []
