@@ -1,7 +1,7 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
 file(GLOB lib-src-files
-	labeled_point.cpp
+	libsvm_parser.cpp
 	batch_data_sampler.cpp
 	)
 

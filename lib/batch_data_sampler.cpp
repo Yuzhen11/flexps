@@ -51,8 +51,8 @@ class BatchDataSampler {
               cur_pos = 0;
         }
         for (auto data : batch_data_) {
-            for (auto field : data->x) {
-              s.insert(field.fea);
+            for (auto field : data->first) {
+              s.insert(field.first);
             }
         }
         for (auto k : s) {

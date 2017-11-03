@@ -10,8 +10,9 @@
 
 #include "boost/utility/string_ref.hpp"
 #include "base/serialization.hpp"
+#include "io/hdfs_manager.hpp"
 #include "lib/batch_data_sampler.cpp"
-#include "lib/load_data.cpp"
+#include "lib/libsvm_parser.cpp"
 #include "driver/engine.hpp"
 #include "worker/kv_client_table.hpp"
 
@@ -34,8 +35,6 @@ DEFINE_int32(with_injected_straggler, 0, "with injected straggler or not, 0/1");
 DEFINE_int32(num_servers_per_node, 1, "num_servers_per_node");
 DEFINE_double(alpha, 0.1, "learning rate");
 
-using flexps::LabeledPointHObj;
-
 namespace flexps {
 
 template<typename T>
@@ -46,14 +45,14 @@ void test_error(third_party::SArray<float>& rets_w, std::vector<T>& data_) {
   for (int i = 0; i < data_.size(); ++i) {
     auto& data = data_[i];
     count = count + 1;
-    auto& x = data.x;
-    float y = data.y;
+    auto& x = data.first;
+    float y = data.second;
     if (y < 0)
       y = 0;
 
     float pred_y = 0.0;
     for (auto field : x)
-      pred_y += rets_w[field.fea] * field.val;
+      pred_y += rets_w[field.first] * field.second;
 
     pred_y = 1. / (1. + exp(-1 * pred_y));
     pred_y = (pred_y > 0.5) ? 1 : 0;
@@ -86,18 +85,46 @@ void Run() {
   config.master_host = nodes[0].hostname;
   config.hdfs_namenode = FLAGS_hdfs_namenode;
   config.hdfs_namenode_port = FLAGS_hdfs_namenode_port;
+
+  // DataObj = <feature<key, val>, label>
+  using DataObj = std::pair<std::vector<std::pair<int, float>>, float>;
+
   zmq::context_t* zmq_context = new zmq::context_t(1);
-  int num_threads_per_node = FLAGS_num_workers_per_node;
+  HDFSManager hdfs_manager(my_node, nodes, config, zmq_context, static_cast<int>(FLAGS_num_workers_per_node));
+  LOG(INFO) << "manager set up";
+  hdfs_manager.Start();
+  LOG(INFO) << "manager start";
 
-  // FeatureT, LabelT
-  using DataObj = LabeledPointHObj<float, float>;
-  std::vector<DataObj> data = load_data<DataObj>(my_node, nodes, config, num_threads_per_node);
+  std::vector<DataObj> data;
+  std::mutex mylock;
+  hdfs_manager.Run([my_node, &data, &mylock](HDFSManager::InputFormat* input_format, int local_tid) {
+    
+    DataObj this_obj;
+    while (input_format->HasRecord()) {
+      auto record = input_format->GetNextRecord();
+      if (record.empty()) return;
+      this_obj = libsvm_parser(record);
 
-  // 3. Start engine
+      mylock.lock();    
+      data.push_back(std::move(this_obj));
+      mylock.unlock();
+    }
+    LOG(INFO) << data.size() << " lines in (node, thread):(" 
+      << my_node.id << "," << local_tid << ")";
+  });
+  hdfs_manager.Stop();
+  LOG(INFO) << "Finished loading data!";
+  int count = 0;
+  for (int i = 0; i < 10; i++) {
+  count += data[i].first.size();
+  }
+  LOG(INFO) << "Estimated number of non-zero: " << count / 10;
+
+  // 2. Start engine
   Engine engine(my_node, nodes);
   engine.StartEverything();
 
-  // 4. Create tables
+  // 3. Create tables
   const int kTableId = 0;
   std::vector<third_party::Range> range;
   int num_total_servers = nodes.size() * FLAGS_num_servers_per_node;
@@ -182,23 +209,23 @@ void Run() {
         deltas.resize(keys.size(), 0.0);
 
         for (auto data : future_data_ptrs[i]) {  // iterate over the data in the batch
-            auto& x = data->x;
-            float y = data->y;
+            auto& x = data->first;
+            float y = data->second;
             if (y < 0)
                 y = 0;
             float pred_y = 0.0;
             int j = 0;
             for (auto field : x) {
-                while (keys[j] < field.fea)
+                while (keys[j] < field.first)
                     j += 1;
-                pred_y += params[j] * field.val;
+                pred_y += params[j] * field.second;
             }
             pred_y = 1. / (1. + exp(-1 * pred_y));
             j = 0;
             for (auto field : x) {
-                while (keys[j] < field.fea)
+                while (keys[j] < field.first)
                     j += 1;
-                deltas[j] += FLAGS_alpha * field.val * (y - pred_y);
+                deltas[j] += FLAGS_alpha * field.second * (y - pred_y);
             }
         }
         table.Add(keys, deltas);  // issue Push
@@ -236,23 +263,23 @@ void Run() {
         deltas.resize(keys.size(), 0.0);
         
         for (auto data : future_data_ptrs[i]) {  // iterate over the data in the batch
-            auto& x = data->x;
-            float y = data->y;
+            auto& x = data->first;
+            float y = data->second;
             if (y < 0)
                 y = 0;
             float pred_y = 0.0;
             int j = 0;
             for (auto field : x) {
-                while (keys[j] < field.fea)
+                while (keys[j] < field.first)
                     j += 1;
-                pred_y += params[j] * field.val;
+                pred_y += params[j] * field.second;
             }
             pred_y = 1. / (1. + exp(-1 * pred_y));
             j = 0;
             for (auto field : x) {
-                while (keys[j] < field.fea)
+                while (keys[j] < field.first)
                     j += 1;
-                deltas[j] += FLAGS_alpha * field.val * (y - pred_y);
+                deltas[j] += FLAGS_alpha * field.second * (y - pred_y);
             }
         }
 
