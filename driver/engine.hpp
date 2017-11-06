@@ -9,7 +9,6 @@
 #include "worker/worker_helper_thread.hpp"
 #include "worker/app_blocker.hpp"
 #include "worker/simple_range_manager.hpp"
-#include "worker/model_init_thread.hpp"
 #include "server/server_thread.hpp"
 #include "server/server_thread_group.hpp"
 #include "server/map_storage.hpp"
@@ -48,7 +47,7 @@ class Engine {
    * The flow of starting the engine:
    * 1. Create an id_mapper and a mailbox
    * 2. Start Sender
-   * 3. Create ServerThreads, WorkerHelperThreads and ModelInitThread
+   * 3. Create ServerThreads and WorkerHelperThreads
    * 4. Register the threads to mailbox through ThreadsafeQueue
    * 5. Start the mailbox: bind and connect to all other nodes
    */
@@ -57,7 +56,6 @@ class Engine {
   void CreateMailbox();
   void StartServerThreads();
   void StartWorkerHelperThreads();
-  void StartModelInitThread();
   void StartMailbox();
   void StartSender();
 
@@ -66,12 +64,11 @@ class Engine {
    * 1. Stop the Sender
    * 2. Stop the mailbox: by Barrier() and then exit
    * 3. The mailbox will stop the corresponding registered threads
-   * 4. Stop the ServerThreads, WorkerHelperThreads and ModelInitThread
+   * 4. Stop the ServerThreads and WorkerHelperThreads
    */
   void StopEverything();
   void StopServerThreads();
   void StopWorkerHelperThreads();
-  void StopModelInitThread();
   void StopSender();
   void StopMailbox();
  
@@ -98,7 +95,6 @@ class Engine {
   // worker elements
   std::unique_ptr<AppBlocker> app_blocker_;
   std::unique_ptr<WorkerHelperThread> worker_helper_thread_;
-  std::unique_ptr<ModelInitThread> model_init_thread_;
   // server elements
   std::unique_ptr<ServerThreadGroup> server_thread_group_;
 };

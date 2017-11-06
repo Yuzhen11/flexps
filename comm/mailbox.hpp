@@ -18,6 +18,7 @@ class Mailbox : public AbstractMailbox {
  public:
   Mailbox(const Node& node, const std::vector<Node>& nodes, AbstractIdMapper* id_mapper);
   void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue);
+  void DeregisterQueue(uint32_t queue_id);
   virtual int Send(const Message& msg) override;
   int Recv(Message* msg);
   void Start();

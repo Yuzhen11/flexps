@@ -14,7 +14,6 @@ void Engine::StartEverything(int num_server_thread_per_node) {
   StartSender();
   StartServerThreads();
   StartWorkerHelperThreads();
-  StartModelInitThread();
   StartMailbox();
   LOG(INFO) << "StartEverything in Node: " << node_.id;
 }
@@ -61,16 +60,6 @@ void Engine::StartServerThreads() {
   VLOG(1) << "server_threads:" << ss.str() << " start on node:" << node_.id;
 }
 
-void Engine::StartModelInitThread() {
-  CHECK(id_mapper_);
-  CHECK(mailbox_);
-  uint32_t model_init_thread_id = id_mapper_->GetModelInitThreadForId(node_.id);
-  model_init_thread_.reset(new ModelInitThread(model_init_thread_id, sender_->GetMessageQueue()));
-  mailbox_->RegisterQueue(model_init_thread_->GetThreadId(), model_init_thread_->GetWorkQueue());
-  model_init_thread_->Start();
-  VLOG(1) << "model_init_thread:" << model_init_thread_->GetThreadId() << " starts on node:" << node_.id;
-}
-
 void Engine::StartMailbox() {
   CHECK(mailbox_);
   VLOG(1) << mailbox_->GetQueueMapSize() << " threads are registered to node:" << node_.id;
@@ -83,7 +72,6 @@ void Engine::StopEverything() {
   StopSender();
   StopServerThreads();
   StopWorkerHelperThreads();
-  StopModelInitThread();
   LOG(INFO) << "StopEverything in Node: " << node_.id;
 }
 
@@ -99,12 +87,6 @@ void Engine::StopServerThreads() {
     server_thread->Stop();
   }
   VLOG(1) << "server_threads stop on node" << node_.id;
-}
-
-void Engine::StopModelInitThread() {
-  CHECK(model_init_thread_);
-  model_init_thread_->Stop();
-  VLOG(1) << "model_init_thread stops on node" << node_.id;
 }
 
 void Engine::StopSender() {
@@ -145,9 +127,37 @@ void Engine::RegisterRangeManager(uint32_t table_id,
 
 
 void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids) {
-  CHECK(model_init_thread_);
+  CHECK(id_mapper_);
+  CHECK(mailbox_);
   std::vector<uint32_t> local_servers = id_mapper_->GetServerThreadsForId(node_.id);
-  model_init_thread_->ResetWorkerInModel(table_id, local_servers, worker_ids);
+  int count = local_servers.size();
+  if (count == 0)
+    return;
+  // Register receiving queue
+  auto id = id_mapper_->AllocateWorkerThread(node_.id);  // TODO allocate background thread?
+  ThreadsafeQueue<Message> queue;
+  mailbox_->RegisterQueue(id, &queue);
+  // Create and send reset worker message
+  Message reset_msg;
+  reset_msg.meta.flag = Flag::kResetWorkerInModel;
+  reset_msg.meta.model_id = table_id;
+  reset_msg.meta.sender = id;
+  reset_msg.AddData(third_party::SArray<uint32_t>(worker_ids));
+  for (auto local_server : local_servers) {
+    reset_msg.meta.recver = local_server;
+    sender_->GetMessageQueue()->Push(reset_msg);
+  }
+  // Wait for reply
+  Message reply;
+  while (count > 0) {
+    queue.WaitAndPop(&reply);
+    CHECK(reply.meta.flag == Flag::kResetWorkerInModel);
+    CHECK(reply.meta.model_id == table_id);
+    --count;
+  }
+  // Free receiving queue
+  mailbox_->DeregisterQueue(id);
+  id_mapper_->DeallocateWorkerThread(node_.id, id);
   Barrier();  // TODO: Now for each InitTable we will invoke a barrier.
 }
 

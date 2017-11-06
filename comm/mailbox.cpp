@@ -119,6 +119,11 @@ void Mailbox::RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const q
   queue_map_.insert({queue_id, queue});
 }
 
+void Mailbox::DeregisterQueue(uint32_t queue_id) {
+  CHECK(queue_map_.find(queue_id) != queue_map_.end());
+  queue_map_.erase(queue_id);
+}
+
 void Mailbox::Receiving() {
   VLOG(1) << "Start receiving";
   while (true) {
