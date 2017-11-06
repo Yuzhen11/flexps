@@ -158,17 +158,20 @@ void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_id
   // Free receiving queue
   mailbox_->DeregisterQueue(id);
   id_mapper_->DeallocateWorkerThread(node_.id, id);
-  Barrier();  // TODO: Now for each InitTable we will invoke a barrier.
 }
 
 void Engine::Run(const MLTask& task) {
   CHECK(task.IsSetup());
-  const std::vector<uint32_t>& tables = task.GetTables();
   WorkerSpec worker_spec = AllocateWorkers(task.GetWorkerAlloc());
+
   // Init tables
+  const std::vector<uint32_t>& tables = task.GetTables();
   for (auto table : tables) {
     InitTable(table, worker_spec.GetAllThreadIds());
   }
+  Barrier();
+
+  // Spawn user threads
   if (worker_spec.HasLocalWorkers(node_.id)) {
     const auto& local_threads = worker_spec.GetLocalThreads(node_.id);
     const auto& local_workers = worker_spec.GetLocalWorkers(node_.id);

@@ -115,11 +115,13 @@ void Mailbox::Bind(const Node& node) {
 }
 
 void Mailbox::RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue) {
+  std::lock_guard<std::mutex> lk(mu_);
   CHECK(queue_map_.find(queue_id) == queue_map_.end());
   queue_map_.insert({queue_id, queue});
 }
 
 void Mailbox::DeregisterQueue(uint32_t queue_id) {
+  std::lock_guard<std::mutex> lk(mu_);
   CHECK(queue_map_.find(queue_id) != queue_map_.end());
   queue_map_.erase(queue_id);
 }
@@ -135,7 +137,7 @@ void Mailbox::Receiving() {
     if (msg.meta.flag == Flag::kExit) {
       break;
     } else if (msg.meta.flag == Flag::kBarrier) {
-      std::unique_lock<std::mutex> lk(mu_);
+      std::unique_lock<std::mutex> lk(barrier_mu_);
       barrier_count_ += 1;
       if (barrier_count_ == nodes_.size()) {
         VLOG(1) << "Collected " << nodes_.size() << " barrier, Node:"
@@ -269,7 +271,7 @@ void Mailbox::Barrier() {
     barrier_msg.meta.flag = Flag::kBarrier;
     Send(barrier_msg);
   }
-  std::unique_lock<std::mutex> lk(mu_);
+  std::unique_lock<std::mutex> lk(barrier_mu_);
   // Very tricky. Consider to use all-one-all method instead of all-all.
   barrier_cond_.wait(lk, [this]() { return barrier_count_ >= nodes_.size(); });
   barrier_count_ -= nodes_.size();

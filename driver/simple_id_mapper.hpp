@@ -27,7 +27,6 @@ class SimpleIdMapper : public AbstractIdMapper {
 
   std::vector<uint32_t> GetServerThreadsForId(uint32_t node_id);
   std::vector<uint32_t> GetWorkerHelperThreadsForId(uint32_t node_id);
-  uint32_t GetModelInitThreadForId(uint32_t node_id);
   std::vector<uint32_t> GetWorkerThreadsForId(uint32_t node_id);
 
   std::vector<uint32_t> GetAllServerThreads();
@@ -38,10 +37,8 @@ class SimpleIdMapper : public AbstractIdMapper {
   // Their ids are [0, 100) for node id 0.
   static const uint32_t kMaxBgThreadsPerNode = 100;
   // The server thread id for node 0 is in [0, 50)
-  // The worker helper thread's id for node id 0 is in [50, 70)
+  // The worker helper thread's id for node id 0 is in [50, 100)
   static const uint32_t kWorkerHelperThreadId = 50;
-  // The model init thread's id for node id 0 is in [70, 100)
-  static const uint32_t kModelInitThreadId = 70;
 
  private:
   // The server thread's id in each node

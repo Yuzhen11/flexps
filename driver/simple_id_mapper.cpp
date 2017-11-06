@@ -8,7 +8,6 @@ const uint32_t SimpleIdMapper::kMaxNodeId;
 const uint32_t SimpleIdMapper::kMaxThreadsPerNode;
 const uint32_t SimpleIdMapper::kMaxBgThreadsPerNode;
 const uint32_t SimpleIdMapper::kWorkerHelperThreadId;
-const uint32_t SimpleIdMapper::kModelInitThreadId;
 
 void SimpleIdMapper::Init(int num_server_threads_per_node) {
   CHECK_GT(num_server_threads_per_node, 0);
@@ -23,10 +22,6 @@ void SimpleIdMapper::Init(int num_server_threads_per_node) {
     // Only 1 worker helper thread now
     // {10, 1010, 2010, ...} are worker helper threads
     node2worker_helper_[node.id].push_back(node.id * kMaxThreadsPerNode + kWorkerHelperThreadId);
-
-    // Only 1 model init thread
-    // {20, 1020, 2020, ...} are model init threads
-    node2model_init_[node.id] = node.id * kMaxThreadsPerNode + kModelInitThreadId;
   }
 }
 
@@ -60,10 +55,6 @@ std::vector<uint32_t> SimpleIdMapper::GetServerThreadsForId(uint32_t node_id) {
 
 std::vector<uint32_t> SimpleIdMapper::GetWorkerHelperThreadsForId(uint32_t node_id) {
   return node2worker_helper_[node_id];
-}
-
-uint32_t SimpleIdMapper::GetModelInitThreadForId(uint32_t node_id) {
-  return node2model_init_[node_id];
 }
 
 std::vector<uint32_t> SimpleIdMapper::GetWorkerThreadsForId(uint32_t node_id) {
