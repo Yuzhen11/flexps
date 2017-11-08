@@ -68,7 +68,6 @@ void Engine::StartMailbox() {
 }
 
 void Engine::StopEverything() {
-  LOG(INFO) << "Stop mailbox";
   StopMailbox();
   StopSender();
   StopServerThreads();
