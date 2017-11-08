@@ -26,6 +26,9 @@ class FakeMailbox : public AbstractMailbox {
     return -1;
   }
 
+  virtual void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue) override {}
+  virtual void DeregisterQueue(uint32_t queue_id) override {}
+
   void WaitAndPop(Message* msg) {
     to_send_.WaitAndPop(msg);
   }

@@ -3,10 +3,12 @@
 #include <sstream>
 
 #include "base/threadsafe_queue.hpp"
+#include "comm/abstract_mailbox.hpp"
 #include "worker/simple_range_manager.hpp"
 #include "worker/abstract_callback_runner.hpp"
 
 #include "worker/kv_client_table.hpp"
+#include "worker/kv_table.hpp"
 #include "worker/sparse_kv_client_table.hpp"
 
 #include "glog/logging.h"
@@ -34,6 +36,9 @@ struct Info {
   KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const;
 
   template <typename Val>
+  KVTable<Val> CreateKVTable(uint32_t table_id) const; 
+
+  template <typename Val>
   SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, 
       uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const;
 
@@ -41,7 +46,7 @@ struct Info {
   ThreadsafeQueue<Message>* send_queue;
   std::map<uint32_t, SimpleRangeManager> range_manager_map;
   AbstractCallbackRunner* callback_runner;
-
+  AbstractMailbox* mailbox;
 };
 
 template <typename Val>
@@ -50,6 +55,14 @@ KVClientTable<Val> Info::CreateKVClientTable(uint32_t table_id) const {
   KVClientTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, callback_runner);
   return table;
 }
+
+template <typename Val>
+KVTable<Val> Info::CreateKVTable(uint32_t table_id) const {
+  CHECK(range_manager_map.find(table_id) != range_manager_map.end());
+  KVTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, mailbox);
+  return table;
+}
+
 template <typename Val>
 SparseKVClientTable<Val> Info::CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const {
   CHECK(range_manager_map.find(table_id) != range_manager_map.end());
