@@ -20,7 +20,7 @@ namespace flexps {
  * HDFSManager::Config config;
  * config.input = ...
  * ...
- * HDFSManager hdfs_manager(my_node, nodes, config, zmq_context, num_threads_per_node);
+ * HDFSManager hdfs_manager(my_node, nodes, config, zmq_context);
  * hdfs_manager.Start();
  * hdfs_manager.Run([](HDFSManager::InputFormat* input_format, int local_tid) {
  *   while (input_format->HasRecord()) {
@@ -32,14 +32,16 @@ namespace flexps {
 class HDFSManager {
  public:
   struct Config {
-    std::string input;
     std::string master_host;
-    std::string worker_host;
-    std::string hdfs_namenode;
     int master_port;
+    std::string worker_host;
     int worker_port;
+    std::string hdfs_namenode;
     int hdfs_namenode_port;
+    std::string input;
+    int num_local_load_thread;
   };
+
   struct InputFormat {
     LineInputFormat* infmt_;
     boost::string_ref record;
@@ -56,8 +58,7 @@ class HDFSManager {
     boost::string_ref GetNextRecord() { return record; }
   };
 
-  HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context,
-              int num_threads_per_node);
+  HDFSManager(Node node, const std::vector<Node>& nodes, const Config& config, zmq::context_t* zmq_context);
   void Start();
   void Run(const std::function<void(InputFormat*, int)>& func);
   void Stop();
@@ -68,7 +69,6 @@ class HDFSManager {
   const Config config_;
   Coordinator* coordinator_;
   zmq::context_t* zmq_context_;
-  const int num_threads_per_node_;
   std::thread hdfs_main_thread_;  // Only in Node0
 };
 

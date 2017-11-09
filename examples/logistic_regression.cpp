@@ -85,12 +85,13 @@ void Run() {
   config.master_host = nodes[0].hostname;
   config.hdfs_namenode = FLAGS_hdfs_namenode;
   config.hdfs_namenode_port = FLAGS_hdfs_namenode_port;
+  config.num_local_load_thread = FLAGS_num_workers_per_node;
 
   // DataObj = <feature<key, val>, label>
   using DataObj = std::pair<std::vector<std::pair<int, float>>, float>;
 
   zmq::context_t* zmq_context = new zmq::context_t(1);
-  HDFSManager hdfs_manager(my_node, nodes, config, zmq_context, static_cast<int>(FLAGS_num_workers_per_node));
+  HDFSManager hdfs_manager(my_node, nodes, config, zmq_context);
   LOG(INFO) << "manager set up";
   hdfs_manager.Start();
   LOG(INFO) << "manager start";
