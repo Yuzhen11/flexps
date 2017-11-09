@@ -136,10 +136,6 @@ void KVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
   {
     Message msg;
     recv_queue_.WaitAndPop(&msg);
-
-    if (msg.meta.flag == Flag::kExit)
-      break;
-
     bool recv_finish = false;
     recv_finish = tracker_.first == tracker_.second + 1 ? true : false;
     HandleMsg_(msg);

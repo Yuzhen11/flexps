@@ -27,9 +27,6 @@ class FakeMailbox : public AbstractMailbox {
     to_send_ = nullptr;
   } 
 
-  void WaitAndPop(Message* msg) {
-    to_send_->WaitAndPop(msg);
-  }
  private:
   ThreadsafeQueue<Message>* to_send_;
 };
