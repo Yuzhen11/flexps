@@ -190,6 +190,7 @@ void Engine::Run(const MLTask& task) {
       info.send_queue = sender_->GetMessageQueue();
       info.range_manager_map = range_manager_map_;  // Now I just copy it
       info.callback_runner = app_blocker_.get();
+      info.mailbox = mailbox_.get();
       thread_group[i] = std::thread([&task, info](){
         task.RunLambda(info);
       });
