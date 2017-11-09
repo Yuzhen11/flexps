@@ -19,6 +19,9 @@ namespace flexps {
 
 /*
  * Get (optional) -> Add (optional) -> Clock ->
+ *
+ * Unlike KVClientTable, KVTable directly registers its recv_queue_ to mailbox
+ * and thus no worker_helper_thread is needed.
  */
 template <typename Val>
 class KVTable {
@@ -52,12 +55,9 @@ class KVTable {
   uint32_t app_thread_id_;
   uint32_t model_id_;
 
-  // Do not need to protect this variable since:
-  // 1. Now we assume only 1 background thread using app_blocker
-  // 2. The Get() call will always wait for the result
-  // If we add more background threads later, we need to lock this.
   std::vector<KVPairs<Val>> recv_kvs_;
-  std::pair<uint32_t, uint32_t> tracker_;
+  uint32_t current_responses = 0;
+  uint32_t expected_responses = 0;
   // Not owned.
   ThreadsafeQueue<Message>* const send_queue_;
   // owned
@@ -77,6 +77,9 @@ KVTable<Val>::KVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue
       send_queue_(send_queue),
       range_manager_(range_manager),
       mailbox_(mailbox) {
+  // TODO: This is a workaround since the Engine::Run() supports KVClientTable and registers the same
+  // thread id to mailbox by default for the usage of KVClientTable, and thus the id is actually
+  // inside mailbox and is associated with the queue in worker_help_thread.
   mailbox_->DeregisterQueue(app_thread_id_);
   mailbox_->RegisterQueue(app_thread_id_, &recv_queue_);
 }
@@ -132,17 +135,15 @@ void KVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
   // 3. send
   Send_(sliced, false);
   // 4. wait request
-  while(tracker_.first != tracker_.second)
-  {
+  while (current_responses < expected_responses) {
     Message msg;
     recv_queue_.WaitAndPop(&msg);
-    bool recv_finish = false;
-    recv_finish = tracker_.first == tracker_.second + 1 ? true : false;
+    current_responses += 1;
     HandleMsg_(msg);
-    if (recv_finish) {
+    if (current_responses == expected_responses) {
       HandleFinish_(kvs, keys, vals);
+      current_responses = expected_responses = 0;
     }
-    tracker_.second += 1;
   }
 }
 
@@ -238,7 +239,8 @@ void KVTable<Val>::AddRequest_(const SlicedKVs& sliced) {
     if (sliced[i].first)
       num_reqs += 1;
   }
-  tracker_ = {num_reqs, 0};
+  current_responses = 0;
+  expected_responses = num_reqs;
 }
 
 template <typename Val>
@@ -248,7 +250,6 @@ void KVTable<Val>::HandleMsg_(Message& msg)
   KVPairs<Val> kvs;
   kvs.keys = msg.data[0];
   kvs.vals = msg.data[1];
-    // TODO: Need lock?
   recv_kvs_.push_back(kvs);
 }
 

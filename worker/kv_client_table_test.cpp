@@ -49,11 +49,11 @@ TEST_F(TestKVClientTable, VectorAdd) {
   EXPECT_EQ(m1.meta.recver, 0);
   EXPECT_EQ(m1.meta.model_id, kTestModelId);
   EXPECT_EQ(m1.meta.flag, Flag::kAdd);
-  EXPECT_EQ(m1.data.size(), 2);
+  ASSERT_EQ(m1.data.size(), 2);
   res_keys = m1.data[0];
   res_vals = m1.data[1];
-  EXPECT_EQ(res_keys.size(), 1);
-  EXPECT_EQ(res_vals.size(), 1);
+  ASSERT_EQ(res_keys.size(), 1);
+  ASSERT_EQ(res_vals.size(), 1);
   EXPECT_EQ(res_keys[0], 3);
   EXPECT_EQ(res_vals[0], float(0.1));
 
@@ -61,11 +61,11 @@ TEST_F(TestKVClientTable, VectorAdd) {
   EXPECT_EQ(m2.meta.recver, 1);
   EXPECT_EQ(m2.meta.model_id, kTestModelId);
   EXPECT_EQ(m2.meta.flag, Flag::kAdd);
-  EXPECT_EQ(m2.data.size(), 2);
+  ASSERT_EQ(m2.data.size(), 2);
   res_keys = m2.data[0];
   res_vals = m2.data[1];
-  EXPECT_EQ(res_keys.size(), 3);
-  EXPECT_EQ(res_vals.size(), 3);
+  ASSERT_EQ(res_keys.size(), 3);
+  ASSERT_EQ(res_vals.size(), 3);
   EXPECT_EQ(res_keys[0], 4);
   EXPECT_EQ(res_keys[1], 5);
   EXPECT_EQ(res_keys[2], 6);
@@ -95,19 +95,19 @@ TEST_F(TestKVClientTable, VectorGet) {
   EXPECT_EQ(m1.meta.recver, 0);
   EXPECT_EQ(m1.meta.model_id, kTestModelId);
   EXPECT_EQ(m1.meta.flag, Flag::kGet);
-  EXPECT_EQ(m1.data.size(), 1);
+  ASSERT_EQ(m1.data.size(), 1);
   third_party::SArray<Key> res_keys;
   res_keys = m1.data[0];
-  EXPECT_EQ(res_keys.size(), 1);
+  ASSERT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], 3);
 
   EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
   EXPECT_EQ(m2.meta.recver, 1);
   EXPECT_EQ(m2.meta.model_id, kTestModelId);
   EXPECT_EQ(m2.meta.flag, Flag::kGet);
-  EXPECT_EQ(m2.data.size(), 1);
+  ASSERT_EQ(m2.data.size(), 1);
   res_keys = m2.data[0];
-  EXPECT_EQ(res_keys.size(), 3);
+  ASSERT_EQ(res_keys.size(), 3);
   EXPECT_EQ(res_keys[0], 4);
   EXPECT_EQ(res_keys[1], 5);
   EXPECT_EQ(res_keys[2], 6);
@@ -144,11 +144,11 @@ TEST_F(TestKVClientTable, SArrayAdd) {
   EXPECT_EQ(m1.meta.recver, 0);
   EXPECT_EQ(m1.meta.model_id, kTestModelId);
   EXPECT_EQ(m1.meta.flag, Flag::kAdd);
-  EXPECT_EQ(m1.data.size(), 2);
+  ASSERT_EQ(m1.data.size(), 2);
   res_keys = m1.data[0];
   res_vals = m1.data[1];
-  EXPECT_EQ(res_keys.size(), 1);
-  EXPECT_EQ(res_vals.size(), 1);
+  ASSERT_EQ(res_keys.size(), 1);
+  ASSERT_EQ(res_vals.size(), 1);
   EXPECT_EQ(res_keys[0], 3);
   EXPECT_EQ(res_vals[0], float(0.1));
 
@@ -156,11 +156,11 @@ TEST_F(TestKVClientTable, SArrayAdd) {
   EXPECT_EQ(m2.meta.recver, 1);
   EXPECT_EQ(m2.meta.model_id, kTestModelId);
   EXPECT_EQ(m2.meta.flag, Flag::kAdd);
-  EXPECT_EQ(m2.data.size(), 2);
+  ASSERT_EQ(m2.data.size(), 2);
   res_keys = m2.data[0];
   res_vals = m2.data[1];
-  EXPECT_EQ(res_keys.size(), 3);
-  EXPECT_EQ(res_vals.size(), 3);
+  ASSERT_EQ(res_keys.size(), 3);
+  ASSERT_EQ(res_vals.size(), 3);
   EXPECT_EQ(res_keys[0], 4);
   EXPECT_EQ(res_keys[1], 5);
   EXPECT_EQ(res_keys[2], 6);
@@ -179,6 +179,7 @@ TEST_F(TestKVClientTable, SArrayGet) {
     third_party::SArray<float> vals;
     table.Get(keys, &vals);  // {3,4,5,6} -> {3}, {4,5,6}
     third_party::SArray<float> expected{0.1, 0.4, 0.2, 0.3};
+    ASSERT_EQ(vals.size(), 4);
     EXPECT_EQ(vals[0], expected[0]);
     EXPECT_EQ(vals[1], expected[1]);
     EXPECT_EQ(vals[2], expected[2]);
@@ -193,19 +194,19 @@ TEST_F(TestKVClientTable, SArrayGet) {
   EXPECT_EQ(m1.meta.recver, 0);
   EXPECT_EQ(m1.meta.model_id, kTestModelId);
   EXPECT_EQ(m1.meta.flag, Flag::kGet);
-  EXPECT_EQ(m1.data.size(), 1);
+  ASSERT_EQ(m1.data.size(), 1);
   third_party::SArray<Key> res_keys;
   res_keys = m1.data[0];
-  EXPECT_EQ(res_keys.size(), 1);
+  ASSERT_EQ(res_keys.size(), 1);
   EXPECT_EQ(res_keys[0], 3);
 
   EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
   EXPECT_EQ(m2.meta.recver, 1);
   EXPECT_EQ(m2.meta.model_id, kTestModelId);
   EXPECT_EQ(m2.meta.flag, Flag::kGet);
-  EXPECT_EQ(m2.data.size(), 1);
+  ASSERT_EQ(m2.data.size(), 1);
   res_keys = m2.data[0];
-  EXPECT_EQ(res_keys.size(), 3);
+  ASSERT_EQ(res_keys.size(), 3);
   EXPECT_EQ(res_keys[0], 4);
   EXPECT_EQ(res_keys[1], 5);
   EXPECT_EQ(res_keys[2], 6);

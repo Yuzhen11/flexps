@@ -23,7 +23,7 @@ namespace flexps {
 template <typename Val>
 class KVClientTable {
  public:
-  KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
+  KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
                 const SimpleRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner);
 
   // The vector version
@@ -55,7 +55,7 @@ class KVClientTable {
   std::vector<KVPairs<Val>> recv_kvs_;
 
   // Not owned.
-  ThreadsafeQueue<Message>* const downstream_;
+  ThreadsafeQueue<Message>* const send_queue_;
   // Not owned.
   AbstractCallbackRunner* const callback_runner_;
   // Not owned.
@@ -63,12 +63,12 @@ class KVClientTable {
 };
 
 template <typename Val>
-KVClientTable<Val>::KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
+KVClientTable<Val>::KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
                                   const SimpleRangeManager* const range_manager,
                                   AbstractCallbackRunner* const callback_runner)
     : app_thread_id_(app_thread_id),
       model_id_(model_id),
-      downstream_(downstream),
+      send_queue_(send_queue),
       range_manager_(range_manager),
       callback_runner_(callback_runner) {
   callback_runner_->RegisterRecvHandle(app_thread_id_, model_id_, [&](Message& msg) {
@@ -218,7 +218,7 @@ void KVClientTable<Val>::Send_(const SlicedKVs& sliced, bool is_add) {
         msg.AddData(kvs.vals);
       }
     }
-    downstream_->Push(std::move(msg));
+    send_queue_->Push(std::move(msg));
   }
 }
 
@@ -232,7 +232,7 @@ void KVClientTable<Val>::Clock() {
     msg.meta.recver = server_id;
     msg.meta.model_id = model_id_;
     msg.meta.flag = Flag::kClock;
-    downstream_->Push(std::move(msg));
+    send_queue_->Push(std::move(msg));
   }
 }
 
