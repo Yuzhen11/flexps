@@ -6,7 +6,6 @@
 #include "base/third_party/sarray.h"
 #include "base/threadsafe_queue.hpp"
 
-#include "comm/abstract_mailbox.hpp"
 #include "worker/simple_range_manager.hpp"
 #include "worker/kvpairs.hpp"
 
@@ -18,137 +17,62 @@
 namespace flexps {
 
 /*
- * Get (optional) -> Add (optional) -> Clock ->
- *
- * Unlike KVClientTable, KVTable directly registers its recv_queue_ to mailbox
- * and thus no worker_helper_thread is needed.
+ * KVTableBox contains serveral operations shared by different KVTable.
  */
 template <typename Val>
-class KVTable {
+class KVTableBox {
  public:
-  KVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                const SimpleRangeManager* const range_manager, AbstractMailbox* const mailbox);
-
-  ~KVTable();
-  // The vector version
-  void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);
-  void Get(const std::vector<Key>& keys, std::vector<Val>* vals);
-  // The SArray version
-  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
-  void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals);
-
-  void Clock();
+  KVTableBox(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
+                const SimpleRangeManager* const range_manager);
 
   using SlicedKVs = std::vector<std::pair<bool, KVPairs<Val>>>;
 
- private:
-  template <typename C>
-  void Get_(const third_party::SArray<Key>& keys, C* vals);
+  void Clock();
+  void Slice(const KVPairs<Val>& send, SlicedKVs* sliced);
+  void Send(const SlicedKVs& sliced, bool is_add);
+  void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
+  int GetNumReqs(const SlicedKVs& sliced);
 
-  void Slice_(const KVPairs<Val>& send, SlicedKVs* sliced);
-  void Send_(const SlicedKVs& sliced, bool is_add);
-  void AddRequest_(const SlicedKVs& sliced);
-  void HandleMsg_(Message& msg);
+  void HandleMsg(Message& msg);
   template <typename C>
-  void HandleFinish_(KVPairs<Val>& kvs, const third_party::SArray<Key>& keys, C* vals);
+  void HandleFinish(KVPairs<Val>& kvs, const third_party::SArray<Key>& keys, C* vals);
 
   uint32_t app_thread_id_;
   uint32_t model_id_;
-
-  std::vector<KVPairs<Val>> recv_kvs_;
-  uint32_t current_responses = 0;
-  uint32_t expected_responses = 0;
+ private:
   // Not owned.
   ThreadsafeQueue<Message>* const send_queue_;
-  // owned
-  ThreadsafeQueue<Message> recv_queue_;
   // Not owned.
   const SimpleRangeManager* const range_manager_;
-  // Not owned.
-  AbstractMailbox* const mailbox_;
+
+  std::vector<KVPairs<Val>> recv_kvs_;
 };
 
 template <typename Val>
-KVTable<Val>::KVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                                  const SimpleRangeManager* const range_manager,
-                                  AbstractMailbox* const mailbox)
+KVTableBox<Val>::KVTableBox(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
+                                  const SimpleRangeManager* const range_manager)
     : app_thread_id_(app_thread_id),
       model_id_(model_id),
       send_queue_(send_queue),
-      range_manager_(range_manager),
-      mailbox_(mailbox) {
-  // TODO: This is a workaround since the Engine::Run() supports KVClientTable and registers the same
-  // thread id to mailbox by default for the usage of KVClientTable, and thus the id is actually
-  // inside mailbox and is associated with the queue in worker_help_thread.
-  mailbox_->DeregisterQueue(app_thread_id_);
-  mailbox_->RegisterQueue(app_thread_id_, &recv_queue_);
-}
-
-// vector version Add
-template <typename Val>
-void KVTable<Val>::Add(const std::vector<Key>& keys, const std::vector<Val>& vals) {
-  Add(third_party::SArray<Key>(keys), third_party::SArray<Val>(vals));
-}
-
-template <typename Val>
-KVTable<Val>::~KVTable(){
-  mailbox_->DeregisterQueue(app_thread_id_);
+      range_manager_(range_manager) {
 }
 
 // SArray version Add
 template <typename Val>
-void KVTable<Val>::Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {
+void KVTableBox<Val>::Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals) {
   KVPairs<Val> kvs;
   kvs.keys = keys;
   kvs.vals = vals;
   SlicedKVs sliced;
   // 1. slice
-  Slice_(kvs, &sliced);
+  Slice(kvs, &sliced);
   // 2. send
-  Send_(sliced, true);
+  Send(sliced, true);
 }
 
 
-// vector version Get 
 template <typename Val>
-void KVTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
-  Get_(third_party::SArray<Key>(keys), vals);
-}
-
-// SArray version Get
-template <typename Val>
-void KVTable<Val>::Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {
-  Get_(keys, vals);
-}
-
-// Internal version
-template <typename Val>
-template <typename C>
-void KVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
-  KVPairs<Val> kvs;
-  kvs.keys = keys;
-  SlicedKVs sliced;
-  // 1. slice
-  Slice_(kvs, &sliced);
-  // 2. add request
-  AddRequest_(sliced);
-  // 3. send
-  Send_(sliced, false);
-  // 4. wait request
-  while (current_responses < expected_responses) {
-    Message msg;
-    recv_queue_.WaitAndPop(&msg);
-    current_responses += 1;
-    HandleMsg_(msg);
-    if (current_responses == expected_responses) {
-      HandleFinish_(kvs, keys, vals);
-      current_responses = expected_responses = 0;
-    }
-  }
-}
-
-template <typename Val>
-void KVTable<Val>::Slice_(const KVPairs<Val>& send, SlicedKVs* sliced) {
+void KVTableBox<Val>::Slice(const KVPairs<Val>& send, SlicedKVs* sliced) {
   CHECK_NOTNULL(range_manager_);
   sliced->resize(range_manager_->GetNumServers());
   const auto& ranges = range_manager_->GetRanges();
@@ -194,7 +118,7 @@ void KVTable<Val>::Slice_(const KVPairs<Val>& send, SlicedKVs* sliced) {
 }
 
 template <typename Val>
-void KVTable<Val>::Send_(const SlicedKVs& sliced, bool is_add) {
+void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add) {
   CHECK_NOTNULL(range_manager_);
   const auto& server_thread_ids = range_manager_->GetServerThreadIds();
   CHECK_EQ(server_thread_ids.size(), sliced.size());
@@ -219,7 +143,7 @@ void KVTable<Val>::Send_(const SlicedKVs& sliced, bool is_add) {
 }
 
 template <typename Val>
-void KVTable<Val>::Clock() {
+void KVTableBox<Val>::Clock() {
   CHECK_NOTNULL(range_manager_);
   const auto& server_thread_ids = range_manager_->GetServerThreadIds();
   for (uint32_t server_id : server_thread_ids) {
@@ -233,19 +157,17 @@ void KVTable<Val>::Clock() {
 }
 
 template <typename Val>
-void KVTable<Val>::AddRequest_(const SlicedKVs& sliced) {
+int KVTableBox<Val>::GetNumReqs(const SlicedKVs& sliced) {
   int num_reqs = 0;
   for (size_t i = 0; i < sliced.size(); ++i) {
     if (sliced[i].first)
       num_reqs += 1;
   }
-  current_responses = 0;
-  expected_responses = num_reqs;
+  return num_reqs;
 }
 
 template <typename Val>
-void KVTable<Val>::HandleMsg_(Message& msg)
-{
+void KVTableBox<Val>::HandleMsg(Message& msg) {
   CHECK_EQ(msg.data.size(), 2);
   KVPairs<Val> kvs;
   kvs.keys = msg.data[0];
@@ -256,8 +178,7 @@ void KVTable<Val>::HandleMsg_(Message& msg)
 
 template <typename Val>
 template <typename C>
-void KVTable<Val>::HandleFinish_(KVPairs<Val>& kvs, const third_party::SArray<Key>& keys, C* vals)
-{
+void KVTableBox<Val>::HandleFinish(KVPairs<Val>& kvs, const third_party::SArray<Key>& keys, C* vals) {
   size_t total_key = 0, total_val = 0;
   for (const auto& s : recv_kvs_) {
     third_party::Range range = third_party::FindRange(kvs.keys, s.keys.front(), s.keys.back() + 1);

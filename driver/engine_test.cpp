@@ -218,7 +218,7 @@ TEST_F(TestEngine, KVClientTableVectorStorage) {
   engine.StopEverything();
 }
 
-TEST_F(TestEngine, KVTableMapStorage) {
+TEST_F(TestEngine, SimpleKVTableMapStorage) {
   Node node{0, "localhost", 12353};
   Engine engine(node, {node});
   // start
@@ -235,7 +235,7 @@ TEST_F(TestEngine, KVTableMapStorage) {
     LOG(INFO) << "Hi";
     LOG(INFO) << info.DebugString();
     ASSERT_TRUE(info.range_manager_map.find(kTableId) != info.range_manager_map.end());
-    KVTable<float> table(info.thread_id, kTableId, info.send_queue, &info.range_manager_map.find(kTableId)->second, info.mailbox);
+    SimpleKVTable<float> table(info.thread_id, kTableId, info.send_queue, &info.range_manager_map.find(kTableId)->second, info.mailbox);
     for (int i = 0; i < 5; ++ i) {
       std::vector<Key> keys{1};
       std::vector<float> vals{0.5};

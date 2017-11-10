@@ -8,7 +8,7 @@
 #include "worker/abstract_callback_runner.hpp"
 
 #include "worker/kv_client_table.hpp"
-#include "worker/kv_table.hpp"
+#include "worker/simple_kv_table.hpp"
 #include "worker/sparse_kv_client_table.hpp"
 
 #include "glog/logging.h"
@@ -36,7 +36,7 @@ struct Info {
   KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const;
 
   template <typename Val>
-  KVTable<Val> CreateKVTable(uint32_t table_id) const; 
+  SimpleKVTable<Val> CreateSimpleKVTable(uint32_t table_id) const; 
 
   template <typename Val>
   SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, 
@@ -57,9 +57,9 @@ KVClientTable<Val> Info::CreateKVClientTable(uint32_t table_id) const {
 }
 
 template <typename Val>
-KVTable<Val> Info::CreateKVTable(uint32_t table_id) const {
+SimpleKVTable<Val> Info::CreateSimpleKVTable(uint32_t table_id) const {
   CHECK(range_manager_map.find(table_id) != range_manager_map.end());
-  KVTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, mailbox);
+  SimpleKVTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, mailbox);
   return table;
 }
 

@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "glog/logging.h"
 
-#include "worker/kv_table.hpp"
+#include "worker/simple_kv_table.hpp"
 #include "worker/fake_callback_runner.hpp"
 #include "comm/abstract_mailbox.hpp"
 
@@ -32,10 +32,10 @@ class FakeMailbox : public AbstractMailbox {
 };
 
 
-class TestKVTable : public testing::Test {
+class TestSimpleKVTable : public testing::Test {
  public:
-  TestKVTable() {}
-  ~TestKVTable() {}
+  TestSimpleKVTable() {}
+  ~TestSimpleKVTable() {}
 
  protected:
   void SetUp() {}
@@ -45,18 +45,18 @@ class TestKVTable : public testing::Test {
 const uint32_t kTestAppThreadId = 15;
 const uint32_t kTestModelId = 23;
 
-TEST_F(TestKVTable, Init) {
+TEST_F(TestSimpleKVTable, Init) {
   ThreadsafeQueue<Message> queue;
   SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
-  KVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
+  SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
 }
 
-TEST_F(TestKVTable, VectorAdd) {
+TEST_F(TestSimpleKVTable, VectorAdd) {
   ThreadsafeQueue<Message> queue;
   SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
-  KVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
+  SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
   std::vector<Key> keys = {3, 4, 5, 6};
   std::vector<float> vals = {0.1, 0.1, 0.1, 0.1};
   table.Add(keys, vals);  // {3,4,5,6} -> {3}, {4,5,6}
@@ -95,12 +95,12 @@ TEST_F(TestKVTable, VectorAdd) {
   EXPECT_EQ(res_vals[2], float(0.1));
 }
 
-TEST_F(TestKVTable, VectorGet) {
+TEST_F(TestSimpleKVTable, VectorGet) {
   ThreadsafeQueue<Message> queue;
   SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   std::thread th([&queue, &manager, &fake_mailbox]() {
-    KVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
+    SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
     std::vector<Key> keys = {3, 4, 5, 6};
     std::vector<float> vals;
     table.Get(keys, &vals);  // {3,4,5,6} -> {3}, {4,5,6}
@@ -147,11 +147,11 @@ TEST_F(TestKVTable, VectorGet) {
   fake_mailbox.Send(r2);
   th.join();
 }
-TEST_F(TestKVTable, SArrayAdd) {
+TEST_F(TestSimpleKVTable, SArrayAdd) {
   ThreadsafeQueue<Message> queue;
   SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
-  KVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
+  SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
   third_party::SArray<Key> keys = {3, 4, 5, 6};
   third_party::SArray<float> vals = {0.1, 0.1, 0.1, 0.1};
   table.Add(keys, vals);  // {3,4,5,6} -> {3}, {4,5,6}
@@ -190,12 +190,12 @@ TEST_F(TestKVTable, SArrayAdd) {
   EXPECT_EQ(res_vals[2], float(0.1));
 }
 
-TEST_F(TestKVTable, SArrayGet) {
+TEST_F(TestSimpleKVTable, SArrayGet) {
   ThreadsafeQueue<Message> queue;
   SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   std::thread th([&queue, &manager, &fake_mailbox]() {
-    KVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
+    SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
     third_party::SArray<Key> keys = {3, 4, 5, 6};
     third_party::SArray<float> vals;
     table.Get(keys, &vals);  // {3,4,5,6} -> {3}, {4,5,6}
@@ -247,11 +247,11 @@ TEST_F(TestKVTable, SArrayGet) {
   th.join();
 }
 
-TEST_F(TestKVTable, Clock) {
+TEST_F(TestSimpleKVTable, Clock) {
   ThreadsafeQueue<Message> queue;
   SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
-  KVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
+  SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
   table.Clock();  // -> server 0 and server 1
   Message m1, m2;
   queue.WaitAndPop(&m1);
