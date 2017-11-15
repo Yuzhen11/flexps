@@ -47,9 +47,10 @@ void Run() {
   config.master_host = nodes[0].hostname;
   config.hdfs_namenode = FLAGS_hdfs_namenode;
   config.hdfs_namenode_port = FLAGS_hdfs_namenode_port;
-  config.num_local_load_thread = FLAGS_num_workers_per_node;
+  //config.num_local_load_thread = FLAGS_num_workers_per_node;
+  config.num_local_load_thread = 3;
 
-  using DataObj = std::string;
+  //using DataObj = std::string;
 
   zmq::context_t* zmq_context = new zmq::context_t(1);
   HDFSManager hdfs_manager(my_node, nodes, config, zmq_context);
@@ -57,18 +58,19 @@ void Run() {
   hdfs_manager.Start();
   LOG(INFO) << "manager start";
 
-  std::vector<DataObj> data;
+  std::vector<std::string> data;
   std::mutex mylock;
   hdfs_manager.Run([my_node, &data, &mylock](HDFSManager::InputFormat* input_format, int local_tid) {
     
-    DataObj this_obj;
+    //DataObj this_obj;
     while (input_format->HasRecord()) {
       auto record = input_format->GetNextRecord();
       if (record.empty()) return;
-      this_obj = libsvm_parser(record);
+      //this_obj = libsvm_parser(record);
+      //data.push_back(std::string(record.begin(), record.end()));
 
       mylock.lock();    
-      data.push_back(std::move(this_obj));
+      data.push_back(std::string(record.begin(), record.end()));
       mylock.unlock();
 
     }
@@ -77,8 +79,8 @@ void Run() {
   });
   hdfs_manager.Stop();
   LOG(INFO) << "Finished loading data!";
-  for (auto line: record) {
-    LOG(INFO) << "read line = " << line;
+  for (auto record: data) {
+    LOG(INFO) << "read record = " << record;
   }
   // 1. Start engine
   Engine engine(my_node, nodes);
@@ -101,7 +103,7 @@ void Run() {
   engine.Barrier();
   
   // Load training data
-  /*
+  
   DataLoader data_loader("/home/ubuntu/Git_Project/flexps_bak/flexps/examples/gbdt/data/40_data_train.dat", "\t");
   const std::vector<std::vector<float>> & all_feat_vect_list = data_loader.get_feat_vect_list();
   const std::vector<float> & all_class_vect = data_loader.get_class_vect();
@@ -118,7 +120,7 @@ void Run() {
 
   // Find data size of dataset
   const int & data_num = all_feat_vect_list[0].size();
-  */
+  
 
   // 3. Construct tasks
   MLTask task;
@@ -206,7 +208,7 @@ void Run() {
   });
 
   // 4. Run tasks
-  engine.Run(task);
+  //engine.Run(task);
 
   // 5. Stop engine
   engine.StopEverything();
