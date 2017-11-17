@@ -166,8 +166,8 @@ TEST_F(TestEngine, KVClientTableMapStorage) {
   task.SetLambda([kTableId](const Info& info){
     LOG(INFO) << "Hi";
     LOG(INFO) << info.DebugString();
-    ASSERT_TRUE(info.range_manager_map.find(kTableId) != info.range_manager_map.end());
-    KVClientTable<float> table(info.thread_id, kTableId, info.send_queue, &info.range_manager_map.find(kTableId)->second, info.callback_runner);
+    ASSERT_TRUE(info.partition_manager_map.find(kTableId) != info.partition_manager_map.end());
+    KVClientTable<float> table(info.thread_id, kTableId, info.send_queue, info.partition_manager_map.find(kTableId)->second, info.callback_runner);
     for (int i = 0; i < 5; ++ i) {
       std::vector<Key> keys{1};
       std::vector<float> vals{0.5};
@@ -200,8 +200,8 @@ TEST_F(TestEngine, KVClientTableVectorStorage) {
   task.SetLambda([kTableId](const Info& info){
     LOG(INFO) << "Hi";
     LOG(INFO) << info.DebugString();
-    ASSERT_TRUE(info.range_manager_map.find(kTableId) != info.range_manager_map.end());
-    KVClientTable<float> table(info.thread_id, kTableId, info.send_queue, &info.range_manager_map.find(kTableId)->second, info.callback_runner);
+    ASSERT_TRUE(info.partition_manager_map.find(kTableId) != info.partition_manager_map.end());
+    KVClientTable<float> table(info.thread_id, kTableId, info.send_queue, info.partition_manager_map.find(kTableId)->second, info.callback_runner);
     for (int i = 0; i < 5; ++ i) {
       std::vector<Key> keys{1};
       std::vector<float> vals{0.5};
@@ -234,8 +234,8 @@ TEST_F(TestEngine, SimpleKVTableMapStorage) {
   task.SetLambda([kTableId](const Info& info){
     LOG(INFO) << "Hi";
     LOG(INFO) << info.DebugString();
-    ASSERT_TRUE(info.range_manager_map.find(kTableId) != info.range_manager_map.end());
-    SimpleKVTable<float> table(info.thread_id, kTableId, info.send_queue, &info.range_manager_map.find(kTableId)->second, info.mailbox);
+    ASSERT_TRUE(info.partition_manager_map.find(kTableId) != info.partition_manager_map.end());
+    SimpleKVTable<float> table(info.thread_id, kTableId, info.send_queue, info.partition_manager_map.find(kTableId)->second, info.mailbox);
     for (int i = 0; i < 5; ++ i) {
       std::vector<Key> keys{1};
       std::vector<float> vals{0.5};

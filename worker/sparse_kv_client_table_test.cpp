@@ -26,7 +26,7 @@ const uint32_t kTestModelId = 23;
 
 TEST_F(TestSparseKVClientTable, Init) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<std::vector<Key>> keys{{2, 5}, {2, 5}};
@@ -36,7 +36,7 @@ TEST_F(TestSparseKVClientTable, Init) {
 
 TEST_F(TestSparseKVClientTable, VectorGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<std::vector<Key>> keys{{2, 5}, {3, 6}};
@@ -116,7 +116,7 @@ TEST_F(TestSparseKVClientTable, VectorGet) {
 
 TEST_F(TestSparseKVClientTable, VectorGetAdd) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<std::vector<Key>> keys{{2, 5}, {3, 6}};
@@ -229,7 +229,7 @@ TEST_F(TestSparseKVClientTable, VectorGetAdd) {
 
 TEST_F(TestSparseKVClientTable, VectorGetAddGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<std::vector<Key>> keys{{2, 5}, {3, 6}, {7}};
@@ -388,7 +388,7 @@ TEST_F(TestSparseKVClientTable, VectorGetAddGet) {
 
 TEST_F(TestSparseKVClientTable, SArrayGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<std::vector<Key>> keys{{2, 5}, {3, 6}};
@@ -469,7 +469,7 @@ TEST_F(TestSparseKVClientTable, SArrayGet) {
 
 TEST_F(TestSparseKVClientTable, SArrayGetAdd) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<third_party::SArray<Key>> keys{{2, 5}, {3, 6}};
@@ -583,7 +583,7 @@ TEST_F(TestSparseKVClientTable, SArrayGetAdd) {
 
 TEST_F(TestSparseKVClientTable, SArrayGetAddGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}, {7, 10}}, {0, 1, 2});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   const int kSpeculation = 1;
   const std::vector<third_party::SArray<Key>> keys{{2, 5}, {3, 6}, {7}};

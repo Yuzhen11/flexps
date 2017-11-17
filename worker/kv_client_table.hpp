@@ -3,6 +3,7 @@
 #include "kv_table_box.hpp"
 
 #include "worker/abstract_callback_runner.hpp"
+#include "worker/abstract_partition_manager.hpp"
 
 namespace flexps {
 
@@ -19,7 +20,7 @@ template <typename Val>
 class KVClientTable {
  public:
   KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                const SimpleRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner);
+                const AbstractPartitionManager* const partition_manager, AbstractCallbackRunner* const callback_runner);
 
   // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);
@@ -30,7 +31,7 @@ class KVClientTable {
 
   void Clock();
 
-  using SlicedKVs = std::vector<std::pair<bool, KVPairs<Val>>>;
+  using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 
  private:
   template <typename C>
@@ -45,13 +46,11 @@ class KVClientTable {
 
 template <typename Val>
 KVClientTable<Val>::KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                                  const SimpleRangeManager* const range_manager,
+                                  const AbstractPartitionManager* const partition_manager,
                                   AbstractCallbackRunner* const callback_runner)
-    : kv_table_box_(app_thread_id, model_id, send_queue, range_manager),
-      callback_runner_(callback_runner) {
-  callback_runner_->RegisterRecvHandle(kv_table_box_.app_thread_id_, kv_table_box_.model_id_, [&](Message& msg) {
-    kv_table_box_.HandleMsg(msg);
-  });
+    : kv_table_box_(app_thread_id, model_id, send_queue, partition_manager), callback_runner_(callback_runner) {
+  callback_runner_->RegisterRecvHandle(kv_table_box_.app_thread_id_, kv_table_box_.model_id_,
+                                       [&](Message& msg) { kv_table_box_.HandleMsg(msg); });
 }
 
 // vector version Add
@@ -66,7 +65,7 @@ void KVClientTable<Val>::Add(const third_party::SArray<Key>& keys, const third_p
   kv_table_box_.Add(third_party::SArray<Key>(keys), third_party::SArray<Val>(vals));
 }
 
-// vector version Get 
+// vector version Get
 template <typename Val>
 void KVClientTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
   Get_(third_party::SArray<Key>(keys), vals);
@@ -82,15 +81,14 @@ void KVClientTable<Val>::Get(const third_party::SArray<Key>& keys, third_party::
 template <typename Val>
 template <typename C>
 void KVClientTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
-  KVPairs<Val> kvs;
+  KVPairs<char> kvs;
   kvs.keys = keys;
   SlicedKVs sliced;
   // 1. slice
   kv_table_box_.Slice(kvs, &sliced);
   // 2. register handle
-  callback_runner_->RegisterRecvFinishHandle(kv_table_box_.app_thread_id_, kv_table_box_.model_id_, [&]() {
-    kv_table_box_.HandleFinish(kvs, keys, vals);
-  });
+  callback_runner_->RegisterRecvFinishHandle(kv_table_box_.app_thread_id_, kv_table_box_.model_id_,
+                                             [&]() { kv_table_box_.HandleFinish(keys, vals); });
   // 3. add request
   int num_reqs = kv_table_box_.GetNumReqs(sliced);
   callback_runner_->NewRequest(kv_table_box_.app_thread_id_, kv_table_box_.model_id_, num_reqs);

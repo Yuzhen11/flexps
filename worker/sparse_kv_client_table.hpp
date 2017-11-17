@@ -7,8 +7,9 @@
 #include "base/threadsafe_queue.hpp"
 
 #include "worker/abstract_callback_runner.hpp"
-#include "worker/simple_range_manager.hpp"
+#include "worker/abstract_partition_manager.hpp"
 #include "worker/kvpairs.hpp"
+#include "worker/simple_range_manager.hpp"
 
 #include "glog/logging.h"
 
@@ -22,8 +23,8 @@ namespace flexps {
  *
  * Get (requried) -> Add (optional) ->
  *
- * Get -> Add -> 
- * Get(Clock) -> Add -> 
+ * Get -> Add ->
+ * Get(Clock) -> Add ->
  * Get(Clock) -> Add ->
  * ...
  */
@@ -31,12 +32,14 @@ template <typename Val>
 class SparseKVClientTable {
  public:
   SparseKVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
-                const SimpleRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner,
-                uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys);
+                      const AbstractPartitionManager* const partition_manager,
+                      AbstractCallbackRunner* const callback_runner, uint32_t speculation,
+                      const std::vector<third_party::SArray<Key>>& keys);
 
   SparseKVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
-                const SimpleRangeManager* const range_manager, AbstractCallbackRunner* const callback_runner,
-                uint32_t speculation, const std::vector<std::vector<Key>>& keys);
+                      const AbstractPartitionManager* const partition_manager,
+                      AbstractCallbackRunner* const callback_runner, uint32_t speculation,
+                      const std::vector<std::vector<Key>>& keys);
 
   // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);
@@ -45,14 +48,14 @@ class SparseKVClientTable {
   void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
   void Get(third_party::SArray<Val>* vals);
 
-  using SlicedKVs = std::vector<std::pair<bool, KVPairs<Val>>>;
+  using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 
  private:
   template <typename C>
   void Get_(C* vals);
 
   void Clock_();
-  int Slice_(const KVPairs<Val>& send, SlicedKVs* sliced);
+  int Slice_(const KVPairs<char>& send, SlicedKVs* sliced);
   void Send_(const SlicedKVs& sliced, bool is_add, int version);
   void AddRequest_(const SlicedKVs& sliced);
   void Setup_();
@@ -71,7 +74,7 @@ class SparseKVClientTable {
   // Not owned.
   AbstractCallbackRunner* const callback_runner_;
   // Not owned.
-  const SimpleRangeManager* const range_manager_;
+  const AbstractPartitionManager* const partition_manager_;
 
   int speculation_;
   std::vector<third_party::SArray<Key>> keys_;
@@ -81,14 +84,15 @@ class SparseKVClientTable {
 };
 
 template <typename Val>
-SparseKVClientTable<Val>::SparseKVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
-                                  const SimpleRangeManager* const range_manager,
-                                  AbstractCallbackRunner* const callback_runner,
-                                  uint32_t speculation, const std::vector<std::vector<Key>>& keys)
+SparseKVClientTable<Val>::SparseKVClientTable(uint32_t app_thread_id, uint32_t model_id,
+                                              ThreadsafeQueue<Message>* const downstream,
+                                              const AbstractPartitionManager* const partition_manager,
+                                              AbstractCallbackRunner* const callback_runner, uint32_t speculation,
+                                              const std::vector<std::vector<Key>>& keys)
     : app_thread_id_(app_thread_id),
       model_id_(model_id),
       downstream_(downstream),
-      range_manager_(range_manager),
+      partition_manager_(partition_manager),
       callback_runner_(callback_runner),
       speculation_(speculation) {
   for (auto& key : keys) {
@@ -98,17 +102,18 @@ SparseKVClientTable<Val>::SparseKVClientTable(uint32_t app_thread_id, uint32_t m
 }
 
 template <typename Val>
-SparseKVClientTable<Val>::SparseKVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const downstream,
-                                  const SimpleRangeManager* const range_manager,
-                                  AbstractCallbackRunner* const callback_runner,
-                                  uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys)
+SparseKVClientTable<Val>::SparseKVClientTable(uint32_t app_thread_id, uint32_t model_id,
+                                              ThreadsafeQueue<Message>* const downstream,
+                                              const AbstractPartitionManager* const partition_manager,
+                                              AbstractCallbackRunner* const callback_runner, uint32_t speculation,
+                                              const std::vector<third_party::SArray<Key>>& keys)
     : app_thread_id_(app_thread_id),
       model_id_(model_id),
       downstream_(downstream),
-      range_manager_(range_manager),
+      partition_manager_(partition_manager),
       callback_runner_(callback_runner),
       speculation_(speculation),
-      keys_(keys){
+      keys_(keys) {
   Setup_();
 }
 
@@ -138,7 +143,7 @@ void SparseKVClientTable<Val>::Add(const third_party::SArray<Key>& keys, const t
   add_count_ += 1;
   CHECK_EQ(get_count_, add_count_);
 
-  KVPairs<Val> kvs;
+  KVPairs<char> kvs;
   kvs.keys = keys;
   kvs.vals = vals;
   SlicedKVs sliced;
@@ -148,7 +153,7 @@ void SparseKVClientTable<Val>::Add(const third_party::SArray<Key>& keys, const t
   Send_(sliced, true, get_count_ - 1);
 }
 
-// vector version Get 
+// vector version Get
 template <typename Val>
 void SparseKVClientTable<Val>::Get(std::vector<Val>* vals) {
   Get_(vals);
@@ -189,7 +194,7 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
 
   // Actually the communication pattern required by the server side is to send
   // the speculation_ number of Get requests. And before each Clock, a new Get
-  // request should be sent. 
+  // request should be sent.
   // For here, we send out speculation_ + 1 Get requesets in the first iteration
   // and send out each Clock before the next Get.
   //
@@ -202,8 +207,8 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
   // 2. send out get request for get_count_ - 1 + speculation_.
   if (get_count_ == 1) {
     // For the first Get(), Send out [0, speculation_ + 1) Get requests.
-    for (int i = 0; i < speculation_ + 1; ++ i) {
-      KVPairs<Val> kvs;
+    for (int i = 0; i < speculation_ + 1; ++i) {
+      KVPairs<char> kvs;
       CHECK_LT(i, keys_.size());
       kvs.keys = keys_[i];
       SlicedKVs sliced;
@@ -220,7 +225,7 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
     callback_runner_->NewRequest(app_thread_id_, model_id_, num_reqs_[get_count_ - 1]);
     // Call Clock after NewRequest
     Clock_();  // Clock_() is called here. When the clock is called. The response message may be sent back.
-    KVPairs<Val> kvs;
+    KVPairs<char> kvs;
     CHECK_LT(get_count_ - 1 + speculation_, keys_.size());
     kvs.keys = keys_[get_count_ - 1 + speculation_];
     SlicedKVs sliced;
@@ -233,67 +238,19 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
 }
 
 template <typename Val>
-int SparseKVClientTable<Val>::Slice_(const KVPairs<Val>& send, SlicedKVs* sliced) {
-  CHECK_NOTNULL(range_manager_);
-  sliced->resize(range_manager_->GetNumServers());
-  const auto& ranges = range_manager_->GetRanges();
-
-  size_t n = sliced->size();
-  std::vector<size_t> pos(n + 1);
-  const Key* begin = send.keys.begin();
-  const Key* end = send.keys.end();
-  for (size_t i = 0; i < n; ++i) {
-    if (i == 0) {
-      pos[0] = std::lower_bound(begin, end, ranges[0].begin()) - begin;
-      begin += pos[0];
-    } else {
-      CHECK_EQ(ranges[i - 1].end(), ranges[i].begin());
-    }
-    size_t len = std::lower_bound(begin, end, ranges[i].end()) - begin;
-    begin += len;
-    pos[i + 1] = pos[i] + len;
-
-    // don't send it to severs for empty kv
-    sliced->at(i).first = (len != 0);
-  }
-  CHECK_EQ(pos[n], send.keys.size());
-
-  CHECK(!send.keys.empty());
-
-
-  // TODO: Do not consider lens for now
-  // the length of value
-  size_t k = 0, val_begin = 0, val_end = 0;
-  k = send.vals.size() / send.keys.size();
-
-  // slice
-  int num_reqs = 0;
-  for (size_t i = 0; i < n; ++i) {
-    if (pos[i + 1] == pos[i]) {
-      sliced->at(i).first = false;
-      continue;
-    }
-    num_reqs += 1;
-    sliced->at(i).first = true;
-    auto& kv = sliced->at(i).second;
-    kv.keys = send.keys.segment(pos[i], pos[i + 1]);
-    kv.vals = send.vals.segment(pos[i] * k, pos[i + 1] * k);
-  }
-  return num_reqs;
+int SparseKVClientTable<Val>::Slice_(const KVPairs<char>& send, SlicedKVs* sliced) {
+  CHECK_NOTNULL(partition_manager_);
+  partition_manager_->Slice(send, sliced);
+  return sliced->size();
 }
 
 template <typename Val>
 void SparseKVClientTable<Val>::Send_(const SlicedKVs& sliced, bool is_add, int version) {
-  CHECK_NOTNULL(range_manager_);
-  const auto& server_thread_ids = range_manager_->GetServerThreadIds();
-  CHECK_EQ(server_thread_ids.size(), sliced.size());
+  CHECK_NOTNULL(partition_manager_);
   for (size_t i = 0; i < sliced.size(); ++i) {
-    if (!sliced[i].first) {
-      continue;
-    }
     Message msg;
     msg.meta.sender = app_thread_id_;
-    msg.meta.recver = server_thread_ids[i];
+    msg.meta.recver = sliced[i].first;
     msg.meta.model_id = model_id_;
     msg.meta.flag = is_add ? Flag::kAdd : Flag::kGet;
     msg.meta.version = version;
@@ -310,8 +267,8 @@ void SparseKVClientTable<Val>::Send_(const SlicedKVs& sliced, bool is_add, int v
 
 template <typename Val>
 void SparseKVClientTable<Val>::Clock_() {
-  CHECK_NOTNULL(range_manager_);
-  const auto& server_thread_ids = range_manager_->GetServerThreadIds();
+  CHECK_NOTNULL(partition_manager_);
+  const auto& server_thread_ids = partition_manager_->GetServerThreadIds();
   for (uint32_t server_id : server_thread_ids) {
     Message msg;
     msg.meta.sender = app_thread_id_;
@@ -325,13 +282,7 @@ void SparseKVClientTable<Val>::Clock_() {
 
 template <typename Val>
 void SparseKVClientTable<Val>::AddRequest_(const SlicedKVs& sliced) {
-  int num_reqs = 0;
-  for (size_t i = 0; i < sliced.size(); ++i) {
-    if (sliced[i].first)
-      num_reqs += 1;
-  }
-  callback_runner_->NewRequest(app_thread_id_, model_id_, num_reqs);
+  callback_runner_->NewRequest(app_thread_id_, model_id_, sliced.size());
 }
 
 }  // namespace flexps
-
