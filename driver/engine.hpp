@@ -1,44 +1,38 @@
 #pragma once
 
+#include <algorithm>
 #include <memory>
 #include <vector>
-#include <algorithm>
 
 #include "base/node.hpp"
 #include "base/node_util.hpp"
-#include "worker/worker_helper_thread.hpp"
-#include "worker/app_blocker.hpp"
-#include "worker/simple_range_manager.hpp"
-#include "server/server_thread.hpp"
-#include "server/server_thread_group.hpp"
-#include "server/map_storage.hpp"
-#include "server/vector_storage.hpp"
-#include "server/ssp_model.hpp"
-#include "server/bsp_model.hpp"
-#include "server/asp_model.hpp"
-#include "server/sparsessp/sparse_ssp_model.hpp"
-#include "server/sparsessp/abstract_sparse_ssp_recorder.hpp"
-#include "server/sparsessp/unordered_map_sparse_ssp_recorder.hpp"
-#include "server/sparsessp/vector_sparse_ssp_recorder.hpp"
 #include "comm/mailbox.hpp"
 #include "comm/sender.hpp"
+#include "driver/info.hpp"
 #include "driver/ml_task.hpp"
 #include "driver/simple_id_mapper.hpp"
-#include "driver/info.hpp"
 #include "driver/worker_spec.hpp"
+#include "server/asp_model.hpp"
+#include "server/bsp_model.hpp"
+#include "server/map_storage.hpp"
+#include "server/server_thread.hpp"
+#include "server/server_thread_group.hpp"
+#include "server/sparsessp/abstract_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/sparse_ssp_model.hpp"
+#include "server/sparsessp/unordered_map_sparse_ssp_recorder.hpp"
+#include "server/sparsessp/vector_sparse_ssp_recorder.hpp"
+#include "server/ssp_model.hpp"
+#include "server/vector_storage.hpp"
+#include "worker/abstract_partition_manager.hpp"
+#include "worker/app_blocker.hpp"
+#include "worker/simple_range_manager.hpp"
+#include "worker/worker_helper_thread.hpp"
 
 namespace flexps {
 
-enum class ModelType {
-  SSP, BSP, ASP, SparseSSP
-};
-enum class StorageType {
-  Map, Vector
-};
-enum class SparseSSPRecorderType {
-  None, Map, Vector
-};
-
+enum class ModelType { SSP, BSP, ASP, SparseSSP };
+enum class StorageType { Map, Vector };
+enum class SparseSSPRecorderType { None, Map, Vector };
 
 class Engine {
  public:
@@ -71,20 +65,20 @@ class Engine {
   void StopWorkerHelperThreads();
   void StopSender();
   void StopMailbox();
- 
+
   void Barrier();
   WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
-  template<typename Val>
-  void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges,
-      ModelType model_type, StorageType storage_type, int model_staleness = 0, int speculation = 0,
-      SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
+  template <typename Val>
+  void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
+                   StorageType storage_type, int model_staleness = 0, int speculation = 0,
+                   SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
 
  private:
-  void RegisterRangeManager(uint32_t table_id, const std::vector<third_party::Range>& ranges);
+  void RegisterRangePartitionManager(uint32_t table_id, const std::vector<third_party::Range>& ranges);
 
-  std::map<uint32_t, SimpleRangeManager> range_manager_map_;
+  std::map<uint32_t, std::unique_ptr<AbstractPartitionManager>> partition_manager_map_;
   // nodes
   Node node_;
   std::vector<Node> nodes_;
@@ -99,12 +93,11 @@ class Engine {
   std::unique_ptr<ServerThreadGroup> server_thread_group_;
 };
 
-template<typename Val>
-void Engine::CreateTable(uint32_t table_id,
-    const std::vector<third_party::Range>& ranges,
-    ModelType model_type, StorageType storage_type, int model_staleness, int speculation,
-    SparseSSPRecorderType sparse_ssp_recorder_type) {
-  RegisterRangeManager(table_id, ranges);
+template <typename Val>
+void Engine::CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
+                         StorageType storage_type, int model_staleness, int speculation,
+                         SparseSSPRecorderType sparse_ssp_recorder_type) {
+  RegisterRangePartitionManager(table_id, ranges);
   CHECK(server_thread_group_);
 
   CHECK(id_mapper_);
@@ -117,7 +110,7 @@ void Engine::CreateTable(uint32_t table_id,
     // Set up storage
     if (storage_type == StorageType::Map) {
       storage.reset(new MapStorage<Val>());
-    } else if (storage_type == StorageType::Vector){
+    } else if (storage_type == StorageType::Vector) {
       auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
       storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()]));
     } else {
@@ -137,11 +130,13 @@ void Engine::CreateTable(uint32_t table_id,
         recorder.reset(new UnorderedMapSparseSSPRecorder(model_staleness, speculation));
       } else if (sparse_ssp_recorder_type == SparseSSPRecorderType::Vector) {
         auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
-        recorder.reset(new VectorSparseSSPRecorder(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
+        recorder.reset(
+            new VectorSparseSSPRecorder(model_staleness, speculation, ranges[it - server_thread_ids.begin()]));
       } else {
         CHECK(false);
       }
-      model.reset(new SparseSSPModel(table_id, std::move(storage), std::move(recorder), server_thread_group_->GetReplyQueue(), model_staleness, speculation));
+      model.reset(new SparseSSPModel(table_id, std::move(storage), std::move(recorder),
+                                     server_thread_group_->GetReplyQueue(), model_staleness, speculation));
     } else {
       CHECK(false) << "Unknown model_type";
     }

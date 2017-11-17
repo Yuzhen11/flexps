@@ -3,6 +3,7 @@
 #include "kv_table_box.hpp"
 
 #include "comm/abstract_mailbox.hpp"
+#include "worker/abstract_partition_manager.hpp"
 
 namespace flexps {
 
@@ -16,11 +17,11 @@ template <typename Val>
 class SimpleKVTable {
  public:
   SimpleKVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                const SimpleRangeManager* const range_manager, AbstractMailbox* const mailbox);
+                const AbstractPartitionManager* const range_manager, AbstractMailbox* const mailbox);
 
   ~SimpleKVTable();
 
-  using SlicedKVs = std::vector<std::pair<bool, KVPairs<Val>>>;
+  using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 
   // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);
@@ -48,10 +49,8 @@ class SimpleKVTable {
 
 template <typename Val>
 SimpleKVTable<Val>::SimpleKVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                                  const SimpleRangeManager* const range_manager,
-                                  AbstractMailbox* const mailbox)
-    : kv_table_box_(app_thread_id, model_id, send_queue, range_manager),
-      mailbox_(mailbox) {
+                                  const AbstractPartitionManager* const range_manager, AbstractMailbox* const mailbox)
+    : kv_table_box_(app_thread_id, model_id, send_queue, range_manager), mailbox_(mailbox) {
   // TODO: This is a workaround since the Engine::Run() supports KVClientTable and registers the same
   // thread id to mailbox by default for the usage of KVClientTable, and thus the id is actually
   // inside mailbox and is associated with the queue in worker_help_thread.
@@ -60,7 +59,7 @@ SimpleKVTable<Val>::SimpleKVTable(uint32_t app_thread_id, uint32_t model_id, Thr
 }
 
 template <typename Val>
-SimpleKVTable<Val>::~SimpleKVTable(){
+SimpleKVTable<Val>::~SimpleKVTable() {
   mailbox_->DeregisterQueue(kv_table_box_.app_thread_id_);
 }
 
@@ -76,7 +75,7 @@ void SimpleKVTable<Val>::Add(const third_party::SArray<Key>& keys, const third_p
   kv_table_box_.Add(keys, vals);
 }
 
-// vector version Get 
+// vector version Get
 template <typename Val>
 void SimpleKVTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
   Get_(third_party::SArray<Key>(keys), vals);
@@ -92,7 +91,7 @@ void SimpleKVTable<Val>::Get(const third_party::SArray<Key>& keys, third_party::
 template <typename Val>
 template <typename C>
 void SimpleKVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
-  KVPairs<Val> kvs;
+  KVPairs<char> kvs;
   kvs.keys = keys;
   SlicedKVs sliced;
   // 1. slice
@@ -109,13 +108,15 @@ void SimpleKVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
     current_responses += 1;
     kv_table_box_.HandleMsg(msg);
     if (current_responses == expected_responses) {
-      kv_table_box_.HandleFinish(kvs, keys, vals);
+      kv_table_box_.HandleFinish(keys, vals);
       current_responses = expected_responses = 0;
     }
   }
 }
 
 template <typename Val>
-void SimpleKVTable<Val>::Clock() { kv_table_box_.Clock(); }
+void SimpleKVTable<Val>::Clock() {
+  kv_table_box_.Clock();
+}
 
 }  // namespace flexps
