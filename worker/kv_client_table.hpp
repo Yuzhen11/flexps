@@ -83,14 +83,13 @@ template <typename C>
 void KVClientTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
   KVPairs<char> kvs;
   kvs.keys = keys;
-  SlicedKVs sliced;
   // 1. slice
-  kv_table_box_.Slice(kvs, &sliced);
+  SlicedKVs sliced = kv_table_box_.Slice(kvs);
   // 2. register handle
   callback_runner_->RegisterRecvFinishHandle(kv_table_box_.app_thread_id_, kv_table_box_.model_id_,
                                              [&]() { kv_table_box_.HandleFinish(keys, vals); });
   // 3. add request
-  int num_reqs = kv_table_box_.GetNumReqs(sliced);
+  int num_reqs = sliced.size();
   callback_runner_->NewRequest(kv_table_box_.app_thread_id_, kv_table_box_.model_id_, num_reqs);
   // 4. send
   kv_table_box_.Send(sliced, false);

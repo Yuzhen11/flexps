@@ -17,7 +17,7 @@ template <typename Val>
 class SimpleKVTable {
  public:
   SimpleKVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                const AbstractPartitionManager* const range_manager, AbstractMailbox* const mailbox);
+                const AbstractPartitionManager* const partition_manager, AbstractMailbox* const mailbox);
 
   ~SimpleKVTable();
 
@@ -49,8 +49,8 @@ class SimpleKVTable {
 
 template <typename Val>
 SimpleKVTable<Val>::SimpleKVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-                                  const AbstractPartitionManager* const range_manager, AbstractMailbox* const mailbox)
-    : kv_table_box_(app_thread_id, model_id, send_queue, range_manager), mailbox_(mailbox) {
+                                  const AbstractPartitionManager* const partition_manager, AbstractMailbox* const mailbox)
+    : kv_table_box_(app_thread_id, model_id, send_queue, partition_manager), mailbox_(mailbox) {
   // TODO: This is a workaround since the Engine::Run() supports KVClientTable and registers the same
   // thread id to mailbox by default for the usage of KVClientTable, and thus the id is actually
   // inside mailbox and is associated with the queue in worker_help_thread.
@@ -93,11 +93,10 @@ template <typename C>
 void SimpleKVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
   KVPairs<char> kvs;
   kvs.keys = keys;
-  SlicedKVs sliced;
   // 1. slice
-  kv_table_box_.Slice(kvs, &sliced);
+  SlicedKVs sliced = kv_table_box_.Slice(kvs);
   // 2. get num requests
-  expected_responses = kv_table_box_.GetNumReqs(sliced);
+  expected_responses = sliced.size();
   current_responses = 0;
   // 3. send
   kv_table_box_.Send(sliced, false);

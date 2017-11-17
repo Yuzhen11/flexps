@@ -55,7 +55,6 @@ class SparseKVClientTable {
   void Get_(C* vals);
 
   void Clock_();
-  int Slice_(const KVPairs<char>& send, SlicedKVs* sliced);
   void Send_(const SlicedKVs& sliced, bool is_add, int version);
   void AddRequest_(const SlicedKVs& sliced);
   void Setup_();
@@ -146,9 +145,9 @@ void SparseKVClientTable<Val>::Add(const third_party::SArray<Key>& keys, const t
   KVPairs<char> kvs;
   kvs.keys = keys;
   kvs.vals = vals;
-  SlicedKVs sliced;
   // 1. slice
-  Slice_(kvs, &sliced);
+  CHECK_NOTNULL(partition_manager_);
+  SlicedKVs sliced = partition_manager_->Slice(kvs);
   // 2. send
   Send_(sliced, true, get_count_ - 1);
 }
@@ -211,8 +210,9 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
       KVPairs<char> kvs;
       CHECK_LT(i, keys_.size());
       kvs.keys = keys_[i];
-      SlicedKVs sliced;
-      int num_reqs = Slice_(kvs, &sliced);
+      CHECK_NOTNULL(partition_manager_);
+      SlicedKVs sliced = partition_manager_->Slice(kvs);
+      int num_reqs = sliced.size();
       if (i == 0) {
         // NewRequest before the first Send
         callback_runner_->NewRequest(app_thread_id_, model_id_, num_reqs);
@@ -228,20 +228,14 @@ void SparseKVClientTable<Val>::Get_(C* vals) {
     KVPairs<char> kvs;
     CHECK_LT(get_count_ - 1 + speculation_, keys_.size());
     kvs.keys = keys_[get_count_ - 1 + speculation_];
-    SlicedKVs sliced;
-    int num_reqs = Slice_(kvs, &sliced);
+    CHECK_NOTNULL(partition_manager_);
+    SlicedKVs sliced = partition_manager_->Slice(kvs);
+    int num_reqs = sliced.size();
     num_reqs_.push_back(num_reqs);
     Send_(sliced, false, get_count_ - 1 + speculation_);
   }
   // 3. wait request
   callback_runner_->WaitRequest(app_thread_id_, model_id_);
-}
-
-template <typename Val>
-int SparseKVClientTable<Val>::Slice_(const KVPairs<char>& send, SlicedKVs* sliced) {
-  CHECK_NOTNULL(partition_manager_);
-  partition_manager_->Slice(send, sliced);
-  return sliced->size();
 }
 
 template <typename Val>

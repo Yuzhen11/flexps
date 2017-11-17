@@ -23,15 +23,14 @@ template <typename Val>
 class KVTableBox {
  public:
   KVTableBox(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
-             const AbstractPartitionManager* const range_manager);
+             const AbstractPartitionManager* const partition_manager);
 
   using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 
   void Clock();
   void Send(const SlicedKVs& sliced, bool is_add);
   void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
-  void Slice(const KVPairs<char>& send, SlicedKVs* sliced);
-  int GetNumReqs(const SlicedKVs& sliced);
+  SlicedKVs Slice(const KVPairs<char>& send);
 
   void HandleMsg(Message& msg);
   template <typename C>
@@ -63,17 +62,17 @@ void KVTableBox<Val>::Add(const third_party::SArray<Key>& keys, const third_part
   KVPairs<char> kvs;
   kvs.keys = keys;
   kvs.vals = vals;
-  SlicedKVs sliced;
   // 1. slice
-  Slice(kvs, &sliced);
+  CHECK_NOTNULL(partition_manager_);
+  SlicedKVs sliced = partition_manager_->Slice(kvs);
   // 2. send
   Send(sliced, true);
 }
 
 template <typename Val>
-void KVTableBox<Val>::Slice(const KVPairs<char>& send, SlicedKVs* sliced) {
+typename KVTableBox<Val>::SlicedKVs KVTableBox<Val>::Slice(const KVPairs<char>& send) {
   CHECK_NOTNULL(partition_manager_);
-  partition_manager_->Slice(send, sliced);
+  return partition_manager_->Slice(send);
 }
 
 template <typename Val>
@@ -108,11 +107,6 @@ void KVTableBox<Val>::Clock() {
     msg.meta.flag = Flag::kClock;
     send_queue_->Push(std::move(msg));
   }
-}
-
-template <typename Val>
-int KVTableBox<Val>::GetNumReqs(const SlicedKVs& sliced) {
-  return sliced.size();
 }
 
 template <typename Val>

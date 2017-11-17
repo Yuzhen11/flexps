@@ -24,9 +24,10 @@ class SimpleRangePartitionManager : public AbstractPartitionManager {
   const std::vector<uint32_t>& GetServerThreadIds() const { return server_thread_ids_; }
 
   // slice key-value pairs into <server_id, key_value_partition> pairs
-  void Slice(const KVPairs<char>& send, SlicedKVs* sliced) const override {
+  SlicedKVs Slice(const KVPairs<char>& send) const override {
+    SlicedKVs sliced;
     int n_servers = GetNumServers();
-    sliced->reserve(n_servers);
+    sliced.reserve(n_servers);
 
     auto begin = std::lower_bound(send.keys.begin(), send.keys.end(), ranges_[0].begin());
     size_t begin_idx = begin - send.keys.begin();
@@ -38,10 +39,11 @@ class SimpleRangePartitionManager : public AbstractPartitionManager {
         KVPairs<char> kv;
         kv.keys = send.keys.segment(begin_idx, split);
         kv.vals = send.vals.segment(begin_idx * ratio, split * ratio);
-        sliced->push_back(std::make_pair(server_thread_ids_[i], std::move(kv)));
+        sliced.push_back(std::make_pair(server_thread_ids_[i], std::move(kv)));
       }
       begin_idx = split;  // start from the split index next time
     }
+    return sliced;
   }
 
  private:
