@@ -65,3 +65,4 @@ add_subdirectory(driver)
 add_subdirectory(examples)
 
 add_subdirectory(test)
+add_subdirectory(task-based)
