@@ -60,15 +60,3 @@ target_link_libraries(GBDTExample ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET GBDTExample PROPERTY CXX_STANDARD 11)
 add_dependencies(GBDTExample ${external_project_dependencies})
 
-# KMeansExample
-if(LIBHDFS3_FOUND)
-  file(GLOB kmeans-src-files
-  kmeans/kmeans_helper.cpp
-  )
-  add_executable(KMeansExample kmeans/kmeans_example.cpp ${kmeans-src-files})
-  target_link_libraries(KMeansExample flexps)
-  target_link_libraries(KMeansExample profiler)
-  target_link_libraries(KMeansExample ${HUSKY_EXTERNAL_LIB})
-  set_property(TARGET KMeansExample PROPERTY CXX_STANDARD 11)
-  add_dependencies(KMeansExample ${external_project_dependencies})
-endif(LIBHDFS3_FOUND)
