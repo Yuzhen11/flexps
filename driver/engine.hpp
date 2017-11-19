@@ -70,7 +70,7 @@ class Engine {
   WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
   template <typename Val>
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                   StorageType storage_type, int model_staleness = 0, int speculation = 0,
+                   StorageType storage_type, int model_staleness = 0, int speculation = 0, uint32_t chunk_size = 1,
                    SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
@@ -95,11 +95,11 @@ class Engine {
 
 template <typename Val>
 void Engine::CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                         StorageType storage_type, int model_staleness, int speculation,
+                         StorageType storage_type, int model_staleness, int speculation, uint32_t chunk_size,
                          SparseSSPRecorderType sparse_ssp_recorder_type) {
   RegisterRangePartitionManager(table_id, ranges);
   CHECK(server_thread_group_);
-
+  CHECK_LE(chunk_size, 1);
   CHECK(id_mapper_);
   auto server_thread_ids = id_mapper_->GetAllServerThreads();
   CHECK_EQ(ranges.size(), server_thread_ids.size());
@@ -109,10 +109,10 @@ void Engine::CreateTable(uint32_t table_id, const std::vector<third_party::Range
     std::unique_ptr<AbstractModel> model;
     // Set up storage
     if (storage_type == StorageType::Map) {
-      storage.reset(new MapStorage<Val>());
+      storage.reset(new MapStorage<Val>(chunk_size));
     } else if (storage_type == StorageType::Vector) {
       auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
-      storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()]));
+      storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()], chunk_size));
     } else {
       CHECK(false) << "Unknown storage_type";
     }

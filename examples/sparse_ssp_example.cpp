@@ -159,7 +159,7 @@ void Run() {
     CHECK(false) << "sparse_ssp_storage type error: " << FLAGS_kSparseSSPRecorderType;
   }
   engine.CreateTable<float>(kTableId, range, 
-      model_type, storage_type, FLAGS_kStaleness, FLAGS_kSpeculation, sparse_ssp_recorder_type);
+      model_type, storage_type, 1, FLAGS_kStaleness, FLAGS_kSpeculation, sparse_ssp_recorder_type);
   engine.Barrier();
 
   // 3. Construct tasks
