@@ -3,12 +3,12 @@
 
 namespace flexps {
 
-  SchedulerThread(AbstractMailbox* const mailbox) : mailbox_(mailbox) {
-    mailbox_.RegisterQueue(scheduler_id_, work_queue_);
+  SchedulerThread::SchedulerThread(AbstractMailbox* const mailbox) : mailbox_(mailbox) {
+    mailbox_->RegisterQueue(scheduler_id_, &work_queue_);
   }
 
   SchedulerThread::~SchedulerThread() {
-    mailbox_.DeregisterQueue(scheduler_id_);
+    mailbox_->DeregisterQueue(scheduler_id_);
   }
 
   void SchedulerThread::Start() {
@@ -19,18 +19,18 @@ namespace flexps {
     work_thread_.join();
   }
 
-  void Send(const Message& msg) {
-    mailbox_.Send(msg);
+  void SchedulerThread::Send(const Message& msg) {
+    mailbox_->Send(msg);
   }
 
-  void ServerThread::RegisterWorker(uint32_t worker_id) {
+  void SchedulerThread::RegisterWorker(uint32_t worker_id) {
     CHECK(worker_ids_.find(worker_id) == worker_ids_.end());
     worker_ids_.insert(worker_id);
   }
 
   ThreadsafeQueue<Message>* SchedulerThread::GetWorkQueue() { return &work_queue_; }
 
-  std::set<uint32_t> GetWorkerIDs() { return worker_ids_; }
+  std::set<uint32_t> SchedulerThread::GetWorkerIds() { return worker_ids_; }
 
   uint32_t SchedulerThread::GetSchedulerId() const { return scheduler_id_; }
 

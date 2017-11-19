@@ -21,7 +21,8 @@ public:
     void Stop();
     void Send(const Message& msg);
     ThreadsafeQueue<Message>* GetWorkQueue();
-    std::set<uint32_t> GetWorkerIDs();
+    std::set<uint32_t> GetWorkerIds();
+    uint32_t GetSchedulerId() const;
     void Main();
 
 private:
