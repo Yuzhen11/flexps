@@ -1,7 +1,6 @@
-#include "glog/logging.h"
 #include "gtest/gtest.h"
 
-#include "comm/abstract_mailbox.hpp"
+#include "comm/fake_mailbox.hpp"
 #include "task/thread_template.hpp"
 
 #include <mutex>
@@ -17,27 +16,6 @@ class TestThreadTemplate : public testing::Test {
  protected:
   void SetUp() {}
   void TearDown() {}
-};
-
-class FakeMailbox : public AbstractMailbox {
- public:
-  virtual void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue) override {
-    std::lock_guard<std::mutex> lk(mu_);
-    CHECK(queue_map_.find(queue_id) == queue_map_.end());
-    queue_map_.insert({queue_id, queue});
-  };
-
-  virtual void DeregisterQueue(uint32_t queue_id) override {
-    std::lock_guard<std::mutex> lk(mu_);
-    CHECK(queue_map_.find(queue_id) != queue_map_.end());
-    queue_map_.erase(queue_id);
-  };
-
-  virtual int Send(const Message& msg) override { queue_map_[msg.meta.recver]->Push(std::move(msg)); };
-
- private:
-  std::mutex mu_;
-  std::map<uint32_t, ThreadsafeQueue<Message>* const> queue_map_;
 };
 
 TEST_F(TestThreadTemplate, Init) {
@@ -73,9 +51,9 @@ TEST_F(TestThreadTemplate, Send) {
 
   Message msg;
   thread1_work_queue->WaitAndPop(&msg);
-  CHECK(msg.meta.sender == thread0.GetId());
-  CHECK(msg.meta.recver == thread1.GetId());
-  CHECK(msg.meta.flag == Flag::kExit);
+  EXPECT_EQ(msg.meta.sender, thread0.GetId());
+  EXPECT_EQ(msg.meta.recver, thread1.GetId());
+  EXPECT_EQ(msg.meta.flag, Flag::kExit);
 }
 
 }  // namespace
