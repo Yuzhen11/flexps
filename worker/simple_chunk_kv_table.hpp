@@ -30,12 +30,15 @@ void SimpleChunkKVTable::Add(const std::vector<Key>& keys, const std::vector<std
   int key_size = keys.size();
   int chunk_size = chunk_vals[0].size();
   std::vector<Val> vals(key_size * chunk_size);
-  for (int i = 0; i < key_size; i++)
-  {
-    for (int j = 0; j < chunk_size; j++)
-    {
-      vals[i * chunk_size + j] = chunk_vals[i][j];
-    }
+  if(chunk_size == 1){
+    for (int i = 0; i < key_size; i++)
+      vals[i] = chunks_vals[i][0];
+  }
+  else{
+    for (int i = 0; i < key_size; i++){
+      for (int j = 0; j < chunk_size; j++)
+        vals[i * chunk_size + j] = chunk_vals[i][j];
+    }  
   }
   SimpleKVTable<Val>::Add(keys, vals);
 }

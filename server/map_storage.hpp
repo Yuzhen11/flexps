@@ -42,8 +42,8 @@ class MapStorage : public AbstractStorage {
   virtual void FinishIter() override {}
 
  private:
-  std::map<Key, std::vector<Val>> storage_;
-  uint32_t chunk_size_ = 1;
+  std::map<Key, third_party::SArray<Val>> storage_;
+  uint32_t chunk_size_;
 };
 
 }  // namespace flexps
