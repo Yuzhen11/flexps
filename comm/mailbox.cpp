@@ -63,6 +63,9 @@ void Mailbox::StopReceiving() {
   Barrier();
   Message exit_msg;
   exit_msg.meta.recver = node_.id;
+  exit_msg.meta.sender = node_.id;
+  exit_msg.meta.model_id = -1;
+  exit_msg.meta.version = 0;
   exit_msg.meta.flag = Flag::kExit;
   Send(exit_msg);
   receiver_thread_.join();
@@ -138,11 +141,16 @@ void Mailbox::Receiving() {
       break;
     } else if (msg.meta.flag == Flag::kBarrier) {
       std::unique_lock<std::mutex> lk(barrier_mu_);
-      barrier_count_ += 1;
-      if (barrier_count_ == nodes_.size()) {
-        VLOG(1) << "Collected " << nodes_.size() << " barrier, Node:"
-          << node_.id << " unblocking main thread";
-        barrier_cond_.notify_one();
+      if (msg.meta.version == progress_) {
+        this_count_ += 1;
+        if (this_count_ == nodes_.size()) {
+          barrier_cond_.notify_one();
+        }
+      } else if (msg.meta.version == progress_ + 1) {
+        next_count_ += 1;
+        CHECK_LT(next_count_, nodes_.size());
+      } else {
+        CHECK(false) << "Barrier error.";
       }
     } else {
       CHECK(queue_map_.find(msg.meta.recver) != queue_map_.end());
@@ -269,12 +277,16 @@ void Mailbox::Barrier() {
     barrier_msg.meta.sender = node_.id;
     barrier_msg.meta.recver = node.id;
     barrier_msg.meta.flag = Flag::kBarrier;
+    barrier_msg.meta.version = progress_;
+    barrier_msg.meta.model_id = -1;
     Send(barrier_msg);
   }
   std::unique_lock<std::mutex> lk(barrier_mu_);
-  // Very tricky. Consider to use all-one-all method instead of all-all.
-  barrier_cond_.wait(lk, [this]() { return barrier_count_ >= nodes_.size(); });
-  barrier_count_ -= nodes_.size();
+  barrier_cond_.wait(lk, [this]() { return this_count_ == nodes_.size(); });
+  VLOG(1) << "Barrier in (Node, progress): (" << node_.id << "," << progress_ << ")";
+  this_count_ = next_count_;
+  next_count_ = 0;
+  progress_ += 1;
 }
 
 }  // namespace flexps

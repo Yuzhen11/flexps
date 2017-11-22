@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import os
-from os.path import dirname, join
+import sys
+from launch_utils import launch_util
+
 
 # The file path should be related path from the project home path.
 # The hostfile should be in the format:
@@ -16,17 +17,10 @@ from os.path import dirname, join
 # 
 hostfile = "machinefiles/local"
 #hostfile = "machinefiles/5node"
+
 progfile = "debug/GBDTExample"
 
-script_path = os.path.realpath(__file__)
-proj_dir = dirname(dirname(script_path))
-print "flexps porj_dir:", proj_dir
-hostfile_path = join(proj_dir, hostfile)
-prog_path = join(proj_dir, progfile)
-print "hostfile_path:%s, prog_path:%s" % (hostfile_path, prog_path)
-
 params = {
-    "config_file" : hostfile_path,
     "hdfs_namenode" : "proj10",
     "hdfs_namenode_port" : 9000,
     "cluster_train_input" : "hdfs:///calvinzhou/40_data_train.dat", # TODO: replace by your own data
@@ -42,12 +36,6 @@ params = {
     "rank_fraction" : 0.1,
 }
 
-ssh_cmd = (
-    "ssh "
-    "-o StrictHostKeyChecking=no "
-    "-o UserKnownHostsFile=/dev/null "
-    )
-
 env_params = (
   "GLOG_logtostderr=true "
   "GLOG_v=-1 "
@@ -58,27 +46,4 @@ env_params = (
   "LIBHDFS3_CONF=/data/opt/course/hadoop/etc/hadoop/hdfs-site.xml"
   )
 
-# TODO: May need to ls before run to make sure the related files are synced.
-clear_cmd = "ls " + hostfile_path + " > /dev/null; ls " + prog_path + " > /dev/null; "
-
-with open(hostfile_path, "r") as f:
-  hostlist = []  
-  hostlines = f.read().splitlines()
-  for line in hostlines:
-    if not line.startswith("#"):
-      hostlist.append(line.split(":"))
-
-  for [node_id, host, port] in hostlist:
-    print "node_id:%s, host:%s, port:%s" %(node_id, host, port)
-    cmd = ssh_cmd + host + " "  # Start ssh command
-    cmd += "\""  # Remote command starts
-    cmd += clear_cmd
-    # Command to run program
-    cmd += env_params + " " + prog_path
-    cmd += " --my_id="+node_id
-    cmd += "".join([" --%s=%s" % (k,v) for k,v in params.items()])
-
-    cmd += "\""  # Remote Command ends
-    cmd += " &"
-    print cmd
-    os.system(cmd)
+launch_util(prog_path, hostfile_path, env_params, params, sys.argv)
