@@ -26,14 +26,14 @@ const uint32_t kTestModelId = 23;
 
 TEST_F(TestKVClientTable, Init) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
 }
 
 TEST_F(TestKVClientTable, VectorAdd) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
   std::vector<Key> keys = {3, 4, 5, 6};
@@ -76,7 +76,7 @@ TEST_F(TestKVClientTable, VectorAdd) {
 
 TEST_F(TestKVClientTable, VectorGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   std::thread th([&queue, &manager, &callback_runner]() {
     KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
@@ -128,7 +128,7 @@ TEST_F(TestKVClientTable, VectorGet) {
 }
 TEST_F(TestKVClientTable, SArrayAdd) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
   third_party::SArray<Key> keys = {3, 4, 5, 6};
@@ -171,7 +171,7 @@ TEST_F(TestKVClientTable, SArrayAdd) {
 
 TEST_F(TestKVClientTable, SArrayGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   std::thread th([&queue, &manager, &callback_runner]() {
     KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
@@ -228,7 +228,7 @@ TEST_F(TestKVClientTable, SArrayGet) {
 
 TEST_F(TestKVClientTable, Clock) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeCallbackRunner callback_runner(kTestAppThreadId, kTestModelId);
   KVClientTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &callback_runner);
   table.Clock();  // -> server 0 and server 1

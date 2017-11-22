@@ -67,7 +67,7 @@ void Run() {
   config.hdfs_namenode = FLAGS_hdfs_namenode;
   config.hdfs_namenode_port = FLAGS_hdfs_namenode_port;
   config.num_local_load_thread = FLAGS_num_workers_per_node;
-  
+
   //using DataObj = std::string;
 
   zmq::context_t* zmq_context = new zmq::context_t(1);
@@ -158,8 +158,9 @@ void Run() {
   */
 
   // Load data (Local)
-  
+
   DataLoader data_loader(FLAGS_local_train_input, "\t");
+
   const std::vector<std::vector<float>> & all_feat_vect_list = data_loader.get_feat_vect_list();
   const std::vector<float> & all_class_vect = data_loader.get_class_vect();
   LOG(INFO) << "Load data successfully";
@@ -177,6 +178,7 @@ void Run() {
 
   // Find data size of dataset
   const int & data_num = all_feat_vect_list[0].size();
+
   LOG(INFO) << "Find max min ok";
   
 
@@ -300,7 +302,7 @@ void Run() {
   });
 
   // 4. Run tasks
-  engine.Run(task);
+  //engine.Run(task);
 
   // 5. Stop engine
   engine.StopEverything();

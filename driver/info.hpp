@@ -4,8 +4,9 @@
 
 #include "base/threadsafe_queue.hpp"
 #include "comm/abstract_mailbox.hpp"
-#include "worker/simple_range_manager.hpp"
 #include "worker/abstract_callback_runner.hpp"
+#include "worker/abstract_partition_manager.hpp"
+#include "worker/simple_range_manager.hpp"
 
 #include "worker/kv_client_table.hpp"
 #include "worker/simple_kv_table.hpp"
@@ -16,17 +17,14 @@
 namespace flexps {
 
 struct Info {
-  uint32_t local_id;  // the local id for each process, {0, 1, 2...}
+  uint32_t local_id;   // the local id for each process, {0, 1, 2...}
   uint32_t worker_id;  // the global worker id for the whole system, {0, 1, 2...}
   uint32_t thread_id;  // the global thread id
 
   std::string DebugString() const {
     std::stringstream ss;
     ss << "Info: {";
-    ss << "local_id:" << local_id 
-       << ", thread_id:" << thread_id 
-       << ", worker_id:" << worker_id
-       << "}";
+    ss << "local_id:" << local_id << ", thread_id:" << thread_id << ", worker_id:" << worker_id << "}";
     return ss.str();
   }
 
@@ -36,37 +34,40 @@ struct Info {
   KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const;
 
   template <typename Val>
-  SimpleKVTable<Val> CreateSimpleKVTable(uint32_t table_id) const; 
+  SimpleKVTable<Val> CreateSimpleKVTable(uint32_t table_id) const;
 
   template <typename Val>
-  SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, 
-      uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const;
+  SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation,
+                                                     const std::vector<third_party::SArray<Key>>& keys) const;
 
   // The below fields are not supposed to be used by users
   ThreadsafeQueue<Message>* send_queue;
-  std::map<uint32_t, SimpleRangeManager> range_manager_map;
+  std::map<uint32_t, AbstractPartitionManager*> partition_manager_map;
   AbstractCallbackRunner* callback_runner;
   AbstractMailbox* mailbox;
 };
 
 template <typename Val>
 KVClientTable<Val> Info::CreateKVClientTable(uint32_t table_id) const {
-  CHECK(range_manager_map.find(table_id) != range_manager_map.end());
-  KVClientTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, callback_runner);
+  CHECK(partition_manager_map.find(table_id) != partition_manager_map.end());
+  KVClientTable<Val> table(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second,
+                           callback_runner);
   return table;
 }
 
 template <typename Val>
 SimpleKVTable<Val> Info::CreateSimpleKVTable(uint32_t table_id) const {
-  CHECK(range_manager_map.find(table_id) != range_manager_map.end());
-  SimpleKVTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, mailbox);
+  CHECK(partition_manager_map.find(table_id) != partition_manager_map.end());
+  SimpleKVTable<Val> table(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second, mailbox);
   return table;
 }
 
 template <typename Val>
-SparseKVClientTable<Val> Info::CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation, const std::vector<third_party::SArray<Key>>& keys) const {
-  CHECK(range_manager_map.find(table_id) != range_manager_map.end());
-  SparseKVClientTable<Val> table(thread_id, table_id, send_queue, &range_manager_map.find(table_id)->second, callback_runner, speculation, keys);
+SparseKVClientTable<Val> Info::CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation,
+                                                         const std::vector<third_party::SArray<Key>>& keys) const {
+  CHECK(partition_manager_map.find(table_id) != partition_manager_map.end());
+  SparseKVClientTable<Val> table(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second,
+                                 callback_runner, speculation, keys);
   return table;
 }
 

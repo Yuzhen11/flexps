@@ -243,6 +243,13 @@ class SArray {
     memcpy(data()+orig_size, arr.data(), arr.size()*sizeof(V));
   }
 
+  void append_bytes(const char* bytes, size_t sz) {
+    static_assert(std::is_same<V, char>::value, "append_bytes must be invoked on SArray<char>");
+    auto orig_size = size_;
+    resize(size_ + sz);
+    memcpy(data()+orig_size, bytes, sz);
+  }
+
   // serialization function into base::BinStream for SArrary
   // Warning: only works for pod V
   friend BinStream& operator<<(BinStream& bin, const SArray<V>& sarray) {

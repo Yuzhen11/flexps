@@ -1,6 +1,5 @@
 #include "driver/engine.hpp"
 
-
 #include <thread>
 #include <vector>
 
@@ -22,9 +21,7 @@ void Engine::CreateIdMapper(int num_server_thread_per_node) {
   id_mapper_.reset(new SimpleIdMapper(node_, nodes_));
   id_mapper_->Init(num_server_thread_per_node);
 }
-void Engine::CreateMailbox() {
-  mailbox_.reset(new Mailbox(node_, nodes_, id_mapper_.get()));
-}
+void Engine::CreateMailbox() { mailbox_.reset(new Mailbox(node_, nodes_, id_mapper_.get())); }
 
 void Engine::StartSender() {
   sender_.reset(new Sender(mailbox_.get()));
@@ -106,7 +103,7 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
   WorkerSpec worker_spec(worker_alloc);
   // Need to make sure that all the engines allocate the same set of workers
   for (auto& kv : worker_spec.GetNodeToWorkers()) {
-    for (int i = 0; i < kv.second.size(); ++ i) {
+    for (int i = 0; i < kv.second.size(); ++i) {
       uint32_t tid = id_mapper_->AllocateWorkerThread(kv.first);
       worker_spec.InsertWorkerIdThreadId(kv.second[i], tid);
     }
@@ -114,17 +111,15 @@ WorkerSpec Engine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc)
   return worker_spec;
 }
 
-
-void Engine::RegisterRangeManager(uint32_t table_id, 
-    const std::vector<third_party::Range>& ranges) {
+void Engine::RegisterRangePartitionManager(uint32_t table_id, const std::vector<third_party::Range>& ranges) {
   CHECK(id_mapper_);
   auto server_thread_ids = id_mapper_->GetAllServerThreads();
   CHECK_EQ(ranges.size(), server_thread_ids.size());
-  SimpleRangeManager range_manager(ranges, server_thread_ids);
-  CHECK(range_manager_map_.find(table_id) == range_manager_map_.end());
-  range_manager_map_.insert({table_id, range_manager});
+  std::unique_ptr<SimpleRangePartitionManager> range_manager(
+      new SimpleRangePartitionManager(ranges, server_thread_ids));
+  CHECK(partition_manager_map_.find(table_id) == partition_manager_map_.end());
+  partition_manager_map_[table_id] = std::move(range_manager);
 }
-
 
 void Engine::InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids) {
   CHECK(id_mapper_);
@@ -178,7 +173,13 @@ void Engine::Run(const MLTask& task) {
     CHECK_EQ(local_threads.size(), local_workers.size());
     std::vector<std::thread> thread_group(local_threads.size());
     LOG(INFO) << thread_group.size() << " workers run on proc: " << node_.id;
-    for (int i = 0; i < thread_group.size(); ++ i) {
+    std::map<uint32_t, AbstractPartitionManager*> partition_manager_map;
+    for (auto& table : tables) {
+      auto it = partition_manager_map_.find(table);
+      CHECK(it != partition_manager_map_.end());
+      partition_manager_map[table] = it->second.get();
+    }
+    for (int i = 0; i < thread_group.size(); ++i) {
       // TODO: Now I register the thread_id with the queue in worker_helper_thread to the mailbox.
       // So that the message sent to thread_id will be pushed into worker_helper_thread_'s queue
       // and worker_helper_thread_ is in charge of handling the message.
@@ -188,12 +189,10 @@ void Engine::Run(const MLTask& task) {
       info.thread_id = local_threads[i];
       info.worker_id = local_workers[i];
       info.send_queue = sender_->GetMessageQueue();
-      info.range_manager_map = range_manager_map_;  // Now I just copy it
+      info.partition_manager_map = partition_manager_map;
       info.callback_runner = app_blocker_.get();
       info.mailbox = mailbox_.get();
-      thread_group[i] = std::thread([&task, info](){
-        task.RunLambda(info);
-      });
+      thread_group[i] = std::thread([&task, info]() { task.RunLambda(info); });
     }
     for (auto& th : thread_group) {
       th.join();

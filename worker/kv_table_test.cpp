@@ -27,6 +27,7 @@ class FakeMailbox : public AbstractMailbox {
     to_send_ = nullptr;
   } 
 
+  void Barrier() {}
  private:
   ThreadsafeQueue<Message>* to_send_;
 };
@@ -47,14 +48,14 @@ const uint32_t kTestModelId = 23;
 
 TEST_F(TestSimpleKVTable, Init) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
 }
 
 TEST_F(TestSimpleKVTable, VectorAdd) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
   std::vector<Key> keys = {3, 4, 5, 6};
@@ -97,7 +98,7 @@ TEST_F(TestSimpleKVTable, VectorAdd) {
 
 TEST_F(TestSimpleKVTable, VectorGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   std::thread th([&queue, &manager, &fake_mailbox]() {
     SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
@@ -149,7 +150,7 @@ TEST_F(TestSimpleKVTable, VectorGet) {
 }
 TEST_F(TestSimpleKVTable, SArrayAdd) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
   third_party::SArray<Key> keys = {3, 4, 5, 6};
@@ -192,7 +193,7 @@ TEST_F(TestSimpleKVTable, SArrayAdd) {
 
 TEST_F(TestSimpleKVTable, SArrayGet) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   std::thread th([&queue, &manager, &fake_mailbox]() {
     SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
@@ -249,7 +250,7 @@ TEST_F(TestSimpleKVTable, SArrayGet) {
 
 TEST_F(TestSimpleKVTable, Clock) {
   ThreadsafeQueue<Message> queue;
-  SimpleRangeManager manager({{2, 4}, {4, 7}}, {0, 1});
+  SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});
   FakeMailbox fake_mailbox;
   SimpleKVTable<float> table(kTestAppThreadId, kTestModelId, &queue, &manager, &fake_mailbox);
   table.Clock();  // -> server 0 and server 1
