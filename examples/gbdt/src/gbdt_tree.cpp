@@ -9,6 +9,9 @@
 #include "driver/engine.hpp"
 #include "worker/kv_client_table.hpp"
 
+#include <thread>
+#include <chrono>
+
 #include <limits>
 #include <map>
 #include <string>
@@ -47,8 +50,8 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	aggr_push_key_vect.insert(aggr_push_key_vect.end(), push_key_vect.begin(), push_key_vect.end());
   	aggr_push_val_vect.insert(aggr_push_val_vect.end(), push_val_vect.begin(), push_val_vect.end());
   	
-    //LOG(INFO) << "aggr_push_val_vect.sum = " << std::accumulate(aggr_push_val_vect.begin(), aggr_push_val_vect.end(), 0.0);
   }
+  //LOG(INFO) << "aggr_push_val_vect.sum = " << std::accumulate(aggr_push_val_vect.begin(), aggr_push_val_vect.end(), 0.0);
   table.Add(aggr_push_key_vect, aggr_push_val_vect);
   table.Clock();
 
@@ -65,6 +68,10 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	
   }
   table.Get(pull_key_vect, &pull_val_vect);
+  table.Clock();
+  //LOG(INFO) << "feat_vect_list[0].size = " << feat_vect_list[0].size();
+  //LOG(INFO) << "pull_val_vect.sum = " << std::accumulate(pull_val_vect.begin(), pull_val_vect.end(), 0.0);
+  
   // Check log
   /*
   for (int i = 0; i < pull_val_vect.size(); i++) {
@@ -77,7 +84,10 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   int sketch_num_per_feat = pull_val_vect.size() / feat_vect_list.size(); 
   for (int f_id = 0; f_id < feat_vect_list.size(); f_id++) {
     std::vector<float> sketch_hist_vect(pull_val_vect.begin() + (f_id * sketch_num_per_feat), pull_val_vect.begin() + ((f_id + 1) * sketch_num_per_feat));
+    //LOG(INFO) << "sketch_hist_vect.sum = " << std::accumulate(sketch_hist_vect.begin(), sketch_hist_vect.end(), 0.0);
+    //LOG(INFO) << min_max_feat_list[f_id]["min"] << ", " << min_max_feat_list[f_id]["max"];
     std::vector<float> candidate_split_vect = find_candidate_split(sketch_hist_vect, min_max_feat_list[f_id]);
+    //LOG(INFO) << "candidate_split_vect.sum = " << std::accumulate(candidate_split_vect.begin(), candidate_split_vect.end(), 0.0);
     /*
     for (float val: candidate_split_vect) {
     	LOG(INFO) << "candidate: " << val;
@@ -120,6 +130,10 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	
   }
   table.Get(pull_key_vect, &pull_val_vect);
+  table.Clock();
+  //LOG(INFO) << "2. pull_key_vect.size = " << pull_key_vect.size();
+  //LOG(INFO) << "2. pull_key_vect.sum = " << std::accumulate(pull_key_vect.begin(), pull_key_vect.end(), 0.0);
+  //LOG(INFO) << "2. pull_val_vect.sum = " << std::accumulate(pull_val_vect.begin(), pull_val_vect.end(), 0.0);
 
   int grad_hess_num_per_feat = ((1 / this->params["rank_fraction"]) - 1) * 4;
   for (int f_id = 0; f_id < feat_vect_list.size(); f_id++) {
@@ -138,13 +152,48 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   //LOG(INFO) << "this->split_val = " << this->split_val;
 
 
-  // Step 5: Reset ps val for next node use
-  //LOG(INFO) << "Step 5: Reset ps val for next node use";
+  // Step 5: If is leaf, push local grad vect sum to ps and find predict result
+  if (check_to_stop()) {
+    //LOG(INFO) << "Step 5: Push local grad vect sum to ps and find predict result";
+    aggr_push_key_vect.clear();
+    aggr_push_val_vect.clear();
+
+    push_key_vect = push_local_grad_sum(ps_key_ptr, table, grad_vect, push_val_vect);
+    this->local_grad_sum_key_vect_list = push_key_vect;
+    this->local_grad_sum_val_vect_list = push_val_vect;
+    //LOG(INFO) << "local sum = " << push_val_vect[0];
+    //LOG(INFO) << "local num = " << push_val_vect[1];
+
+    aggr_push_key_vect.insert(aggr_push_key_vect.end(), push_key_vect.begin(), push_key_vect.end());
+    aggr_push_val_vect.insert(aggr_push_val_vect.end(), push_val_vect.begin(), push_val_vect.end());
+    table.Add(aggr_push_key_vect, aggr_push_val_vect);
+    table.Clock();
+
+    //LOG(INFO) << "Pull global grad vect sum from ps and find predict result";
+    pull_key_vect.clear();
+    pull_val_vect.clear();
+
+    pull_key_vect = this->local_grad_sum_key_vect_list;
+    table.Get(pull_key_vect, &pull_val_vect);
+    table.Clock();
+    //LOG(INFO) << "global sum = " << pull_val_vect[0];
+    //LOG(INFO) << "global num = " << pull_val_vect[1];
+
+    this->predict_val = pull_val_vect[0] / pull_val_vect[1];
+
+  }
+
+
+  // Step 6: Reset ps val for next node use
+  //LOG(INFO) << "Step 6: Reset ps val for next node use";
+
+  // Avoid reset too early
+  std::this_thread::sleep_for(std::chrono::milliseconds(int(500)));
+  //LOG(INFO) << "sleep for " << int(500) << " ms";
 
   aggr_push_key_vect.clear();
   aggr_push_val_vect.clear();
   for (int i = 0; i < this->quantile_sketch_key_vect_list.size(); i++) {
-    // TODO: dont use transform
     std::vector<float> inv_val_vect;
     for (int j = 0; j < this->quantile_sketch_key_vect_list[i].size(); j++) {
       inv_val_vect.push_back(this->quantile_sketch_val_vect_list[i][j] * -1.0);
@@ -170,31 +219,40 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   //LOG(INFO) << "aggr_push_key_vect.size = " << aggr_push_key_vect.size();
   //LOG(INFO) << "aggr_push_val_vect.size = " << aggr_push_val_vect.size();
   
-  table.Add(aggr_push_key_vect, aggr_push_val_vect);
+  std::vector<float> inv_val_vect;
+  for (int i = 0; i < this->local_grad_sum_key_vect_list.size(); i++) {
+    inv_val_vect.push_back(this->local_grad_sum_val_vect_list[i] * -1.0);
+  }
+  push_val_vect = inv_val_vect;
+  aggr_push_key_vect.insert(aggr_push_key_vect.end(), local_grad_sum_key_vect_list.begin(), local_grad_sum_key_vect_list.end());
+  aggr_push_val_vect.insert(aggr_push_val_vect.end(), push_val_vect.begin(), push_val_vect.end());
+  
 
+
+  table.Add(aggr_push_key_vect, aggr_push_val_vect);
+  table.Clock();
   // Reset ps_key_ptr
   ps_key_ptr = 0;
 
-  table.Clock();
   // Check log
   /*
   pull_val_vect.clear();
   table.Get(aggr_push_key_vect, &pull_val_vect);
-  //LOG(INFO) << "sum(pull_val_vect) (should be 0) = " << std::accumulate(pull_val_vect.begin(), pull_val_vect.end(), 0.0);
+  LOG(INFO) << "sum(pull_val_vect) (should be 0) = " << std::accumulate(pull_val_vect.begin(), pull_val_vect.end(), 0.0);
   */
 
-  // Step 6: Check to stop
-  //LOG(INFO) << "Step 6: Check to stop";
+  // Step 7: Check to stop
+  //LOG(INFO) << "Step 7: Check to stop";
   if (check_to_stop()) {
-    this->predict_val = std::accumulate(grad_vect.begin(), grad_vect.end(), 0.0) / grad_vect.size();
+    //this->predict_val = std::accumulate(grad_vect.begin(), grad_vect.end(), 0.0) / grad_vect.size();
     this->is_leaf = true;
     // TODO: mark the clock?
 
     return;
   }
 
-  // Step 7: Recursively build child
-  //LOG(INFO) << "Step 7: Recursively build child";
+  // Step 8: Recursively build child
+  //LOG(INFO) << "Step 8: Recursively build child";
   std::vector<float> left_grad_vect, right_grad_vect;
   std::vector<float> left_hess_vect, right_hess_vect;
   std::vector<std::vector<float>> left_feat_vect_list, right_feat_vect_list;
@@ -226,9 +284,16 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   this->left_child->set_depth(this->depth + 1);
   this->right_child->set_depth(this->depth + 1);
 
-  this->left_child->train(ps_key_ptr, table, left_feat_vect_list, min_max_feat_list
+  // Update min_max_feat_list
+  std::vector<std::map<std::string, float>> left_min_max_feat_list = min_max_feat_list;
+  std::vector<std::map<std::string, float>> right_min_max_feat_list = min_max_feat_list;
+  left_min_max_feat_list[this->feat_id]["max"] = this->split_val;
+  right_min_max_feat_list[this->feat_id]["min"] = this->split_val;
+  //LOG(INFO) << "this->split_val = " << this->split_val;
+
+  this->left_child->train(ps_key_ptr, table, left_feat_vect_list, left_min_max_feat_list
   , left_grad_vect, left_hess_vect);
-  this->right_child->train(ps_key_ptr, table, right_feat_vect_list, min_max_feat_list
+  this->right_child->train(ps_key_ptr, table, right_feat_vect_list, right_min_max_feat_list
   , right_grad_vect, right_hess_vect);
 
 }
@@ -238,7 +303,7 @@ std::vector<Key> GBDTTree::push_quantile_sketch(int & ps_key_ptr, KVClientTable<
   float total_data_num = this->params["total_data_num"];
   float min = min_max_feat["min"];
   float max = min_max_feat["max"];
-  max += 1; // To include largest element
+  max += 0.0001; // To include largest element
 
   // Step 1: Create histogram
   //float rank_bin_width = rank_fraction * total_data_num;
@@ -281,7 +346,7 @@ std::vector<float> GBDTTree::find_candidate_split(std::vector<float> sketch_hist
   float total_data_num = this->params["total_data_num"];
   float min = min_max_feat["min"];
   float max = min_max_feat["max"];
-  max += 1; // To include largest element
+  max += 0.0001; // To include largest element
   /*
   for (int i = 0; i < sketch_hist_vect.size(); i++) {
   	LOG(INFO) << "sketch_hist_vect[" << i << "] = " << sketch_hist_vect[i];
@@ -312,7 +377,7 @@ std::vector<float> GBDTTree::find_candidate_split(std::vector<float> sketch_hist
       float cur_fraction = prev_fraction + s_id * sketch_fraction;
       float cur_fraction_sum = std::accumulate(sketch_hist_vect.begin(), sketch_hist_vect.begin() + (int)(cur_fraction / sketch_fraction), 0.0);
 
-      if (fabs(cur_fraction_sum - cur_candidate_aggr_num) < best_approx) {
+      if (fabs(cur_fraction_sum - cur_candidate_aggr_num) <= best_approx) {
         best_approx = fabs(cur_fraction_sum - cur_candidate_aggr_num);
         argmax_fraction = cur_fraction;
       }
@@ -405,6 +470,22 @@ std::map<std::string, float> GBDTTree::find_best_split(std::vector<float> grad_h
   res["best_split_gain"] = best_split_gain;
 
   return res;
+}
+
+std::vector<Key> GBDTTree::push_local_grad_sum(int & ps_key_ptr, KVClientTable<float> & table, std::vector<float> grad_vect, std::vector<float> & _push_val_vect) {
+  float local_grad_sum = std::accumulate(grad_vect.begin(), grad_vect.end(), 0.0);
+  float local_grad_num = grad_vect.size();
+
+  std::vector<float> push_val_vect;
+  push_val_vect.push_back(local_grad_sum);
+  push_val_vect.push_back(local_grad_num);
+
+  std::vector<Key> push_key_vect(push_val_vect.size());
+  std::iota(push_key_vect.begin(), push_key_vect.end(), ps_key_ptr);
+  ps_key_ptr += push_key_vect.size();
+
+  _push_val_vect = push_val_vect;
+  return push_key_vect;
 }
 
 bool GBDTTree::check_to_stop() {
