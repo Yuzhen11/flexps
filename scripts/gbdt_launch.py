@@ -14,10 +14,8 @@ from os.path import dirname, join
 # 3:worker4:37542
 # 4:worker5:37542
 # 
-#hostfile = "machinefiles/local"
-hostfile = "machinefiles/5node"
-#progfile = "release/BasicExample"
-#progfile = "release/KVStorePerformanceExample"
+hostfile = "machinefiles/local"
+#hostfile = "machinefiles/5node"
 progfile = "debug/GBDTExample"
 
 script_path = os.path.realpath(__file__)
@@ -31,7 +29,17 @@ params = {
     "config_file" : hostfile_path,
     "hdfs_namenode" : "proj10",
     "hdfs_namenode_port" : 9000,
-    "input" : "hdfs:///jasper/kdd12", # TODO: replace by your own data
+    "cluster_train_input" : "hdfs:///calvinzhou/40_data_train.dat", # TODO: replace by your own data
+    "cluster_test_input" : "hdfs:///calvinzhou/40_data_train.dat",
+    "num_workers_per_node" : 1,
+    "local_train_input" : "/home/ubuntu/Git_Project/flexps/examples/gbdt/data/40_train.dat",
+    "local_test_input" : "/home/ubuntu/Git_Project/flexps/examples/gbdt/data/40_train.dat",
+    "run_mode" : "local",
+    # gbdt model config
+    "num_of_trees" : 3,
+    "max_depth" : 3,
+    "complexity_of_leaf" : 0.05,
+    "rank_fraction" : 0.1,
 }
 
 ssh_cmd = (
