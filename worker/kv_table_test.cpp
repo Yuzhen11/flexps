@@ -27,6 +27,7 @@ class FakeMailbox : public AbstractMailbox {
     to_send_ = nullptr;
   } 
 
+  void Barrier() {}
  private:
   ThreadsafeQueue<Message>* to_send_;
 };

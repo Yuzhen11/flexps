@@ -20,11 +20,11 @@ class Mailbox : public AbstractMailbox {
   virtual void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue) override;
   virtual void DeregisterQueue(uint32_t queue_id) override;
   virtual int Send(const Message& msg) override;
+  virtual void Barrier() override;
   int Recv(Message* msg);
   void Start();
   void Stop();
   size_t GetQueueMapSize() const;
-  void Barrier();
 
   // For testing only
   void ConnectAndBind();

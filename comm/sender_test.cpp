@@ -32,6 +32,7 @@ class FakeMailbox : public AbstractMailbox {
   void WaitAndPop(Message* msg) {
     to_send_.WaitAndPop(msg);
   }
+  virtual void Barrier() {}
  private:
   ThreadsafeQueue<Message> to_send_;
 };

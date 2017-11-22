@@ -24,7 +24,8 @@ class FakeMailbox : public AbstractMailbox {
 
   virtual int Send(const Message& msg) override { queue_map_[msg.meta.recver]->Push(std::move(msg)); };
 
- private:
+  virtual void Barrier() {}
+
   std::mutex mu_;
   std::map<uint32_t, ThreadsafeQueue<Message>* const> queue_map_;
 };
