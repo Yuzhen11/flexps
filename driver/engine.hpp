@@ -70,8 +70,8 @@ class Engine {
   WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
   template <typename Val>
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                   StorageType storage_type, int model_staleness = 0, int speculation = 0, uint32_t chunk_size = 1,
-                   SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
+                   StorageType storage_type, int model_staleness = 0, int speculation = 0,
+                   SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None, uint32_t chunk_size = 1);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
   void Run(const MLTask& task);
 
@@ -95,11 +95,11 @@ class Engine {
 
 template <typename Val>
 void Engine::CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                         StorageType storage_type, int model_staleness, int speculation, uint32_t chunk_size,
-                         SparseSSPRecorderType sparse_ssp_recorder_type) {
+                         StorageType storage_type, int model_staleness, int speculation,
+                         SparseSSPRecorderType sparse_ssp_recorder_type, uint32_t chunk_size) {
   RegisterRangePartitionManager(table_id, ranges);
   CHECK(server_thread_group_);
-  CHECK_LE(chunk_size, 1);
+  CHECK_GE(chunk_size, 1);
   CHECK(id_mapper_);
   auto server_thread_ids = id_mapper_->GetAllServerThreads();
   CHECK_EQ(ranges.size(), server_thread_ids.size());

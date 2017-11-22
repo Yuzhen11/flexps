@@ -25,21 +25,39 @@ class VectorStorage : public AbstractStorage {
       const third_party::SArray<char>& vals) override {
     auto typed_vals = third_party::SArray<Val>(vals);
     CHECK_EQ(chunk_size_ * typed_keys.size(), typed_vals.size());
-    for (size_t index = 0; index < typed_keys.size(); index++) {
-      CHECK_GE(typed_keys[index], range_.begin());
-      CHECK_LT(typed_keys[index], range_.end());
-      for (size_t chunk_index = 0; chunk_index < chunk_size_; chunk_index++)
-        storage_[(typed_keys[index] - range_.begin()) * chunk_size_ + chunk_index] += typed_vals[index * chunk_size_ + chunk_index];
+    if(chunk_size_ == 1){
+      for (size_t index = 0; index < typed_keys.size(); index++) { 
+        CHECK_GE(typed_keys[index], range_.begin());                                                                                                                                                    
+        CHECK_LT(typed_keys[index], range_.end());  
+        storage_[typed_keys[index] - range_.begin()] += typed_vals[index];  
+      }
+    }
+    else{
+      for (size_t index = 0; index < typed_keys.size(); index++) {
+        CHECK_GE(typed_keys[index], range_.begin());
+        CHECK_LT(typed_keys[index], range_.end());
+        for (size_t chunk_index = 0; chunk_index < chunk_size_; chunk_index++)
+          storage_[(typed_keys[index] - range_.begin()) * chunk_size_ + chunk_index] += typed_vals[index * chunk_size_ + chunk_index];
+      }
     }
   }
 
   virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
     third_party::SArray<Val> reply_vals(typed_keys.size() * chunk_size_);
-    for (int i = 0; i < typed_keys.size(); ++ i) {
-      CHECK_GE(typed_keys[i], range_.begin());
-      CHECK_LT(typed_keys[i], range_.end());
-      for (int j = 0; j < chunk_size_; ++ j)
-        reply_vals[i * chunk_size_ + j] = storage_[(typed_keys[i] - range_.begin()) * chunk_size_ + j];
+    if(chunk_size_ == 1){
+      for (size_t i = 0; i < typed_keys.size(); i++) {                                                                                                                                      
+        CHECK_GE(typed_keys[i], range_.begin());                                                                                                                                                    
+        CHECK_LT(typed_keys[i], range_.end());
+        reply_vals[i] = storage_[typed_keys[i] - range_.begin()];
+      }  
+    }  
+    else{
+      for (int i = 0; i < typed_keys.size(); ++ i) {
+        CHECK_GE(typed_keys[i], range_.begin());
+        CHECK_LT(typed_keys[i], range_.end());
+        for (int j = 0; j < chunk_size_; ++ j)
+          reply_vals[i * chunk_size_ + j] = storage_[(typed_keys[i] - range_.begin()) * chunk_size_ + j];
+      }
     }
     return third_party::SArray<char>(reply_vals);
   }
