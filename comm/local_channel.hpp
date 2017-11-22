@@ -15,6 +15,7 @@ class LocalChannel {
   LocalChannel(uint32_t tid, AbstractChannel* const channel);
   LocalChannel(const LocalChannel&) = delete;
   LocalChannel& operator=(const LocalChannel&) = delete;
+  uint32_t GetId() const { return tid_; }
   /*
    * Push an SArrayBinStream to remote thread.
    */

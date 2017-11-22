@@ -23,13 +23,14 @@ void Channel::RegisterQueues() {
   local_channels_.reserve(local_thread_ids_.size());  
   for (auto tid : local_thread_ids_) {
     local_channels_.emplace_back(new LocalChannel(tid, this));
-    mailbox_->RegisterQueue(tid, local_channels_.back()->GetQueue());
+    CHECK(id_map_.find(tid) != id_map_.end());
+    mailbox_->RegisterQueue(id_map_[tid], local_channels_.back()->GetQueue());
   }
 }
 
 void Channel::DeregisterQueues() {
   for (auto tid : local_thread_ids_) {
-    mailbox_->DeregisterQueue(tid);
+    mailbox_->DeregisterQueue(id_map_[tid]);
   }
 }
 
@@ -48,6 +49,8 @@ void Channel::PushTo(uint32_t id, const SArrayBinStream& bin) {
   Message msg = bin.ToMsg();
   msg.meta.sender = -1;
   msg.meta.recver = tid;
+  msg.meta.model_id = -1;
+  msg.meta.flag = Flag::kOther;
   msg.meta.model_id = -1;
   mailbox_->Send(msg);
 }

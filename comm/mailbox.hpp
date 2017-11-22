@@ -56,7 +56,9 @@ class Mailbox : public AbstractMailbox {
   // barrier
   std::mutex barrier_mu_;
   std::condition_variable barrier_cond_;
-  int barrier_count_ = 0;
+  uint32_t this_count_ = 0;
+  uint32_t next_count_ = 0;
+  uint32_t progress_ = 0;
 };
 
 }  // namespace flexps

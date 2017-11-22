@@ -24,7 +24,7 @@ class TestChannel : public testing::Test {
 TEST_F(TestChannel, Create) {
   uint32_t num_local_threads = 2;
   uint32_t num_global_threads = 2;
-  std::vector<uint32_t> local_thread_ids{20, 21};
+  std::vector<uint32_t> local_thread_ids{0, 1};
   std::unordered_map<uint32_t, uint32_t> id_map{{0, 20}, {1, 21}};
   FakeMailbox mailbox;
 
@@ -34,7 +34,7 @@ TEST_F(TestChannel, Create) {
 TEST_F(TestChannel, PushTo) {
   uint32_t num_local_threads = 2;
   uint32_t num_global_threads = 2;
-  std::vector<uint32_t> local_thread_ids{20, 21};
+  std::vector<uint32_t> local_thread_ids{0, 1};
   std::unordered_map<uint32_t, uint32_t> id_map{{0, 20}, {1, 21}};
   FakeMailbox mailbox;
 
@@ -58,7 +58,7 @@ TEST_F(TestChannel, PushTo) {
 TEST_F(TestChannel, Wait) {
   uint32_t num_local_threads = 2;
   uint32_t num_global_threads = 2;
-  std::vector<uint32_t> local_thread_ids{20, 21};
+  std::vector<uint32_t> local_thread_ids{0, 1};
   std::unordered_map<uint32_t, uint32_t> id_map{{0, 20}, {1, 21}};
   FakeMailbox mailbox;
 
@@ -72,7 +72,7 @@ TEST_F(TestChannel, Wait) {
 TEST_F(TestChannel, WaitMultipleTimes) {
   uint32_t num_local_threads = 2;
   uint32_t num_global_threads = 2;
-  std::vector<uint32_t> local_thread_ids{20, 21};
+  std::vector<uint32_t> local_thread_ids{0, 1};
   std::unordered_map<uint32_t, uint32_t> id_map{{0, 20}, {1, 21}};
   FakeMailbox mailbox;
 
