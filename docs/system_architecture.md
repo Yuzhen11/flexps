@@ -1,6 +1,6 @@
 # System Architecture
 
-![system architecture](assets/system_archi.svg)
+![system architecture](assets/system_archi.jpg)
 
 
 
@@ -16,3 +16,4 @@ Typical workflow:
 
 
 Reference: [TatianaJin/csci5570](https://github.com/TatianaJin/csci5570/blob/master/mindmap.svg)
+

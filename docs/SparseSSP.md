@@ -12,4 +12,4 @@ A graph description is as below:
 
 
 
-![system architecture](assets/SparseSSP.svg)
+![system architecture](assets/SparseSSP.jpg)
