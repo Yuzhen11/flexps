@@ -199,7 +199,7 @@ int Mailbox::Send(const Message& msg) {
   int send_bytes = meta_size;
 
   // send data
-  VLOG(1) << "Node " << node_.id << " starts sending data";
+  VLOG(1) << "Node " << node_.id << " starts sending data: " << msg.DebugString();
   for (int i = 0; i < num_data; ++i) {
     zmq_msg_t data_msg;
     third_party::SArray<char>* data = new third_party::SArray<char>(msg.data[i]);

@@ -10,9 +10,8 @@ namespace {
 /*
  * Test for Engine which depends on
  *  Mailbox
- *  WorkerHelperThread
- *  ServerThread
- *  AppBlocker
+ *  SimpleIdMapper
+ *  KVEngine
  *  ...
  *
  *  The failure of the test may be caused by each of these components.
@@ -37,15 +36,6 @@ class FakeIdMapper : public AbstractIdMapper {
 TEST_F(TestEngine, Construct) {
   Node node{0, "localhost", 12353};
   Engine engine(node, {node});
-}
-
-TEST_F(TestEngine, StartMailbox) {
-  Node node{0, "localhost", 12353};
-  Engine engine(node, {node});
-  engine.CreateIdMapper();
-  engine.CreateMailbox();
-  engine.StartMailbox();
-  engine.StopMailbox();
 }
 
 TEST_F(TestEngine, StartEverything) {

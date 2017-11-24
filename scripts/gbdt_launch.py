@@ -23,4 +23,4 @@ env_params = (
   "LIBHDFS3_CONF=/data/opt/course/hadoop/etc/hadoop/hdfs-site.xml"
   )
 
-launch_util(prog_path, hostfile_path, env_params, params, sys.argv)
+launch_util(progfile, hostfile, env_params, params, sys.argv)

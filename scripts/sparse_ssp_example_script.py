@@ -26,4 +26,4 @@ env_params = (
   "GLOG_minloglevel=0 "
   )
 
-launch_util(prog_path, hostfile_path, env_params, params, sys.argv)
+launch_util(progfile, hostfile, env_params, params, sys.argv)
