@@ -1,5 +1,9 @@
 include_directories(${PROJECT_SOURCE_DIR} ${HUSKY_EXTERNAL_INCLUDE})
 
+add_subdirectory(gbdt)
+
+### Applications
+
 # BasicExample
 add_executable(BasicExample basic_example.cpp)
 target_link_libraries(BasicExample flexps)
@@ -49,14 +53,4 @@ if(LIBHDFS3_FOUND)
   set_property(TARGET LRExample PROPERTY CXX_STANDARD 11)
   add_dependencies(LRExample ${external_project_dependencies})
 endif(LIBHDFS3_FOUND)
-
-# GBDTExample
-file(GLOB gbdt-src-files
-  gbdt/src/*.cpp
-  )
-add_executable(GBDTExample gbdt/gbdt_example.cpp ${gbdt-src-files})
-target_link_libraries(GBDTExample flexps)
-target_link_libraries(GBDTExample ${HUSKY_EXTERNAL_LIB})
-set_property(TARGET GBDTExample PROPERTY CXX_STANDARD 11)
-add_dependencies(GBDTExample ${external_project_dependencies})
 

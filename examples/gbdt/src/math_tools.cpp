@@ -55,4 +55,18 @@ std::map<std::string, float> find_min_max(std::vector<float> vect) {
   return res;
 }
 
+float calculate_rmse(std::vector<float> vect1, std::vector<float> vect2) {
+  float rmse = 0.0;
+
+  for (int i = 0; i < vect1.size(); i++) {
+    
+    float error = vect1[i] - vect2[i];
+    rmse += error * error;
+  }
+  rmse = rmse / vect1.size();
+  rmse = sqrt(rmse);
+
+  return rmse;
+}
+
 }

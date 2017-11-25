@@ -13,6 +13,10 @@
 
 namespace flexps {
 
+DataLoader::DataLoader() {
+
+}
+
 DataLoader::DataLoader(std::string file_path, std::string delimiter) {
   std::ifstream infile(file_path.c_str());
 
@@ -20,19 +24,61 @@ DataLoader::DataLoader(std::string file_path, std::string delimiter) {
   bool init_flag = false;
   this->num_of_record = 0;
   this->num_of_feat = 0;
+
   while (getline(infile, line)) {
-    std::vector<std::string> tokens = split(line, "\t");
+    std::vector<float> val_vect = read_line_to_vect(line);
     if (init_flag == false) {
-      num_of_feat = tokens.size() - 1;
+      num_of_feat = val_vect.size() - 1;
       this->feat_vect_list.resize(num_of_feat);
       init_flag = true;
     }
-    this->class_vect.push_back(atof(tokens[0].c_str()));
+    this->class_vect.push_back(val_vect[0]);
 
     for (int i = 0; i < num_of_feat; i++) {
-      this->feat_vect_list[i].push_back(atof(tokens[i+1].c_str()));
+      this->feat_vect_list[i].push_back(val_vect[i+1]);
     }
+
     this->num_of_record++;
+  }
+}
+
+std::vector<float> DataLoader::read_line_to_vect(std::string line) {
+  // line format: <class_val>  1:<feat_val> 2:<feat_val> ...
+
+  std::vector<float> vect;
+  std::vector<std::string> feat_element_vect = split(line, "  ");
+
+  float class_val = atof(feat_element_vect[0].c_str());
+  vect.push_back(class_val);
+
+  feat_element_vect.erase(feat_element_vect.begin());
+
+  for (std::string element: feat_element_vect) {
+    float feat_val = atof(split(element, ":")[1].c_str());
+    vect.push_back(feat_val);
+  }
+
+  return vect;
+}
+
+void DataLoader::read_hdfs_to_class_feat_vect(std::vector<std::string> & line_vect
+      , std::vector<float> & class_vect, std::vector<std::vector<float>> & feat_vect_list) {
+  DataLoader dataloader;
+  bool init_flag = false;
+  int num_of_feat = 0;
+
+  for (std::string line: line_vect) {
+    std::vector<float> val_vect = dataloader.read_line_to_vect(line);
+    if (init_flag == false) {
+      num_of_feat = val_vect.size() - 1;
+      feat_vect_list.resize(num_of_feat);
+      init_flag = true;
+    }
+    class_vect.push_back(val_vect[0]);
+
+    for (int i = 0; i < num_of_feat; i++) {
+      feat_vect_list[i].push_back(val_vect[i+1]);
+    }
   }
 }
 

@@ -3,7 +3,7 @@
 
 #include "boost/utility/string_ref.hpp"
 #include "base/serialization.hpp"
-//#include "io/hdfs_manager.hpp"
+#include "io/hdfs_manager.hpp"
 #include "lib/batch_data_sampler.cpp"
 #include "lib/libsvm_parser.cpp"
 #include "driver/engine.hpp"
@@ -57,7 +57,7 @@ void Run() {
 
   // Load data (HDFS)
   // TODO: include hdfs_manager.hpp
-  /*
+  
   HDFSManager::Config config;
   config.input = FLAGS_cluster_train_input;
   config.worker_host = my_node.hostname;
@@ -67,7 +67,7 @@ void Run() {
   config.hdfs_namenode = FLAGS_hdfs_namenode;
   config.hdfs_namenode_port = FLAGS_hdfs_namenode_port;
   config.num_local_load_thread = FLAGS_num_workers_per_node;
-
+  
   //using DataObj = std::string;
 
   zmq::context_t* zmq_context = new zmq::context_t(1);
@@ -98,11 +98,11 @@ void Run() {
   hdfs_manager.Stop();
   LOG(INFO) << "Finished loading data!";
 
-  for (auto record: data) {
-    LOG(INFO) << "read record = " << record;
-  }
-  */
-  /*
+  //for (auto record: data) {
+  //  LOG(INFO) << "read record = " << record;
+  //}
+  
+  
   // Use DataLoader to convert string to feat vect
   //std::vector<std::string> data;
   //data.push_back("0  1:8 2:350 3:150 4:4699 5:14.5 6:74 7:0");
@@ -155,12 +155,11 @@ void Run() {
   //}
 
   // ad-hoc solution end
-  */
+  
 
   // Load data (Local)
-
+  /*
   DataLoader data_loader(FLAGS_local_train_input, "\t");
-
   const std::vector<std::vector<float>> & all_feat_vect_list = data_loader.get_feat_vect_list();
   const std::vector<float> & all_class_vect = data_loader.get_class_vect();
   LOG(INFO) << "Load data successfully";
@@ -178,9 +177,8 @@ void Run() {
 
   // Find data size of dataset
   const int & data_num = all_feat_vect_list[0].size();
-
   LOG(INFO) << "Find max min ok";
-  
+  */
 
   // 1. Start engine
   const int nodeId = my_node.id;
@@ -302,7 +300,7 @@ void Run() {
   });
 
   // 4. Run tasks
-  //engine.Run(task);
+  engine.Run(task);
 
   // 5. Stop engine
   engine.StopEverything();
