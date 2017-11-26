@@ -22,9 +22,11 @@ class FakeMailbox : public AbstractMailbox {
     to_send_ = queue;
   }
 
-  void DeregisterQueue(uint32_t queue_id) override { 
+  virtual void DeregisterQueue(uint32_t queue_id) override { 
     to_send_ = nullptr;
-  } 
+  }
+
+  virtual void Barrier() {} 
 
  private:
   ThreadsafeQueue<Message>* to_send_;
