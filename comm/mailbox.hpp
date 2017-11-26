@@ -20,11 +20,11 @@ class Mailbox : public AbstractMailbox {
   virtual void RegisterQueue(uint32_t queue_id, ThreadsafeQueue<Message>* const queue) override;
   virtual void DeregisterQueue(uint32_t queue_id) override;
   virtual int Send(const Message& msg) override;
+  virtual void Barrier() override;
   int Recv(Message* msg);
   void Start();
   void Stop();
   size_t GetQueueMapSize() const;
-  void Barrier();
 
   // For testing only
   void ConnectAndBind();
@@ -56,7 +56,9 @@ class Mailbox : public AbstractMailbox {
   // barrier
   std::mutex barrier_mu_;
   std::condition_variable barrier_cond_;
-  int barrier_count_ = 0;
+  uint32_t this_count_ = 0;
+  uint32_t next_count_ = 0;
+  uint32_t progress_ = 0;
 };
 
 }  // namespace flexps

@@ -18,7 +18,7 @@ class FakeMailbox : public AbstractMailbox {
 
   virtual void DeregisterQueue(uint32_t queue_id) override {
     std::lock_guard<std::mutex> lk(mu_);
-    //CHECK(queue_map_.find(queue_id) != queue_map_.end()) << "Queue " << queue_id << "is not in mailbox";
+    CHECK(queue_map_.find(queue_id) != queue_map_.end()) << "Queue " << queue_id << "is not in mailbox";
     queue_map_.erase(queue_id);
   };
 
@@ -31,3 +31,4 @@ class FakeMailbox : public AbstractMailbox {
 };
 
 }
+
