@@ -30,4 +30,5 @@ class FakeMailbox : public AbstractMailbox {
   std::map<uint32_t, ThreadsafeQueue<Message>* const> queue_map_;
 };
 
-}  // namespace flexps
+}
+

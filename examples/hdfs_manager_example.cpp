@@ -55,7 +55,7 @@ void Run() {
       count++;
     }
     LOG(INFO) << count << " lines in (node, thread):(" 
-      << my_node.id << "," << local_tid << ")";
+      << my_node.id << "," << local_tid << ", number of lines:" << count << ")";
   });
   hdfs_manager.Stop();
 }

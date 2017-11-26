@@ -126,6 +126,7 @@ TEST_F(TestKVClientTable, VectorGet) {
   callback_runner.AddResponse(r2);
   th.join();
 }
+
 TEST_F(TestKVClientTable, SArrayAdd) {
   ThreadsafeQueue<Message> queue;
   SimpleRangePartitionManager manager({{2, 4}, {4, 7}}, {0, 1});

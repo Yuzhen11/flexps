@@ -17,7 +17,7 @@ class VectorStorage : public AbstractStorage {
   /*
    * The storage is in charge of range [range.begin(), range.end()).
    */
-  VectorStorage(third_party::Range range) : range_(range), storage_(range.size(), Val()) {
+  VectorStorage(third_party::Range range, uint32_t chunk_size = 1) : range_(range), chunk_size_(chunk_size), storage_(range.size(), Val()) {
     CHECK_LE(range_.begin(), range_.end());
   }
 
@@ -35,8 +35,6 @@ class VectorStorage : public AbstractStorage {
   virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
     third_party::SArray<Val> reply_vals(typed_keys.size());
     for (int i = 0; i < typed_keys.size(); ++ i) {
-      CHECK_GE(typed_keys[i], range_.begin());
-      CHECK_LT(typed_keys[i], range_.end());
       reply_vals[i] = storage_[typed_keys[i] - range_.begin()];
     }
     return third_party::SArray<char>(reply_vals);
@@ -53,12 +51,13 @@ class VectorStorage : public AbstractStorage {
   }
 
   size_t Size() const {
-    CHECK_EQ(range_.size(), storage_.size());
+    CHECK_EQ(range_.size() * chunk_size_, storage_.size());
     return storage_.size();
   }
  private:
   third_party::Range range_;
   std::vector<Val> storage_;
+  uint32_t chunk_size_;
 };
 
 }  // namespace flexps

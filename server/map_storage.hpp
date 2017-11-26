@@ -12,7 +12,7 @@ namespace flexps {
 template <typename Val>
 class MapStorage : public AbstractStorage {
  public:
-  MapStorage() = default;
+  MapStorage(uint32_t chunk_size = 1):chunk_size_(chunk_size){}
 
   virtual void SubAdd(const third_party::SArray<Key>& typed_keys, 
       const third_party::SArray<char>& vals) override {
@@ -35,6 +35,7 @@ class MapStorage : public AbstractStorage {
 
  private:
   std::map<Key, Val> storage_;
+  uint32_t chunk_size_;
 };
 
 }  // namespace flexps
