@@ -74,17 +74,5 @@ TEST_F(TestMapStorage, SubAddSubGet) {
   }
 }
 
-TEST_F(TestMapStorage, ChunkBasedSubAddSubGet) {
-  uint32_t chunk_size = 2;
-  MapStorage<float> s(chunk_size);
-
-  third_party::SArray<Key> s_keys({13, 14, 15});
-  third_party::SArray<float> s_vals({0.1, 0.2, 0.3, 0.4, 0.5, 0.6});
-  s.SubAdd(s_keys, third_party::SArray<char>(s_vals));
-  third_party::SArray<float> ret = third_party::SArray<float>(s.SubGet(s_keys));
-  for (int i = 0; i < s_keys.size() * chunk_size; ++ i) {
-    EXPECT_EQ(ret[i], s_vals[i]);
-  }
-}
 }  // namespace
 }  // namespace flexps
