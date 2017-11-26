@@ -11,8 +11,8 @@ namespace flexps {
 
 struct Control {};
 
-enum class Flag : char { kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet };
-static const char* FlagName[] = {"kExit", "kBarrier", "kResetWorkerInModel", "kClock", "kAdd", "kGet"};
+enum class Flag : char { kExit, kBarrier, kResetWorkerInModel, kClock, kAdd, kGet, kOther };
+static const char* FlagName[] = {"kExit", "kBarrier", "kResetWorkerInModel", "kClock", "kAdd", "kGet", "kOther"};
 
 struct Meta {
   int sender;
