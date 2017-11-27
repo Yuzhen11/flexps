@@ -163,8 +163,15 @@ void Run() {
   } else {
     CHECK(false) << "sparse_ssp_storage type error: " << FLAGS_kSparseSSPRecorderType;
   }
-  engine.CreateTable<float>(kTableId, range, 
-      model_type, storage_type, FLAGS_kStaleness, FLAGS_kSpeculation, sparse_ssp_recorder_type);
+
+  // Create SparseSSP table or normal table
+  if (model_type == ModelType::SparseSSP) {
+    engine.CreateSparseSSPTable<float>(kTableId, range, 
+        model_type, storage_type, FLAGS_kStaleness, FLAGS_kSpeculation, sparse_ssp_recorder_type);
+  } else {
+    engine.CreateTable<float>(kTableId, range, 
+        model_type, storage_type, FLAGS_kStaleness);
+  }
   engine.Barrier();
   // 3. Construct tasks
   MLTask task;

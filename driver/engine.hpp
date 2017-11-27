@@ -24,8 +24,15 @@ class Engine {
 
   template <typename Val>
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
+                   StorageType storage_type, int model_staleness = 0);
+
+  // Create SparseSSP Table, for testing sparsessp use only.
+  // Make sure you know how to use sparsessp before use this.
+  template <typename Val>
+  void CreateSparseSSPTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
                    StorageType storage_type, int model_staleness = 0, int speculation = 0,
                    SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
+
 
   void Run(const MLTask& task);
 
@@ -41,10 +48,17 @@ class Engine {
 
 template <typename Val>
 void Engine::CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
+                         StorageType storage_type, int model_staleness) {
+  CHECK(kv_engine_);
+  kv_engine_->CreateTable<Val>(table_id, ranges, model_type, storage_type, model_staleness);
+}
+
+template <typename Val>
+void Engine::CreateSparseSSPTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
                          StorageType storage_type, int model_staleness, int speculation,
                          SparseSSPRecorderType sparse_ssp_recorder_type) {
   CHECK(kv_engine_);
-  kv_engine_->CreateTable<Val>(table_id, ranges, model_type, storage_type, model_staleness, speculation, sparse_ssp_recorder_type);
+  kv_engine_->CreateSparseSSPTable<Val>(table_id, ranges, model_type, storage_type, model_staleness, speculation, sparse_ssp_recorder_type);
 }
 
 }  // namespace flexps
