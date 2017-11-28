@@ -174,6 +174,8 @@ void KVEngine::Run(const MLTask& task) {
       th.join();
     }
   }
+  // Let all the on-the-fly messages be recevied based on TCP/IP assumption
+  mailbox_->Barrier();
 }
 
 }  // namespace flexps
