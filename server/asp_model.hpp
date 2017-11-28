@@ -18,7 +18,7 @@ class ASPModel : public AbstractModel {
 
   virtual void Clock(Message& msg) override;
   virtual void Add(Message& msg) override;
-  virtual void Get(Message& msg) override;
+  virtual void Get(Message& msg, bool is_chunk = false) override;
   virtual int GetProgress(int tid) override;
   virtual void ResetWorker(Message& msg) override;
 

@@ -57,7 +57,7 @@ class KVEngine {
 
   template <typename Val>
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                   StorageType storage_type, int model_staleness = 0);
+                   StorageType storage_type, int model_staleness = 0, uint32_t chunk_size = 1);
 
   // Create SparseSSP Table, for testing sparsessp use only.
   template <typename Val>
@@ -68,7 +68,7 @@ class KVEngine {
   void Run(const MLTask& task);
  private:
   WorkerSpec AllocateWorkers(const std::vector<WorkerAlloc>& worker_alloc);
-  void RegisterRangePartitionManager(uint32_t table_id, const std::vector<third_party::Range>& ranges);
+  void RegisterRangePartitionManager(uint32_t table_id, const std::vector<third_party::Range>& ranges, uint32_t chunk_size = 1);
   void InitTable(uint32_t table_id, const std::vector<uint32_t>& worker_ids);
 
  private:
@@ -91,8 +91,8 @@ class KVEngine {
 
 template <typename Val>
 void KVEngine::CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                         StorageType storage_type, int model_staleness) {
-  RegisterRangePartitionManager(table_id, ranges);
+                         StorageType storage_type, int model_staleness, uint32_t chunk_size) {
+  RegisterRangePartitionManager(table_id, ranges, chunk_size);
   CHECK(server_thread_group_);
 
   CHECK(id_mapper_);
@@ -104,10 +104,10 @@ void KVEngine::CreateTable(uint32_t table_id, const std::vector<third_party::Ran
     std::unique_ptr<AbstractModel> model;
     // Set up storage
     if (storage_type == StorageType::Map) {
-      storage.reset(new MapStorage<Val>());
+      storage.reset(new MapStorage<Val>(chunk_size));
     } else if (storage_type == StorageType::Vector) {
       auto it = std::find(server_thread_ids.begin(), server_thread_ids.end(), server_thread->GetServerId());
-      storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()]));
+      storage.reset(new VectorStorage<Val>(ranges[it - server_thread_ids.begin()], chunk_size));
     } else {
       CHECK(false) << "Unknown storage_type";
     }

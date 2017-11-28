@@ -12,21 +12,33 @@ namespace flexps {
 template <typename Val>
 class MapStorage : public AbstractStorage {
  public:
-  MapStorage() = default;
+  MapStorage(uint32_t chunk_size = 1): chunk_size_(chunk_size) {};
 
   virtual void SubAdd(const third_party::SArray<Key>& typed_keys, 
       const third_party::SArray<char>& vals) override {
     auto typed_vals = third_party::SArray<Val>(vals);
-    CHECK_EQ(typed_keys.size(), typed_vals.size());
-    for (size_t index = 0; index < typed_keys.size(); index++) {
-      storage_[typed_keys[index]] += typed_vals[index];
+    if (typed_keys.size() == typed_vals.size()) {
+      for (size_t i = 0; i < typed_keys.size(); i++)
+        storage_[typed_keys[i]] += typed_vals[i];
+    }
+    else {
+      CHECK_EQ(typed_vals.size()/typed_keys.size(), chunk_size_);
+      for (size_t i = 0; i < typed_keys.size(); i++)
+        for (size_t j = 0; j < chunk_size_; j++)
+          storage_[typed_keys[i] * chunk_size_ + j] += typed_vals[i * chunk_size_ + j];
     }
   }
 
-  virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
-    third_party::SArray<Val> reply_vals(typed_keys.size());
-    for (int i = 0; i < typed_keys.size(); ++ i) {
-      reply_vals[i] = storage_[typed_keys[i]];
+  virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys, bool is_chunk = false) override {
+    third_party::SArray<Val> reply_vals(typed_keys.size() * chunk_size_);
+    if (!is_chunk) {
+      for (size_t i = 0; i < typed_keys.size(); i++)
+        reply_vals[i] = storage_[typed_keys[i]];
+    }
+    else {
+      for (int i = 0; i < typed_keys.size(); i++) 
+        for (int j = 0; j < chunk_size_; j++)
+          reply_vals[i * chunk_size_ + j] = storage_[typed_keys[i] * chunk_size_ + j];
     }
     return third_party::SArray<char>(reply_vals);
   }
@@ -35,6 +47,7 @@ class MapStorage : public AbstractStorage {
 
  private:
   std::map<Key, Val> storage_;
+  uint32_t chunk_size_;
 };
 
 }  // namespace flexps

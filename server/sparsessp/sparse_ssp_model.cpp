@@ -59,7 +59,7 @@ void SparseSSPModel::Clock(Message& message) {
   }
 }
 
-void SparseSSPModel::Get(Message& message) {
+void SparseSSPModel::Get(Message& message, bool is_chunk) {
   CHECK(progress_tracker_.CheckThreadValid(message.meta.sender));
   CHECK(message.data.size() == 1);
   if (message.meta.version == 0) {

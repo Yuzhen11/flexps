@@ -68,7 +68,18 @@ void ServerThread::Main() {
 #ifdef USE_TIMER
       auto start_time = std::chrono::steady_clock::now();
 #endif
-      models_[model_id]->Get(msg);
+      models_[model_id]->Get(msg, false);
+#ifdef USE_TIMER
+      auto end_time = std::chrono::steady_clock::now();
+      get_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
+#endif
+      break;
+    }
+    case Flag::kGetChunk: {
+#ifdef USE_TIMER
+      auto start_time = std::chrono::steady_clock::now();
+#endif
+      models_[model_id]->Get(msg, true);
 #ifdef USE_TIMER
       auto end_time = std::chrono::steady_clock::now();
       get_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);

@@ -87,7 +87,7 @@ WorkerSpec KVEngine::AllocateWorkers(const std::vector<WorkerAlloc>& worker_allo
 }
 
 
-void KVEngine::RegisterRangePartitionManager(uint32_t table_id, const std::vector<third_party::Range>& ranges) {
+void KVEngine::RegisterRangePartitionManager(uint32_t table_id, const std::vector<third_party::Range>& ranges, uint32_t chunk_size) {
   CHECK(id_mapper_);
   auto server_thread_ids = id_mapper_->GetAllServerThreads();
   CHECK_EQ(ranges.size(), server_thread_ids.size());

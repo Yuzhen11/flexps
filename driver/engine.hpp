@@ -24,7 +24,7 @@ class Engine {
 
   template <typename Val>
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                   StorageType storage_type, int model_staleness = 0);
+                   StorageType storage_type, int model_staleness = 0, uint32_t chunk_size = 1);
 
   // Create SparseSSP Table, for testing sparsessp use only.
   // Make sure you know how to use sparsessp before use this.
@@ -48,9 +48,9 @@ class Engine {
 
 template <typename Val>
 void Engine::CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
-                         StorageType storage_type, int model_staleness) {
+                         StorageType storage_type, int model_staleness, uint32_t chunk_size) {
   CHECK(kv_engine_);
-  kv_engine_->CreateTable<Val>(table_id, ranges, model_type, storage_type, model_staleness);
+  kv_engine_->CreateTable<Val>(table_id, ranges, model_type, storage_type, model_staleness, chunk_size);
 }
 
 template <typename Val>

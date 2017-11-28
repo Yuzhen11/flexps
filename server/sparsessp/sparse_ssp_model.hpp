@@ -25,7 +25,7 @@ class SparseSSPModel : public AbstractModel {
 
   virtual void Clock(Message& message) override;
   virtual void Add(Message& message) override;
-  virtual void Get(Message& message) override;
+  virtual void Get(Message& message, bool is_chunk = false) override;
   virtual int GetProgress(int tid) override;
   virtual void ResetWorker(Message& msg) override;
 

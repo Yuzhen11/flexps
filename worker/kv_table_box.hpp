@@ -28,9 +28,9 @@ class KVTableBox {
   using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 
   void Clock();
-  void Send(const SlicedKVs& sliced, bool is_add);
+  void Send(const SlicedKVs& sliced, bool is_add, bool is_chunk = false);
   void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
-  SlicedKVs Slice(const KVPairs<char>& send);
+  SlicedKVs Slice(const KVPairs<char>& send, bool is_chunk = false);
 
   void HandleMsg(Message& msg);
   template <typename C>
@@ -63,20 +63,21 @@ void KVTableBox<Val>::Add(const third_party::SArray<Key>& keys, const third_part
   kvs.keys = keys;
   kvs.vals = vals;
   // 1. slice
+  bool is_chunk = (keys.size() != vals.size());
   CHECK_NOTNULL(partition_manager_);
-  SlicedKVs sliced = partition_manager_->Slice(kvs);
+  SlicedKVs sliced = partition_manager_->Slice(kvs, is_chunk);
   // 2. send
-  Send(sliced, true);
+  Send(sliced, true, is_chunk);
 }
 
 template <typename Val>
-typename KVTableBox<Val>::SlicedKVs KVTableBox<Val>::Slice(const KVPairs<char>& send) {
+typename KVTableBox<Val>::SlicedKVs KVTableBox<Val>::Slice(const KVPairs<char>& send, bool is_chunk) {
   CHECK_NOTNULL(partition_manager_);
-  return partition_manager_->Slice(send);
+  return partition_manager_->Slice(send, is_chunk);
 }
 
 template <typename Val>
-void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add) {
+void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add, bool is_chunk) {
   CHECK_NOTNULL(partition_manager_);
   for (size_t i = 0; i < sliced.size(); ++i) {
     Message msg;
@@ -84,6 +85,7 @@ void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add) {
     msg.meta.recver = sliced[i].first;
     msg.meta.model_id = model_id_;
     msg.meta.flag = is_add ? Flag::kAdd : Flag::kGet;
+    if(msg.meta.flag == Flag::kGet) msg.meta.flag = is_chunk ? Flag::kGetChunk : Flag::kGet;
     const auto& kvs = sliced[i].second;
     if (kvs.keys.size()) {
       msg.AddData(kvs.keys);
