@@ -64,22 +64,12 @@ void ServerThread::Main() {
 #endif
       break;
     }
+    case Flag::kGetChunk:
     case Flag::kGet: {
 #ifdef USE_TIMER
       auto start_time = std::chrono::steady_clock::now();
 #endif
-      models_[model_id]->Get(msg, false);
-#ifdef USE_TIMER
-      auto end_time = std::chrono::steady_clock::now();
-      get_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-#endif
-      break;
-    }
-    case Flag::kGetChunk: {
-#ifdef USE_TIMER
-      auto start_time = std::chrono::steady_clock::now();
-#endif
-      models_[model_id]->Get(msg, true);
+      models_[model_id]->Get(msg);
 #ifdef USE_TIMER
       auto end_time = std::chrono::steady_clock::now();
       get_time_ += std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);

@@ -38,13 +38,13 @@ void BSPModel::Add(Message& msg) {
   }
 }
 
-void BSPModel::Get(Message& msg, bool is_chunk) {
+void BSPModel::Get(Message& msg) {
   CHECK(progress_tracker_.CheckThreadValid(msg.meta.sender));
   int progress = progress_tracker_.GetProgress(msg.meta.sender);
   if (progress == progress_tracker_.GetMinClock() + 1) {
     get_buffer_.push_back(msg);
   } else if (progress == progress_tracker_.GetMinClock()) {
-    reply_queue_->Push(storage_->Get(msg, is_chunk));
+    reply_queue_->Push(storage_->Get(msg));
   } else {
     CHECK(false) << "progress error in BSPModel::Get { get progress: " << progress << ", min clock: " << progress_tracker_.GetMinClock() << " }";
   }

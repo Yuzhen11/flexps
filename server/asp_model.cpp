@@ -18,9 +18,9 @@ void ASPModel::Add(Message& msg) {
   storage_->Add(msg);
 }
 
-void ASPModel::Get(Message& msg, bool is_chunk) {
+void ASPModel::Get(Message& msg) {
   CHECK(progress_tracker_.CheckThreadValid(msg.meta.sender));
-  reply_queue_->Push(storage_->Get(msg, is_chunk));
+  reply_queue_->Push(storage_->Get(msg));
 }
 
 int ASPModel::GetProgress(int tid) { return progress_tracker_.GetProgress(tid); }

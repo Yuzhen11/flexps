@@ -18,10 +18,17 @@ template <typename Val>
 class SimpleKVChunkTable : public SimpleKVTable<Val> {
  public:
   using SimpleKVTable<Val>::SimpleKVTable;
+  using SimpleKVTable<Val>::kv_table_box_;
+  using SimpleKVTable<Val>::recv_queue_;
+  using SimpleKVTable<Val>::mailbox_;
+  using SlicedKVs = AbstractPartitionManager::SlicedKVs;
   // The chunk version, it will tranform 2-dimension vector to 1-dimension one
   void AddChunk(const std::vector<Key>& keys, const std::vector<std::vector<Val>>& chunk_vals);
   void GetChunk(const std::vector<Key>& keys, std::vector<std::vector<Val>*>& chunk_vals);
 
+ private:
+  uint32_t current_responses = 0;
+  uint32_t expected_responses = 0;
 };
 // chunk version Add
 template <typename Val>
@@ -31,16 +38,9 @@ void SimpleKVChunkTable<Val>::AddChunk(const std::vector<Key>& keys, const std::
   int key_size = keys.size();
   int chunk_size = chunk_vals[0].size();
   std::vector<Val> vector_chunk_vals(key_size * chunk_size);
-  if(chunk_size == 1){
-    for (int i = 0; i < key_size; i++){
-      vector_chunk_vals[i] = chunk_vals[i][0];
-     }
-  }
-  else{
-    for (int i = 0; i < key_size; i++){
-      for (int j = 0; j < chunk_size; j++){
-        vector_chunk_vals[i * chunk_size + j] = chunk_vals[i][j];
-      }
+  for (int i = 0; i < key_size; i++){
+    for (int j = 0; j < chunk_size; j++){
+      vector_chunk_vals[i * chunk_size + j] = chunk_vals[i][j];
     }
   }
   SimpleKVTable<Val>::Add(keys, vector_chunk_vals);
@@ -48,15 +48,26 @@ void SimpleKVChunkTable<Val>::AddChunk(const std::vector<Key>& keys, const std::
 
 template <typename Val>
 void SimpleKVChunkTable<Val>::GetChunk(const std::vector<Key>& keys, std::vector<std::vector<Val>*>& chunk_vals){
-  std::vector<Val> vals;
-  SimpleKVTable<Val>::Get(keys, &vals, true);
-  int chunk_size  = vals.size() / keys.size();
-  for (int i = 0; i < chunk_vals.size(); i++){
-    chunk_vals[i] = new std::vector<Val> (chunk_size);
-    for (int j = 0; j < chunk_size; j++)
-      (*chunk_vals[i])[j] = vals[i * chunk_size + j];
+  KVPairs<char> kvs;
+  kvs.keys = keys;
+  // 1. slice
+  SlicedKVs sliced = kv_table_box_.SliceChunk(kvs);
+  // 2. get num requests
+  expected_responses = sliced.size();
+  current_responses = 0;
+  // 3. send
+  kv_table_box_.SendChunk(sliced, false);
+  // 4. wait request
+  while (current_responses < expected_responses) {
+    Message msg;
+    recv_queue_.WaitAndPop(&msg);
+    current_responses += 1;
+    kv_table_box_.HandleMsg(msg);
+    if (current_responses == expected_responses) {
+      kv_table_box_.HandleChunkFinish(third_party::SArray<Key>(keys), chunk_vals);
+      current_responses = expected_responses = 0;
+    }
   }
 }
-
 
 } //namespace flexps

@@ -23,7 +23,7 @@ class FakeModel : public AbstractModel {
  public:
   virtual void Clock(Message&) override { clock_count_ += 1; }
   virtual void Add(Message&) override { add_count_ += 1; }
-  virtual void Get(Message&, bool is_chunk = false) override { get_count_ += 1; }
+  virtual void Get(Message&) override { get_count_ += 1; }
   virtual int GetProgress(int tid) override { return -1; }
   virtual void ResetWorker(Message& msg) override {}
 

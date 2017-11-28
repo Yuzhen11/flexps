@@ -25,16 +25,16 @@ class SimpleKVTable {
 
   // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);
-  void Get(const std::vector<Key>& keys, std::vector<Val>* vals, bool is_chunk = false);
+  void Get(const std::vector<Key>& keys, std::vector<Val>* vals);
   // The SArray version
   void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
-  void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals, bool is_chunk = false);
+  void Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals);
 
   void Clock();
 
- private:
+ protected:
   template <typename C>
-  void Get_(const third_party::SArray<Key>& keys, C* vals, bool is_chunk);
+  void Get_(const third_party::SArray<Key>& keys, C* vals);
 
   uint32_t current_responses = 0;
   uint32_t expected_responses = 0;
@@ -77,29 +77,29 @@ void SimpleKVTable<Val>::Add(const third_party::SArray<Key>& keys, const third_p
 
 // vector version Get
 template <typename Val>
-void SimpleKVTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals, bool is_chunk) {
-  Get_(third_party::SArray<Key>(keys), vals, is_chunk);
+void SimpleKVTable<Val>::Get(const std::vector<Key>& keys, std::vector<Val>* vals) {
+  Get_(third_party::SArray<Key>(keys), vals);
 }
 
 // SArray version Get
 template <typename Val>
-void SimpleKVTable<Val>::Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals, bool is_chunk) {
-  Get_(keys, vals, is_chunk);
+void SimpleKVTable<Val>::Get(const third_party::SArray<Key>& keys, third_party::SArray<Val>* vals) {
+  Get_(keys, vals);
 }
 
 // Internal version
 template <typename Val>
 template <typename C>
-void SimpleKVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals, bool is_chunk) {
+void SimpleKVTable<Val>::Get_(const third_party::SArray<Key>& keys, C* vals) {
   KVPairs<char> kvs;
   kvs.keys = keys;
   // 1. slice
-  SlicedKVs sliced = kv_table_box_.Slice(kvs, is_chunk);
+  SlicedKVs sliced = kv_table_box_.Slice(kvs);
   // 2. get num requests
   expected_responses = sliced.size();
   current_responses = 0;
   // 3. send
-  kv_table_box_.Send(sliced, false, is_chunk);
+  kv_table_box_.Send(sliced, false);
   // 4. wait request
   while (current_responses < expected_responses) {
     Message msg;

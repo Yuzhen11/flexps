@@ -28,14 +28,18 @@ class KVTableBox {
   using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 
   void Clock();
-  void Send(const SlicedKVs& sliced, bool is_add, bool is_chunk = false);
+  void Send(const SlicedKVs& sliced, bool is_add);
+  void SendChunk(const SlicedKVs& sliced, bool is_add);
   void Add(const third_party::SArray<Key>& keys, const third_party::SArray<Val>& vals);
-  SlicedKVs Slice(const KVPairs<char>& send, bool is_chunk = false);
-
+  SlicedKVs Slice(const KVPairs<char>& send);
+  SlicedKVs SliceChunk(const KVPairs<char>& send);
+  
   void HandleMsg(Message& msg);
   template <typename C>
   void HandleFinish(const third_party::SArray<Key>& keys, C* vals);
-
+  template <typename C>
+  void HandleChunkFinish(const third_party::SArray<Key>& keys, std::vector<C*> &vals);
+  
   uint32_t app_thread_id_;
   uint32_t model_id_;
 
@@ -62,22 +66,26 @@ void KVTableBox<Val>::Add(const third_party::SArray<Key>& keys, const third_part
   KVPairs<char> kvs;
   kvs.keys = keys;
   kvs.vals = vals;
-  // 1. slice
   bool is_chunk = (keys.size() != vals.size());
   CHECK_NOTNULL(partition_manager_);
-  SlicedKVs sliced = partition_manager_->Slice(kvs, is_chunk);
-  // 2. send
-  Send(sliced, true, is_chunk);
+  if(is_chunk) {
+    SlicedKVs sliced = partition_manager_->SliceChunk(kvs);
+    SendChunk(sliced, true);
+  }
+  else {
+    SlicedKVs sliced = partition_manager_->Slice(kvs);
+    Send(sliced, true);
+  }  
 }
 
 template <typename Val>
-typename KVTableBox<Val>::SlicedKVs KVTableBox<Val>::Slice(const KVPairs<char>& send, bool is_chunk) {
+typename KVTableBox<Val>::SlicedKVs KVTableBox<Val>::Slice(const KVPairs<char>& send) {
   CHECK_NOTNULL(partition_manager_);
-  return partition_manager_->Slice(send, is_chunk);
+  return partition_manager_->Slice(send);
 }
 
 template <typename Val>
-void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add, bool is_chunk) {
+void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add) {
   CHECK_NOTNULL(partition_manager_);
   for (size_t i = 0; i < sliced.size(); ++i) {
     Message msg;
@@ -85,7 +93,6 @@ void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add, bool is_chunk) 
     msg.meta.recver = sliced[i].first;
     msg.meta.model_id = model_id_;
     msg.meta.flag = is_add ? Flag::kAdd : Flag::kGet;
-    if(msg.meta.flag == Flag::kGet) msg.meta.flag = is_chunk ? Flag::kGetChunk : Flag::kGet;
     const auto& kvs = sliced[i].second;
     if (kvs.keys.size()) {
       msg.AddData(kvs.keys);
@@ -96,6 +103,33 @@ void KVTableBox<Val>::Send(const SlicedKVs& sliced, bool is_add, bool is_chunk) 
     send_queue_->Push(std::move(msg));
   }
 }
+
+template <typename Val>
+typename KVTableBox<Val>::SlicedKVs KVTableBox<Val>::SliceChunk(const KVPairs<char>& send) {
+  CHECK_NOTNULL(partition_manager_);
+  return partition_manager_->SliceChunk(send);
+}
+
+template <typename Val>
+void KVTableBox<Val>::SendChunk(const SlicedKVs& sliced, bool is_add) {
+  CHECK_NOTNULL(partition_manager_);
+  for (size_t i = 0; i < sliced.size(); ++i) {
+    Message msg;
+    msg.meta.sender = app_thread_id_;
+    msg.meta.recver = sliced[i].first;
+    msg.meta.model_id = model_id_;
+    msg.meta.flag = is_add ? Flag::kAdd : Flag::kGetChunk;
+    const auto& kvs = sliced[i].second;
+    if (kvs.keys.size()) {
+      msg.AddData(kvs.keys);
+      if (is_add) {
+        msg.AddData(kvs.vals);
+      }
+    }
+    send_queue_->Push(std::move(msg));
+  }
+}
+
 
 template <typename Val>
 void KVTableBox<Val>::Clock() {
@@ -142,5 +176,33 @@ void KVTableBox<Val>::HandleFinish(const third_party::SArray<Key>& keys, C* vals
   }
   recv_kvs_.clear();
 }
+
+template <typename Val>
+template <typename C>
+void KVTableBox<Val>::HandleChunkFinish(const third_party::SArray<Key>& keys, std::vector<C*>& vals) {
+  size_t total_key = 0, total_val = 0;
+  for (const auto& s : recv_kvs_) {
+    third_party::Range range = third_party::FindRange(keys, s.keys.front(), s.keys.back() + 1);
+    CHECK_EQ(range.size(), s.keys.size()) << "unmatched keys size from one server";
+    total_key += s.keys.size();
+    total_val += s.vals.size();
+  }
+  size_t chunk_size = total_val / total_key;
+  CHECK_EQ(total_key, keys.size()) << "lost some servers?";
+  std::sort(recv_kvs_.begin(), recv_kvs_.end(),
+            [](const KVPairs<Val>& a, const KVPairs<Val>& b) { return a.keys.front() < b.keys.front(); });
+  int idx = 0;
+  for (const auto& s : recv_kvs_) {
+    int start = 0;
+    for (int i = 0; i < s.keys.size(); ++ i) {
+      vals[idx]->resize(chunk_size);
+      memcpy(vals[idx]->data(), s.vals.data()+start, chunk_size*sizeof(Val));
+      start += chunk_size;
+      idx += 1;
+    }
+  }
+  recv_kvs_.clear();
+}
+
 
 }  // namespace flexps
