@@ -32,7 +32,7 @@ class SimpleKVTable {
 
   void Clock();
 
- private:
+ protected:
   template <typename C>
   void Get_(const third_party::SArray<Key>& keys, C* vals);
 

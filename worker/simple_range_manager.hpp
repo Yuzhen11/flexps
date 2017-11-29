@@ -8,14 +8,15 @@
 
 #include <cinttypes>
 #include <vector>
+#include <algorithm>
 
 namespace flexps {
 
 class SimpleRangePartitionManager : public AbstractPartitionManager {
  public:
   SimpleRangePartitionManager(const std::vector<third_party::Range>& ranges,
-                              const std::vector<uint32_t>& server_thread_ids)
-      : AbstractPartitionManager(server_thread_ids), ranges_(ranges) {
+                              const std::vector<uint32_t>& server_thread_ids, uint32_t chunk_size = 1)
+      : AbstractPartitionManager(server_thread_ids), ranges_(ranges), chunk_size_(chunk_size) {
     CHECK_EQ(ranges_.size(), server_thread_ids_.size());
   }
 
@@ -28,10 +29,9 @@ class SimpleRangePartitionManager : public AbstractPartitionManager {
     SlicedKVs sliced;
     int n_servers = GetNumServers();
     sliced.reserve(n_servers);
-
+    auto ratio = send.vals.size() / send.keys.size();
     auto begin = std::lower_bound(send.keys.begin(), send.keys.end(), ranges_[0].begin());
     size_t begin_idx = begin - send.keys.begin();
-    auto ratio = send.vals.size() / send.keys.size();
     for (int i = 0; i < n_servers; ++i) {
       begin = std::lower_bound(begin, send.keys.end(), ranges_[i].end());
       auto split = begin - send.keys.begin();  // split index for next range
@@ -46,8 +46,33 @@ class SimpleRangePartitionManager : public AbstractPartitionManager {
     return sliced;
   }
 
+  SlicedKVs SliceChunk(const KVPairs<char>& send) const override {
+    SlicedKVs sliced;
+    int n_servers = GetNumServers();
+    sliced.reserve(n_servers);
+    std::vector<Key> real_keys(send.keys.size());
+    std::transform(send.keys.begin(), send.keys.end(), real_keys.begin(), std::bind1st(std::multiplies<Key>(), chunk_size_));
+    auto ratio = send.vals.size() / send.keys.size();
+    auto begin = std::lower_bound(real_keys.begin(), real_keys.end(), ranges_[0].begin());
+    size_t begin_idx = begin - real_keys.begin();
+    for (int i = 0; i < n_servers; ++i) {
+      begin = std::lower_bound(begin, real_keys.end(), ranges_[i].end());
+      auto split = begin - real_keys.begin();  // split index for next range
+      if (split > begin_idx) {                 // if some keys fall into this range
+        KVPairs<char> kv;
+        kv.keys = send.keys.segment(begin_idx, split);
+        kv.vals = send.vals.segment(begin_idx * ratio, split * ratio);
+        sliced.push_back(std::make_pair(server_thread_ids_[i], std::move(kv)));
+      }
+      begin_idx = split;  // start from the split index next time
+    }
+    return sliced;
+  }
+
+
  private:
   std::vector<third_party::Range> ranges_;
+  uint32_t chunk_size_;
 };
 
 }  // namespace flexps

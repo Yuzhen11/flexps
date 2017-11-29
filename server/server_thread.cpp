@@ -64,6 +64,7 @@ void ServerThread::Main() {
 #endif
       break;
     }
+    case Flag::kGetChunk:
     case Flag::kGet: {
 #ifdef USE_TIMER
       auto start_time = std::chrono::steady_clock::now();

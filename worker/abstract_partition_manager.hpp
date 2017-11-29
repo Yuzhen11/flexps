@@ -24,6 +24,7 @@ class AbstractPartitionManager {
 
   // slice key-value pairs into <server_id, key_value_partition> pairs
   virtual SlicedKVs Slice(const KVPairs<char>& kvs) const = 0;
+  virtual SlicedKVs SliceChunk(const KVPairs<char>& kvs) const = 0;
 
  protected:
   std::vector<uint32_t> server_thread_ids_;
