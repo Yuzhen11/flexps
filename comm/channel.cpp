@@ -13,6 +13,8 @@ Channel::Channel(uint32_t num_local_threads, uint32_t num_global_threads, std::v
       mailbox_(mailbox),
       m_count_(num_local_threads), m_threshold_(num_local_threads) {
   RegisterQueues();
+  // Call a barrier to ensure the queues are registered
+  mailbox_->Barrier();
 }
 
 Channel::~Channel() {
