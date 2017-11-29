@@ -48,6 +48,17 @@ TEST_F(TestEngine, StartEverything) {
   engine.StopEverything();
 }
 
+TEST_F(TestEngine, GetIdMapperAndMailbox) {
+  Node node{0, "localhost", 12353};
+  Engine engine(node, {node});
+  engine.StartEverything();
+  auto* id_mapper = engine.GetIdMapper();
+  EXPECT_NE(id_mapper, nullptr);
+  auto* mailbox = engine.GetMailbox();
+  EXPECT_NE(mailbox, nullptr);
+  engine.StopEverything();
+}
+
 TEST_F(TestEngine, MultipleStartEverything) {
   std::vector<Node> nodes{
     {0, "localhost", 12353},

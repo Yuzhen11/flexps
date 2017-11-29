@@ -26,15 +26,25 @@ class Engine {
   void CreateTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
                    StorageType storage_type, int model_staleness = 0, uint32_t chunk_size = 1);
 
+  void Run(const MLTask& task);
+
+  SimpleIdMapper* GetIdMapper() { 
+    CHECK(id_mapper_);
+    return id_mapper_.get();
+  }
+
+  Mailbox* GetMailbox() {
+    CHECK(mailbox_);
+    return mailbox_.get();
+  }
+
+  // For dev use only
   // Create SparseSSP Table, for testing sparsessp use only.
   // Make sure you know how to use sparsessp before use this.
   template <typename Val>
   void CreateSparseSSPTable(uint32_t table_id, const std::vector<third_party::Range>& ranges, ModelType model_type,
                    StorageType storage_type, int model_staleness = 0, int speculation = 0,
                    SparseSSPRecorderType sparse_ssp_recorder_type = SparseSSPRecorderType::None);
-
-
-  void Run(const MLTask& task);
 
  private:
   // nodes
