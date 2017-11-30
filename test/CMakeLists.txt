@@ -7,7 +7,6 @@ add_library(flexps STATIC
   $<TARGET_OBJECTS:base-objs>
   $<TARGET_OBJECTS:driver-objs>
   $<TARGET_OBJECTS:io-objs>
-  $<TARGET_OBJECTS:task-objs>
   )
 
 # Unit Test
