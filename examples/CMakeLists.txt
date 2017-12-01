@@ -22,6 +22,13 @@ target_link_libraries(KVStorePerformanceExample ${HUSKY_EXTERNAL_LIB})
 set_property(TARGET KVStorePerformanceExample PROPERTY CXX_STANDARD 11)
 add_dependencies(KVStorePerformanceExample ${external_project_dependencies})
 
+# ChannelExample
+add_executable(ChannelExample channel_example.cpp)
+target_link_libraries(ChannelExample flexps)
+target_link_libraries(ChannelExample ${HUSKY_EXTERNAL_LIB})
+set_property(TARGET ChannelExample PROPERTY CXX_STANDARD 11)
+add_dependencies(ChannelExample ${external_project_dependencies})
+
 # HdfsReadExample
 if(LIBHDFS3_FOUND)
   add_executable(HdfsReadExample hdfs_read_example.cpp)

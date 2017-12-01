@@ -8,6 +8,7 @@ const uint32_t SimpleIdMapper::kMaxNodeId;
 const uint32_t SimpleIdMapper::kMaxThreadsPerNode;
 const uint32_t SimpleIdMapper::kMaxBgThreadsPerNode;
 const uint32_t SimpleIdMapper::kWorkerHelperThreadId;
+const uint32_t SimpleIdMapper::kChannelThreadId;
 
 void SimpleIdMapper::Init(int num_server_threads_per_node) {
   CHECK_GT(num_server_threads_per_node, 0);
@@ -67,6 +68,30 @@ std::vector<uint32_t> SimpleIdMapper::GetAllServerThreads() {
     ret.insert(ret.end(), kv.second.begin(), kv.second.end());
   }
   return ret;
+}
+
+std::pair<std::vector<uint32_t>, std::unordered_map<uint32_t, uint32_t>> SimpleIdMapper::GetChannelThreads(uint32_t num_local_threads, uint32_t num_global_threads) {
+  CHECK_EQ(num_local_threads*nodes_.size(), num_global_threads);
+  CHECK_LT(num_local_threads, kMaxBgThreadsPerNode - kChannelThreadId);
+  channel_thread_allocated = true;
+  std::pair<std::vector<uint32_t>, std::unordered_map<uint32_t, uint32_t>> ret;
+  int c = 0;
+  for (const auto& node : nodes_) {
+    for (int i = 0; i < num_local_threads; ++ i) {
+      ret.second.insert({c, node.id*kMaxThreadsPerNode+kChannelThreadId+i});
+      if (node.id == node_.id) {
+        ret.first.push_back(c);
+      }
+      c += 1;
+    }
+  }
+  CHECK_EQ(ret.first.size(), num_local_threads);
+  return ret;
+}
+
+void SimpleIdMapper::ReleaseChannelThreads() {
+  CHECK(channel_thread_allocated);
+  channel_thread_allocated = false;
 }
 
 }  // namespace flexps
