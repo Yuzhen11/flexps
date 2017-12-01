@@ -14,7 +14,10 @@ class AbstractStorage {
   void Add(Message& msg) {
     CHECK(msg.data.size() == 2);
     auto typed_keys = third_party::SArray<Key>(msg.data[0]);
-    SubAdd(typed_keys, msg.data[1]);
+    if(msg.meta.flag == Flag::kAddChunk)
+      SubAddChunk(typed_keys, msg.data[1]);
+    else
+      SubAdd(typed_keys, msg.data[1]);
   }
   Message Get(Message& msg) {
     CHECK(msg.data.size() == 1);
@@ -37,6 +40,8 @@ class AbstractStorage {
   }
   
   virtual void SubAdd(const third_party::SArray<Key>& typed_keys, 
+      const third_party::SArray<char>& vals) = 0;
+  virtual void SubAddChunk(const third_party::SArray<Key>& typed_keys, 
       const third_party::SArray<char>& vals) = 0;
   virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) = 0;
   virtual third_party::SArray<char> SubGetChunk(const third_party::SArray<Key>& typed_keys) = 0;

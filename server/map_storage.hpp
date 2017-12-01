@@ -17,16 +17,17 @@ class MapStorage : public AbstractStorage {
   virtual void SubAdd(const third_party::SArray<Key>& typed_keys, 
       const third_party::SArray<char>& vals) override {
     auto typed_vals = third_party::SArray<Val>(vals);
-    if (typed_keys.size() == typed_vals.size()) {
-      for (size_t i = 0; i < typed_keys.size(); i++)
-        storage_[typed_keys[i]] += typed_vals[i];
-    }
-    else {
-      CHECK_EQ(typed_vals.size()/typed_keys.size(), chunk_size_);
-      for (size_t i = 0; i < typed_keys.size(); i++)
-        for (size_t j = 0; j < chunk_size_; j++)
-          storage_[typed_keys[i] * chunk_size_ + j] += typed_vals[i * chunk_size_ + j];
-    }
+    for (size_t i = 0; i < typed_keys.size(); i++)
+      storage_[typed_keys[i]] += typed_vals[i];
+  }
+
+  virtual void SubAddChunk(const third_party::SArray<Key>& typed_keys, 
+      const third_party::SArray<char>& vals) override {
+    auto typed_vals = third_party::SArray<Val>(vals);
+    CHECK_EQ(typed_vals.size()/typed_keys.size(), chunk_size_);
+    for (size_t i = 0; i < typed_keys.size(); i++)
+      for (size_t j = 0; j < chunk_size_; j++)
+        storage_[typed_keys[i] * chunk_size_ + j] += typed_vals[i * chunk_size_ + j];
   }
 
   virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
