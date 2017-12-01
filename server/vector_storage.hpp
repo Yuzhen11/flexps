@@ -24,23 +24,25 @@ class VectorStorage : public AbstractStorage {
   virtual void SubAdd(const third_party::SArray<Key>& typed_keys, 
       const third_party::SArray<char>& vals) override {
     auto typed_vals = third_party::SArray<Val>(vals);
-   if(typed_keys.size() == typed_vals.size()) {
-      for (size_t index = 0; index < typed_keys.size(); index++) { 
-        CHECK_GE(typed_keys[index], range_.begin());                                                                                                                                                    
-        CHECK_LT(typed_keys[index], range_.end());  
-        storage_[typed_keys[index] - range_.begin()] += typed_vals[index];  
-      }
-    }
-    else {
-      CHECK_EQ(typed_vals.size()/typed_keys.size(), chunk_size_);
-      for (size_t index = 0; index < typed_keys.size(); index++) {
-        CHECK_GE(typed_keys[index], range_.begin());
-        CHECK_LT(typed_keys[index], range_.end());
-        for (size_t chunk_index = 0; chunk_index < chunk_size_; chunk_index++)
-          storage_[(typed_keys[index] - range_.begin()) * chunk_size_ + chunk_index] += typed_vals[index * chunk_size_ + chunk_index];
-      }
+    for (size_t index = 0; index < typed_keys.size(); index++) { 
+      CHECK_GE(typed_keys[index], range_.begin());                                                                                                                                                    
+      CHECK_LT(typed_keys[index], range_.end());  
+      storage_[typed_keys[index] - range_.begin()] += typed_vals[index];  
     }
   }
+
+  virtual void SubAddChunk(const third_party::SArray<Key>& typed_keys, 
+      const third_party::SArray<char>& vals) override {
+    auto typed_vals = third_party::SArray<Val>(vals);
+    CHECK_EQ(typed_vals.size()/typed_keys.size(), chunk_size_);
+    for (size_t index = 0; index < typed_keys.size(); index++) {
+      CHECK_GE(typed_keys[index] * chunk_size_, range_.begin());
+      CHECK_LT(typed_keys[index] * chunk_size_, range_.end());
+      for (size_t chunk_index = 0; chunk_index < chunk_size_; chunk_index++)
+        storage_[typed_keys[index] * chunk_size_ - range_.begin() + chunk_index] += typed_vals[index * chunk_size_ + chunk_index];
+    }
+  }
+
 
   virtual third_party::SArray<char> SubGet(const third_party::SArray<Key>& typed_keys) override {
     third_party::SArray<Val> reply_vals(typed_keys.size());
@@ -55,10 +57,10 @@ class VectorStorage : public AbstractStorage {
   virtual third_party::SArray<char> SubGetChunk(const third_party::SArray<Key>& typed_keys) override {
     third_party::SArray<Val> reply_vals(typed_keys.size() * chunk_size_);
     for (int i = 0; i < typed_keys.size(); ++ i) {
-      CHECK_GE(typed_keys[i], range_.begin());
-      CHECK_LT(typed_keys[i], range_.end());
+      CHECK_GE(typed_keys[i] * chunk_size_, range_.begin());
+      CHECK_LT(typed_keys[i] * chunk_size_, range_.end());
       for (int j = 0; j < chunk_size_; ++ j)
-        reply_vals[i * chunk_size_ + j] = storage_[(typed_keys[i] - range_.begin()) * chunk_size_ + j];
+        reply_vals[i * chunk_size_ + j] = storage_[typed_keys[i] * chunk_size_ - range_.begin() + j];
     }
     return third_party::SArray<char>(reply_vals);
   }

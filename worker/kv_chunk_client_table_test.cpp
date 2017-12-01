@@ -53,7 +53,7 @@ TEST_F(TestKVChunkClientTable, VectorChunkAdd) {
   EXPECT_EQ(m1.meta.sender, kTestAppThreadId);
   EXPECT_EQ(m1.meta.recver, 0);
   EXPECT_EQ(m1.meta.model_id, kTestModelId);
-  EXPECT_EQ(m1.meta.flag, Flag::kAdd);
+  EXPECT_EQ(m1.meta.flag, Flag::kAddChunk);
   ASSERT_EQ(m1.data.size(), 2);
   res_keys = m1.data[0];
   res_vals = m1.data[1];
@@ -66,7 +66,7 @@ TEST_F(TestKVChunkClientTable, VectorChunkAdd) {
   EXPECT_EQ(m2.meta.sender, kTestAppThreadId);
   EXPECT_EQ(m2.meta.recver, 1);
   EXPECT_EQ(m2.meta.model_id, kTestModelId);
-  EXPECT_EQ(m2.meta.flag, Flag::kAdd);
+  EXPECT_EQ(m2.meta.flag, Flag::kAddChunk);
   ASSERT_EQ(m2.data.size(), 2);
   res_keys = m2.data[0];
   res_vals = m2.data[1];

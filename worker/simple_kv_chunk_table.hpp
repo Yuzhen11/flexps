@@ -43,7 +43,7 @@ void SimpleKVChunkTable<Val>::AddChunk(const std::vector<Key>& keys, const std::
       vector_chunk_vals[i * chunk_size + j] = chunk_vals[i][j];
     }
   }
-  SimpleKVTable<Val>::Add(keys, vector_chunk_vals);
+  SimpleKVTable<Val>::kv_table_box_.AddChunk(third_party::SArray<Key>(keys), third_party::SArray<Val>(vector_chunk_vals));
 }
 
 template <typename Val>

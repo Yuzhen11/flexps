@@ -89,6 +89,21 @@ TEST_F(TestVectorStorage, SubAddSubGet) {
   }
 }
 
+TEST_F(TestVectorStorage, SubAddChunkSubGetChunk) {
+  VectorStorage<float> s({10, 40}, 10);
+  third_party::SArray<float> s_vals(20);
+  third_party::SArray<Key> s_keys({1, 2});
+  for (int i = 0; i < 20; i++) {
+    s_vals[i] = i / 10.0;
+  }
+  s.SubAddChunk(s_keys, third_party::SArray<char>(s_vals));
+  third_party::SArray<float> ret = third_party::SArray<float>(s.SubGetChunk(s_keys));
+  for (int i = 0; i < s_vals.size(); ++ i) {
+    EXPECT_EQ(ret[i], s_vals[i]);
+  }
+}
+
+
 }  // namespace
 }  // namespace flexps
 
