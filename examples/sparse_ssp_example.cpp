@@ -195,12 +195,12 @@ void Run() {
       for (int i = 0; i < FLAGS_num_iters; ++ i) {
         CHECK_LT(i, future_keys.size());
         auto& keys = future_keys[i];
-        table.Get(keys, &rets);
+        table->Get(keys, &rets);
         CHECK_EQ(keys.size(), rets.size());
         vals.resize(keys.size());
         for (int i = 0; i < vals.size(); ++ i) vals[i] = 0.5;
-        table.Add(keys, vals);
-        table.Clock();
+        table->Add(keys, vals);
+        table->Clock();
         CHECK_EQ(rets.size(), keys.size());
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
@@ -221,11 +221,11 @@ void Run() {
       for (int i = 0; i < FLAGS_num_iters; ++ i) {
         CHECK_LT(i, future_keys.size());
         auto& keys = future_keys[i];
-        table.Get(&rets);
+        table->Get(&rets);
         CHECK_EQ(keys.size(), rets.size());
         vals.resize(keys.size());
         for (int i = 0; i < vals.size(); ++ i) vals[i] = 0.5;
-        table.Add(keys, vals);
+        table->Add(keys, vals);
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
 

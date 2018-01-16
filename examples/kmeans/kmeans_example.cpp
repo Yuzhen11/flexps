@@ -191,8 +191,8 @@ void Run() {
         for (int j = 0; j < FLAGS_num_dims; ++j)
           push[i * FLAGS_num_dims + j] = std::move(params[i][j]);
 
-      table.Add(keys, push);
-      table.Clock();
+      table->Add(keys, push);
+      table->Clock();
       CHECK_EQ(push.size(), keys.size());
       auto end_time = std::chrono::steady_clock::now();
       auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -228,9 +228,9 @@ void Run() {
     }
 
     for (int iter = 0; iter < FLAGS_num_iters; ++iter) {
-      table.Get(keys, &pull);
+      table->Get(keys, &pull);
       CHECK_EQ(keys.size(), pull.size());
-      table2.Get(keys2, &cluster_members);
+      table2->Get(keys2, &cluster_members);
       CHECK_EQ(keys2.size(), cluster_members.size());
       for (int i = 0; i < FLAGS_K + 1; ++i)
         for (int j = 0; j < FLAGS_num_dims; ++j)
@@ -272,11 +272,11 @@ void Run() {
         for (int j = 0; j < FLAGS_num_dims; ++j)
           push[i * FLAGS_num_dims + j] = std::move(deltas[i][j]);
 
-      table.Add(keys, push);
-      table.Clock();
+      table->Add(keys, push);
+      table->Clock();
       CHECK_EQ(push.size(), keys.size());
-      table2.Add(keys2, cluster_members);
-      table2.Clock();
+      table2->Add(keys2, cluster_members);
+      table2->Clock();
       CHECK_EQ(keys2.size(), cluster_members.size());
 
       if (iter % FLAGS_report_interval == 0 && info.worker_id == FLAGS_report_worker)

@@ -17,6 +17,11 @@ namespace flexps {
 template <typename Val>
 class KVChunkClientTable: public KVClientTable<Val> {
  public:
+  KVChunkClientTable(const KVChunkClientTable&) = delete;
+  KVChunkClientTable& operator=(const KVChunkClientTable&) = delete;
+  KVChunkClientTable(KVChunkClientTable&& other) = delete;
+  KVChunkClientTable& operator=(KVChunkClientTable&& other) = delete;
+
   using KVClientTable<Val>::KVClientTable;
   using KVClientTable<Val>::kv_table_box_;
   using KVClientTable<Val>::callback_runner_;

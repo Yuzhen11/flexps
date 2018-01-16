@@ -19,6 +19,10 @@ class SimpleKVTable {
   SimpleKVTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
                 const AbstractPartitionManager* const partition_manager, AbstractMailbox* const mailbox);
 
+  SimpleKVTable(const SimpleKVTable&) = delete;
+  SimpleKVTable& operator=(const SimpleKVTable&) = delete;
+  SimpleKVTable(SimpleKVTable&& other) = delete;
+  SimpleKVTable& operator=(SimpleKVTable&& other) = delete;
   ~SimpleKVTable();
 
   using SlicedKVs = AbstractPartitionManager::SlicedKVs;

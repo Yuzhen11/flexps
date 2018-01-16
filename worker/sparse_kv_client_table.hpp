@@ -40,6 +40,10 @@ class SparseKVClientTable {
                       const AbstractPartitionManager* const partition_manager,
                       AbstractCallbackRunner* const callback_runner, uint32_t speculation,
                       const std::vector<std::vector<Key>>& keys);
+  SparseKVClientTable(const SparseKVClientTable&) = delete;
+  SparseKVClientTable& operator=(const SparseKVClientTable&) = delete;
+  SparseKVClientTable(SparseKVClientTable&& other) = delete;
+  SparseKVClientTable& operator=(SparseKVClientTable&& other) = delete;
 
   // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);

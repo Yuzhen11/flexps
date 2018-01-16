@@ -14,10 +14,10 @@ class GBDTController {
   public:
   	GBDTController();
     void init(std::map<std::string, std::string> & options, std::map<std::string, float> & params);
-    GBDTTree build_tree(KVClientTable<float> & table, std::vector<std::vector<float>> feat_vect_list, 
+    GBDTTree build_tree(std::unique_ptr<KVClientTable<float>> & table, std::vector<std::vector<float>> feat_vect_list, 
       std::vector<std::map<std::string, float>> min_max_feat_list, std::vector<float> grad_vect, std::vector<float> hess_vect);
     GBDTTree create_tree();
-    void build_forest(KVClientTable<float> & table, std::vector<float> class_vect, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list);
+    void build_forest(std::unique_ptr<KVClientTable<float>> & table, std::vector<float> class_vect, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list);
     void update_estimator_vect(GBDTTree & tree, std::vector<float> & estimator_vect, std::vector<float> & class_vect, std::vector<std::vector<float>> & feat_vect_list);
   protected:
     // Helper functions

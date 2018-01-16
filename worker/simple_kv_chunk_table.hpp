@@ -17,6 +17,11 @@ namespace flexps {
 template <typename Val>
 class SimpleKVChunkTable : public SimpleKVTable<Val> {
  public:
+  SimpleKVChunkTable(const SimpleKVChunkTable&) = delete;
+  SimpleKVChunkTable& operator=(const SimpleKVChunkTable&) = delete;
+  SimpleKVChunkTable(SimpleKVChunkTable&& other) = delete;
+  SimpleKVChunkTable& operator=(SimpleKVChunkTable&& other) = delete;
+
   using SimpleKVTable<Val>::SimpleKVTable;
   using SimpleKVTable<Val>::kv_table_box_;
   using SimpleKVTable<Val>::recv_queue_;

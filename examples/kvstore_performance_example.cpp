@@ -67,11 +67,11 @@ void Run() {
 
       // Worker (0) and server (0) are in the same node
       auto start_time = std::chrono::steady_clock::now();
-      table.Add(sarray_keys1, sarray_vals);
+      table->Add(sarray_keys1, sarray_vals);
 
       auto start_time_2 = std::chrono::steady_clock::now();
-      table.Get(sarray_keys1, &sarray_rets);
-      table.Clock();
+      table->Get(sarray_keys1, &sarray_rets);
+      table->Clock();
 
       auto end_time = std::chrono::steady_clock::now();
       auto total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -85,11 +85,11 @@ void Run() {
 
       // Worker (0) and server (1) are in different nodes
       start_time = std::chrono::steady_clock::now();
-      table.Add(sarray_keys2, sarray_vals);
+      table->Add(sarray_keys2, sarray_vals);
 
       start_time_2 = std::chrono::steady_clock::now();
-      table.Get(sarray_keys2, &sarray_rets);
-      table.Clock();
+      table->Get(sarray_keys2, &sarray_rets);
+      table->Clock();
 
       end_time = std::chrono::steady_clock::now();
       total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -115,11 +115,11 @@ void Run() {
 
       // Worker (0) and server (0) are in the same node
       start_time = std::chrono::steady_clock::now();
-      table.Add(vector_keys1, vector_vals);
+      table->Add(vector_keys1, vector_vals);
 
       start_time_2 = std::chrono::steady_clock::now();
-      table.Get(vector_keys1, &vector_rets);
-      table.Clock();
+      table->Get(vector_keys1, &vector_rets);
+      table->Clock();
 
       end_time = std::chrono::steady_clock::now();
       total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();
@@ -133,11 +133,11 @@ void Run() {
 
       // Worker (0) and server (1) are in different nodes
       start_time = std::chrono::steady_clock::now();
-      table.Add(vector_keys2, vector_vals);
+      table->Add(vector_keys2, vector_vals);
 
       start_time_2 = std::chrono::steady_clock::now();
-      table.Get(vector_keys2, &vector_rets);
-      table.Clock();
+      table->Get(vector_keys2, &vector_rets);
+      table->Clock();
 
       end_time = std::chrono::steady_clock::now();
       total_time = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time).count();

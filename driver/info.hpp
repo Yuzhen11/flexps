@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <sstream>
 
 #include "base/threadsafe_queue.hpp"
@@ -31,13 +32,13 @@ struct Info {
   // The wrapper function (helper) to create a KVClientTable, so that users
   // do not need to call the KVClientTable constructor with so many arguments.
   template <typename Val>
-  KVClientTable<Val> CreateKVClientTable(uint32_t table_id) const;
+  std::unique_ptr<KVClientTable<Val>> CreateKVClientTable(uint32_t table_id) const;
 
   template <typename Val>
-  SimpleKVTable<Val> CreateSimpleKVTable(uint32_t table_id) const;
+  std::unique_ptr<SimpleKVTable<Val>> CreateSimpleKVTable(uint32_t table_id) const;
 
   template <typename Val>
-  SparseKVClientTable<Val> CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation,
+  std::unique_ptr<SparseKVClientTable<Val>> CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation,
                                                      const std::vector<third_party::SArray<Key>>& keys) const;
 
   // The below fields are not supposed to be used by users
@@ -48,26 +49,26 @@ struct Info {
 };
 
 template <typename Val>
-KVClientTable<Val> Info::CreateKVClientTable(uint32_t table_id) const {
+std::unique_ptr<KVClientTable<Val>> Info::CreateKVClientTable(uint32_t table_id) const {
   CHECK(partition_manager_map.find(table_id) != partition_manager_map.end());
-  KVClientTable<Val> table(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second,
-                           callback_runner);
+  std::unique_ptr<KVClientTable<Val>> table(new KVClientTable<Val>(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second,
+                           callback_runner));
   return table;
 }
 
 template <typename Val>
-SimpleKVTable<Val> Info::CreateSimpleKVTable(uint32_t table_id) const {
+std::unique_ptr<SimpleKVTable<Val>> Info::CreateSimpleKVTable(uint32_t table_id) const {
   CHECK(partition_manager_map.find(table_id) != partition_manager_map.end());
-  SimpleKVTable<Val> table(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second, mailbox);
+  std::unique_ptr<SimpleKVTable<Val>> table(new SimpleKVTable<Val>(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second, mailbox));
   return table;
 }
 
 template <typename Val>
-SparseKVClientTable<Val> Info::CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation,
+std::unique_ptr<SparseKVClientTable<Val>> Info::CreateSparseKVClientTable(uint32_t table_id, uint32_t speculation,
                                                          const std::vector<third_party::SArray<Key>>& keys) const {
   CHECK(partition_manager_map.find(table_id) != partition_manager_map.end());
-  SparseKVClientTable<Val> table(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second,
-                                 callback_runner, speculation, keys);
+  std::unique_ptr<SparseKVClientTable<Val>> table(new SparseKVClientTable<Val>(thread_id, table_id, send_queue, partition_manager_map.find(table_id)->second,
+                                 callback_runner, speculation, keys));
   return table;
 }
 

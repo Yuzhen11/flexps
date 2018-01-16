@@ -33,7 +33,7 @@ void GBDTController::init(std::map<std::string, std::string> & options, std::map
 
 }
 
-GBDTTree GBDTController::build_tree(KVClientTable<float> & table, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list, 
+GBDTTree GBDTController::build_tree(std::unique_ptr<KVClientTable<float>> & table, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list, 
   std::vector<float> grad_vect, std::vector<float> hess_vect) {
   GBDTTree tree = create_tree();
 
@@ -46,7 +46,7 @@ GBDTTree GBDTController::create_tree() {
   return GBDTTree(this->params);
 }
 
-void GBDTController::build_forest(KVClientTable<float> & table, std::vector<float> class_vect, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list) {
+void GBDTController::build_forest(std::unique_ptr<KVClientTable<float>> & table, std::vector<float> class_vect, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list) {
   float init_estimator = 0.0;
   // Initialize estimator vector
   std::vector<float> estimator_vect(class_vect.size(), init_estimator);

@@ -21,6 +21,10 @@ class KVClientTable {
  public:
   KVClientTable(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
                 const AbstractPartitionManager* const partition_manager, AbstractCallbackRunner* const callback_runner);
+  KVClientTable(const KVClientTable&) = delete;
+  KVClientTable& operator=(const KVClientTable&) = delete;
+  KVClientTable(KVClientTable&& other) = delete;
+  KVClientTable& operator=(KVClientTable&& other) = delete;
 
   // The vector version
   void Add(const std::vector<Key>& keys, const std::vector<Val>& vals);

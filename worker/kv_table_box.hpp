@@ -24,6 +24,10 @@ class KVTableBox {
  public:
   KVTableBox(uint32_t app_thread_id, uint32_t model_id, ThreadsafeQueue<Message>* const send_queue,
              const AbstractPartitionManager* const partition_manager);
+  KVTableBox(const KVTableBox&) = delete;
+  KVTableBox& operator=(const KVTableBox&) = delete;
+  KVTableBox(KVTableBox&& other) = delete;
+  KVTableBox& operator=(KVTableBox&& other) = delete;
 
   using SlicedKVs = AbstractPartitionManager::SlicedKVs;
 

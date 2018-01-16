@@ -11,11 +11,11 @@ namespace flexps {
 class GBDTTree {
   public:
   	GBDTTree(std::map<std::string, float> & params);
-  	void train(int & ps_key_ptr, KVClientTable<float> & table, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list
+  	void train(int & ps_key_ptr, std::unique_ptr<KVClientTable<float>> & table, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list
   		, std::vector<float> grad_vect, std::vector<float> hess_vect);
-    std::vector<Key> push_quantile_sketch(int & ps_key_ptr, KVClientTable<float> & table, std::vector<float> feat_vect, std::map<std::string, float> min_max_feat, std::vector<float> & _push_val_vect);
+    std::vector<Key> push_quantile_sketch(int & ps_key_ptr, std::unique_ptr<KVClientTable<float>> & table, std::vector<float> feat_vect, std::map<std::string, float> min_max_feat, std::vector<float> & _push_val_vect);
     std::vector<float> find_candidate_split(std::vector<float> sketch_hist_vect, std::map<std::string, float> min_max_feat);
-    std::vector<Key> push_local_grad_hess(int & ps_key_ptr, KVClientTable<float> & table, std::vector<float> feat_vect, std::vector<float> candidate_split_vect
+    std::vector<Key> push_local_grad_hess(int & ps_key_ptr, std::unique_ptr<KVClientTable<float>> & table, std::vector<float> feat_vect, std::vector<float> candidate_split_vect
     	, std::vector<float> grad_vect, std::vector<float> hess_vect, std::vector<float> & _push_val_vect);
     std::map<std::string, float> find_best_split(std::vector<float> grad_hess_vect, float complexity_of_leaf);
     bool check_to_stop();

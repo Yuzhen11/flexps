@@ -28,7 +28,7 @@ GBDTTree::GBDTTree(std::map<std::string, float> & params) {
   this->params = params;
 }
 
-void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list
+void GBDTTree::train(int & ps_key_ptr, std::unique_ptr<KVClientTable<float>> & table, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list
 	,std::vector<float> grad_vect, std::vector<float> hess_vect) {
   std::vector<Key> push_key_vect;
   std::vector<float> push_val_vect;
@@ -49,8 +49,8 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	
     //LOG(INFO) << "aggr_push_val_vect.sum = " << std::accumulate(aggr_push_val_vect.begin(), aggr_push_val_vect.end(), 0.0);
   }
-  table.Add(aggr_push_key_vect, aggr_push_val_vect);
-  table.Clock();
+  table->Add(aggr_push_key_vect, aggr_push_val_vect);
+  table->Clock();
 
   
   // Step 2: Pull global quantile sketch result and find split candidates
@@ -64,7 +64,7 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	pull_key_vect.insert(pull_key_vect.end(), key_vect.begin(), key_vect.end());
   	
   }
-  table.Get(pull_key_vect, &pull_val_vect);
+  table->Get(pull_key_vect, &pull_val_vect);
   // Check log
   /*
   for (int i = 0; i < pull_val_vect.size(); i++) {
@@ -104,8 +104,8 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	aggr_push_val_vect.insert(aggr_push_val_vect.end(), push_val_vect.begin(), push_val_vect.end());
   }
   //LOG(INFO) << "ps_key_ptr = " << ps_key_ptr;
-  table.Add(aggr_push_key_vect, aggr_push_val_vect);
-  table.Clock();
+  table->Add(aggr_push_key_vect, aggr_push_val_vect);
+  table->Clock();
 
 
   // Step 4: Pull global grad and hess and find the best split
@@ -119,7 +119,7 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   	pull_key_vect.insert(pull_key_vect.end(), key_vect.begin(), key_vect.end());
   	
   }
-  table.Get(pull_key_vect, &pull_val_vect);
+  table->Get(pull_key_vect, &pull_val_vect);
 
   int grad_hess_num_per_feat = ((1 / this->params["rank_fraction"]) - 1) * 4;
   for (int f_id = 0; f_id < feat_vect_list.size(); f_id++) {
@@ -170,16 +170,16 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
   //LOG(INFO) << "aggr_push_key_vect.size = " << aggr_push_key_vect.size();
   //LOG(INFO) << "aggr_push_val_vect.size = " << aggr_push_val_vect.size();
   
-  table.Add(aggr_push_key_vect, aggr_push_val_vect);
+  table->Add(aggr_push_key_vect, aggr_push_val_vect);
 
   // Reset ps_key_ptr
   ps_key_ptr = 0;
 
-  table.Clock();
+  table->Clock();
   // Check log
   /*
   pull_val_vect.clear();
-  table.Get(aggr_push_key_vect, &pull_val_vect);
+  table->Get(aggr_push_key_vect, &pull_val_vect);
   //LOG(INFO) << "sum(pull_val_vect) (should be 0) = " << std::accumulate(pull_val_vect.begin(), pull_val_vect.end(), 0.0);
   */
 
@@ -233,7 +233,7 @@ void GBDTTree::train(int & ps_key_ptr, KVClientTable<float> & table, std::vector
 
 }
 
-std::vector<Key> GBDTTree::push_quantile_sketch(int & ps_key_ptr, KVClientTable<float> & table, std::vector<float> feat_vect, std::map<std::string, float> min_max_feat, std::vector<float> & _push_val_vect) {
+std::vector<Key> GBDTTree::push_quantile_sketch(int & ps_key_ptr, std::unique_ptr<KVClientTable<float>> & table, std::vector<float> feat_vect, std::map<std::string, float> min_max_feat, std::vector<float> & _push_val_vect) {
   float rank_fraction = this->params["rank_fraction"];
   float total_data_num = this->params["total_data_num"];
   float min = min_max_feat["min"];
@@ -323,7 +323,7 @@ std::vector<float> GBDTTree::find_candidate_split(std::vector<float> sketch_hist
   return candidate_vect;
 }
 
-std::vector<Key> GBDTTree::push_local_grad_hess(int & ps_key_ptr, KVClientTable<float> & table, std::vector<float> feat_vect, std::vector<float> candidate_split_vect
+std::vector<Key> GBDTTree::push_local_grad_hess(int & ps_key_ptr, std::unique_ptr<KVClientTable<float>> & table, std::vector<float> feat_vect, std::vector<float> candidate_split_vect
 	,std::vector<float> grad_vect, std::vector<float> hess_vect, std::vector<float> & _push_val_vect) {
   int candidate_num_per_feat = candidate_split_vect.size();
   //LOG(INFO) << "candidate_num_per_feat = " << candidate_num_per_feat;

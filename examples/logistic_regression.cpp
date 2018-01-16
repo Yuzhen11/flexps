@@ -212,7 +212,7 @@ void Run() {
       for (int i = 0; i < FLAGS_num_iters; ++ i) {
         CHECK_LT(i, future_keys.size());
         auto& keys = future_keys[i];
-        table.Get(keys, &params);
+        table->Get(keys, &params);
         CHECK_EQ(keys.size(), params.size());
         deltas.resize(keys.size(), 0.0);
 
@@ -236,8 +236,8 @@ void Run() {
                 deltas[j] += FLAGS_alpha * field.second * (y - pred_y);
             }
         }
-        table.Add(keys, deltas);  // issue Push
-        table.Clock();
+        table->Add(keys, deltas);  // issue Push
+        table->Clock();
         CHECK_EQ(params.size(), keys.size());
 
         if (i % 10 == 0)
@@ -255,7 +255,7 @@ void Run() {
       end_time = std::chrono::steady_clock::now();
 
       // test error
-      table.Get(all_keys, &params);
+      table->Get(all_keys, &params);
       test_error<DataObj>(params, data);
     } 
     else if (FLAGS_kModelType == "SparseSSP") {  // Sparse SSP mode
@@ -266,7 +266,7 @@ void Run() {
       for (int i = 0; i < FLAGS_num_iters; ++ i) {
         CHECK_LT(i, future_keys.size());
         auto& keys = future_keys[i];
-        table.Get(&params);
+        table->Get(&params);
         CHECK_EQ(keys.size(), params.size());
         deltas.resize(keys.size(), 0.0);
         
@@ -291,7 +291,7 @@ void Run() {
             }
         }
 
-        table.Add(keys, deltas);
+        table->Add(keys, deltas);
         if (i % 10 == 0)
           LOG(INFO) << "Iter: " << i << " finished on worker " << info.worker_id;
 

@@ -61,9 +61,9 @@ void Run() {
     std::vector<float> vals(keys.size(), 0.5);
     std::vector<float> ret;
     for (int i = 0; i < 100; ++ i) {
-      table.Get(keys, &ret);
-      table.Add(keys, vals);
-      table.Clock();
+      table->Get(keys, &ret);
+      table->Add(keys, vals);
+      table->Clock();
       CHECK_EQ(ret.size(), keys.size());
       // LOG(INFO) << ret[0];
       LOG(INFO) << "Iter: " << i << " finished on Node " << info.worker_id;
