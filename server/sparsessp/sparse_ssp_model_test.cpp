@@ -325,7 +325,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1Conflict) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -338,7 +338,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1Conflict) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -416,7 +416,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase1) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -429,7 +429,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase1) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -449,7 +449,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase1) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 1);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
@@ -527,7 +527,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -540,7 +540,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -561,7 +561,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 1);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
@@ -589,7 +589,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation1NoConflictCase2) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 1);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -650,7 +650,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Conflict) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -663,7 +663,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Conflict) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -750,7 +750,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -763,7 +763,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -790,7 +790,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);
@@ -810,7 +810,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case1) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 2);
@@ -884,7 +884,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -897,7 +897,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -924,7 +924,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);
@@ -944,7 +944,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case2) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 2);
@@ -1027,7 +1027,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -1040,7 +1040,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -1067,7 +1067,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);
@@ -1087,7 +1087,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case3) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 2);
@@ -1177,7 +1177,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -1190,7 +1190,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -1217,7 +1217,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);
@@ -1237,7 +1237,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case4) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 2);
@@ -1337,7 +1337,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case5) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -1350,7 +1350,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case5) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -1377,7 +1377,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case5) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);
@@ -1460,7 +1460,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -1473,7 +1473,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -1500,7 +1500,7 @@ TEST_F(TestSparseSSPModel, staleness0speculation2Case6) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);
@@ -1591,7 +1591,7 @@ TEST_F(TestSparseSSPModel, ClockWithoutGet) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -1604,7 +1604,7 @@ TEST_F(TestSparseSSPModel, ClockWithoutGet) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -1629,7 +1629,7 @@ TEST_F(TestSparseSSPModel, ClockWithoutGet) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 1);

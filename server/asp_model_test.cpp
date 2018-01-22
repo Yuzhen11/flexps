@@ -53,7 +53,7 @@ TEST_F(TestASPModel, CheckGetAndAdd) {
   model->Get(msg);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.meta.version, 0);
@@ -66,7 +66,7 @@ TEST_F(TestASPModel, CheckGetAndAdd) {
   EXPECT_EQ(rep_vals[0], 0);
 
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.version, 0);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
@@ -86,7 +86,7 @@ TEST_F(TestASPModel, CheckGetAndAdd) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
   EXPECT_EQ(check_msg.data.size(), 2);
@@ -104,7 +104,7 @@ TEST_F(TestASPModel, CheckGetAndAdd) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 2);
   EXPECT_EQ(check_msg.data.size(), 2);
@@ -123,7 +123,7 @@ TEST_F(TestASPModel, CheckGetAndAdd) {
 
   EXPECT_EQ(reply_queue.Size(), 1);
   reply_queue.WaitAndPop(&check_msg);
-  EXPECT_EQ(check_msg.meta.flag, Flag::kGet);
+  EXPECT_EQ(check_msg.meta.flag, Flag::kGetReply);
   EXPECT_EQ(check_msg.meta.sender, 0);
   EXPECT_EQ(check_msg.meta.recver, 3);
   EXPECT_EQ(check_msg.data.size(), 2);
