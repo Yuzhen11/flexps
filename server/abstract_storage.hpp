@@ -25,7 +25,18 @@ class AbstractStorage {
     Message reply;
     reply.meta.recver = msg.meta.sender;
     reply.meta.sender = msg.meta.recver;
-    reply.meta.flag = msg.meta.flag;
+    switch (msg.meta.flag)
+    {
+    case Flag::kGet:
+	reply.meta.flag = Flag::kGetReply;
+	break;
+    case Flag::kGetChunk:
+	reply.meta.flag = Flag::kGetChunkReply;
+	break;
+    default:
+	reply.meta.flag = msg.meta.flag;
+	break;
+    }
     reply.meta.model_id = msg.meta.model_id;
     reply.meta.version = msg.meta.version;
     third_party::SArray<Key> reply_keys(typed_keys);

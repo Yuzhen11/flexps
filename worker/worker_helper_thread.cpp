@@ -18,7 +18,7 @@ void WorkerHelperThread::Main() {
   while (true) {
     Message msg;
     work_queue_.WaitAndPop(&msg);
-
+    
     if (msg.meta.flag == Flag::kExit)
       break;
 
