@@ -7,7 +7,10 @@ namespace flexps {
 
 class DataLoader {
   public:
-  	DataLoader(std::string path, std::string delimiter);
+    DataLoader();
+  	DataLoader(std::string path);
+    std::vector<float> read_line_to_vect(std::string line);
+    void read_hdfs_to_class_feat_vect(std::vector<std::string> & line_vect);
     std::vector<float> get_class_vect();
     std::vector<std::vector<float>> get_feat_vect_list();
     static std::vector<float> get_feat_vect_by_row(std::vector<std::vector<float>> & feat_vect_list, int row);
@@ -24,6 +27,9 @@ class DataLoader {
       std::vector<std::vector<float>> & left_feat_vect_list,
       std::vector<std::vector<float>> & right_feat_vect_list
       );
+    std::vector<float> pop();
+    void push(std::vector<float> & vect);
+    void print_loaded_data();
   private:
     std::vector<float> class_vect;
     std::vector<std::vector<float>> feat_vect_list;

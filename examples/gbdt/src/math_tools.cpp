@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <math.h>
 #include <string>
 #include <vector>
 
@@ -13,7 +14,6 @@ float calculate_gradient(float actual, float predict, std::string loss_function,
     case 1: // first order
       if (loss_function == "square_error") {
         result = actual - predict;
-        //return predict - actual;
       }
       else {
         result = 0;
@@ -53,6 +53,39 @@ std::map<std::string, float> find_min_max(std::vector<float> vect) {
   res["max"] = max;
 
   return res;
+}
+
+float calculate_rmse(std::vector<float> vect1, std::vector<float> vect2) {
+  float rmse = 0.0;
+
+  for (int i = 0; i < vect1.size(); i++) {
+    
+    float error = vect1[i] - vect2[i];
+    rmse += error * error;
+  }
+  rmse = rmse / vect1.size();
+  rmse = sqrt(rmse);
+
+  return rmse;
+}
+
+float calculate_rmse(float & SSE, float & NUM) {
+  return sqrt(SSE / NUM);
+}
+
+void get_SSE_and_NUM(std::vector<float> vect1, std::vector<float> vect2, float & SSE, int & NUM) {
+  float _SSE = 0.0;
+
+  for (int i = 0; i < vect1.size(); i++) {
+    
+    float error = vect1[i] - vect2[i];
+    _SSE += error * error;
+  }
+  
+  SSE = _SSE;
+  NUM = vect1.size();
+
+  return;
 }
 
 }

@@ -1,3 +1,5 @@
+#include <cmath>
+#include <limits>
 #include "glog/logging.h"
 #include "gtest/gtest.h"
 
@@ -59,6 +61,38 @@ TEST_F(TestSArrayBinStream, Int) {
   EXPECT_EQ(c, 10);
   EXPECT_EQ(d, 20);
   ASSERT_EQ(bin.Size(), 0);
+}
+
+TEST_F(TestSArrayBinStream, String) {
+  std::string input = "123abc";
+  BinStream stream;
+  stream << input;
+  std::string output;
+  stream >> output;
+  EXPECT_STREQ(output.c_str(), input.c_str());
+}
+
+TEST_F(TestSArrayBinStream, Map) {
+    std::map<std::string, float> input, output;
+    input.insert(std::pair<std::string, float>("num", 12));
+    input.insert(std::pair<std::string, float>("sum", 12.34));
+    BinStream stream;
+    stream << input;
+    stream >> output;
+    EXPECT_EQ(input.size(), output.size());
+    EXPECT_EQ(output["num"], 12);
+    EXPECT_NEAR(output["sum"], 12.34, 0.00001);
+}
+
+TEST_F(TestSArrayBinStream, Vector) {
+    std::vector<int> input{1, 0, -2, 3};
+    BinStream stream;
+    stream << input;
+    std::vector<int> output;
+    stream >> output;
+    EXPECT_EQ(output.size(), input.size());
+    for (int i = 0; i < output.size(); i++)
+        EXPECT_EQ(output[i], input[i]);
 }
 
 // TODO:  Provide vector overload to enable this
