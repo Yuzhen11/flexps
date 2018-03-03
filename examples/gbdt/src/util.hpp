@@ -1,10 +1,18 @@
 #pragma once
 
+#include "gflags/gflags.h"
+#include "glog/logging.h"
+
+#include "driver/engine.hpp"
+#include "worker/kv_client_table.hpp"
+
 #include <algorithm>
 #include <string>
 #include <map>
 #include <utility>
 #include <vector>
+
+namespace flexps {
 
 std::vector<std::string> inline split(const std::string &source, const char *delimiter = " ", bool keepEmpty = false) {
 	std::vector<std::string> results;
@@ -92,4 +100,26 @@ std::pair<KeyType, ValueType> get_max_in_map(const std::map<KeyType, ValueType> 
 	return *std::max_element(x.begin(), x.end(), [] (const pairtype & p1, const pairtype & p2) {
 		return p1.second < p2.second;
 	});
+}
+
+template<typename T>
+third_party::SArray<T> vect_to_sarray(std::vector<T> vect) {
+  third_party::SArray<T> sarray(vect.size());
+
+  for (int i = 0; i < vect.size(); i++) {
+    sarray[i] = vect[i];
+  }
+  return sarray;
+}
+
+template<typename T>
+std::vector<T> sarray_to_vect(third_party::SArray<T> sarray) {
+  std::vector<T> vect(sarray.size());
+
+  for (int i = 0; i < sarray.size(); i++) {
+    vect[i] = sarray[i];
+  }
+  return vect;
+}
+
 }

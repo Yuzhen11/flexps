@@ -12,18 +12,22 @@ namespace flexps {
 
 class GBDTController {
   public:
-  	GBDTController();
-    void init(std::map<std::string, std::string> & options, std::map<std::string, float> & params);
-    GBDTTree build_tree(std::unique_ptr<KVClientTable<float>> & table, std::vector<std::vector<float>> feat_vect_list, 
-      std::vector<std::map<std::string, float>> min_max_feat_list, std::vector<float> grad_vect, std::vector<float> hess_vect);
+    GBDTController();
+    void init(std::map<std::string, std::string>& options, std::map<std::string, float>& params);
+    GBDTTree build_tree(int tree_id, std::map<std::string, std::unique_ptr<KVClientTable<float>>>& name_to_kv_table, std::vector<std::vector<float>>& feat_vect_list, 
+      std::vector<std::map<std::string, float>>& min_max_feat_list, std::vector<float>& grad_vect, std::vector<float>& hess_vect);
     GBDTTree create_tree();
-    void build_forest(std::unique_ptr<KVClientTable<float>> & table, std::vector<float> class_vect, std::vector<std::vector<float>> feat_vect_list, std::vector<std::map<std::string, float>> min_max_feat_list);
-    void update_estimator_vect(GBDTTree & tree, std::vector<float> & estimator_vect, std::vector<float> & class_vect, std::vector<std::vector<float>> & feat_vect_list);
+    void build_forest(std::map<std::string, std::unique_ptr<KVClientTable<float>>>& name_to_kv_table, std::vector<float>& class_vect, std::vector<std::vector<float>>& feat_vect_list, std::vector<std::map<std::string, float>>& min_max_feat_list);
+    void update_estimator_vect(GBDTTree& tree, std::vector<float>& estimator_vect, std::vector<float>& class_vect, std::vector<std::vector<float>>& feat_vect_list);
+    float predict(std::vector<float>& data_row);
+    void calculate_predict_result(std::vector<std::vector<float>>& test_feat_vect_list, std::vector<float>& test_class_vect, std::map<std::string, float>& predict_result);
   protected:
     // Helper functions
-    std::vector<float> get_gradient_vect(std::vector<float> class_vect, std::vector<float> estimator_vect, std::string loss_function, int order);
+    std::vector<float> get_gradient_vect(std::vector<float>& class_vect, std::vector<float>& estimator_vect, std::string loss_function, int order);
   private:
     int ps_key_ptr;
+    float init_estimator;
+
     std::map<std::string, std::string> options;
     std::map<std::string, float> params;
 
