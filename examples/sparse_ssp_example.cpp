@@ -3,8 +3,6 @@
 #include "gflags/gflags.h"
 #include "glog/logging.h"
 
-#include <gperftools/profiler.h>
-
 #include "driver/engine.hpp"
 #include "worker/kv_client_table.hpp"
 
